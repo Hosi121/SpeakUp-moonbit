@@ -55,7 +55,7 @@ const AdminPage: React.FC = () => {
     try {
       const generatedTheme = await eventService.generateTheme();
       setTheme(generatedTheme);
-    } catch (error) {
+    } catch {
       setErrorMessage("テーマの生成に失敗しました");
     }
   };
@@ -75,7 +75,7 @@ const AdminPage: React.FC = () => {
       handleCloseDialog();
       const fetchedEvents = await eventService.fetchEvents();
       setEvents(fetchedEvents);
-    } catch (error) {
+    } catch {
       setErrorMessage("イベントの作成に失敗しました");
     }
   };

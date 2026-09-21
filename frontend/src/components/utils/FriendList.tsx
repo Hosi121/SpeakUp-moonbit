@@ -23,7 +23,7 @@ const FriendList: React.FC = () => {
 
   const handleMessage = (friendName: string) => {
     // メッセージページに遷移
-    navigate(`/message/${friendName}`);
+    navigate(`/message/${encodeURIComponent(friendName)}`);
   };
 
   return (

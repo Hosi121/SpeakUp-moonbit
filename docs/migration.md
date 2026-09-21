@@ -100,6 +100,8 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 
 ## 検証と未実施範囲
 
+引き継いだ frontend の依存更新と残る監査項目の判断は [依存関係の確認](dependencies.md) に記載した。
+
 source oracle は `contract/source/` の元コード抜粋を実行して生成する。入力はケースとして定義するが expected は手書きしない。`npm run fixtures` で再生成でき、CI が差分を検査する。純粋変換と旧 Go の message/avatar シリアライズを対象にした structural parity であり、全 endpoint を旧稼働環境へ replay した比較ではない。
 
 MoonBit type check / JS test / native core test、TypeScript strict check、frontend production build、MySQL API/WS integration、Playwright 二ブラウザの音声受信と既存画面を検証する。Supabase/OpenAI への実 API 呼び出し、TURN 実回線、production traffic の shadow/replay、canary は未実施。新 schema のため既存 DB のデータ移行も別作業。元 Go repo を変更せず残しており、今回の公開による本番切替はない。
