@@ -1,0 +1,19 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: speakup_moonbit
+      MYSQL_USER: speakup
+      MYSQL_PASSWORD: speakup-local-only
+      MYSQL_ROOT_PASSWORD: speakup-root-local-only
+    ports:
+      - '127.0.0.1:3308:3306'
+    volumes:
+      - moonbit_mysql:/var/lib/mysql
+    healthcheck:
+      test: [CMD, mysqladmin, ping, -h, localhost]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+volumes:
+  moonbit_mysql:

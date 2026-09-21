@@ -1,0 +1,43 @@
+name: Verify migration
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: speakup_moonbit
+          MYSQL_USER: speakup
+          MYSQL_PASSWORD: speakup-local-only
+          MYSQL_ROOT_PASSWORD: speakup-root-local-only
+        ports: ['3308:3306']
+        options: --health-cmd="mysqladmin ping -h localhost" --health-interval=2s --health-timeout=2s --health-retries=30
+    env:
+      AUTH_MODE: development
+      DATABASE_URL: mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.13.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: 1.23.5
+          cache-dependency-path: bench/go/go.sum
+      - run: npm ci && npm --prefix frontend ci
+      - run: bash scripts/install-moon.sh
+      - run: npm run generate && npm run check
+      - run: npm run fixtures && git diff --exit-code -- contract core/platform
+      - run: npm run db:migrate && npm run db:seed
+      - run: npm test && npm run test:native
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk fonts-noto-color-emoji
+      - run: npm run test:browser

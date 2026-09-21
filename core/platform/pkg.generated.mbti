@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/platform"
+
+// Values
+pub fn dispatch(String, DispatchDoneCallback) -> Unit
+
+pub fn eventTimes(String) -> String
+
+pub fn now() -> String
+
+pub fn publicUrl(String) -> String
+
+// Errors
+
+// Types and methods
+#external
+pub type DispatchDoneCallback
+
+// Type aliases
+
+// Traits

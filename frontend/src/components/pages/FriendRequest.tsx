@@ -1,0 +1,188 @@
+import { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Avatar, Button, Paper, List, ListItem, ListItemAvatar, ListItemText, Container, IconButton, Snackbar, CircularProgress } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import TopSection from "../utils/TopSection";
+import { sendFriendRequest as sendFriendRequestRequest } from "../../services/friendService";
+import { fetchUserSummaryById } from "../../services/userService";
+import type { FriendState } from "../../types/types";
+
+interface Friend {
+  id: number;
+  username: string;
+  avatarUrl: string;
+  friendState: FriendState;
+}
+
+const FriendRequestComponent: React.FC = () => {
+  const navigate = useNavigate();
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const userIds = [2, 3]; // セッションしたユーザーのID
+
+  const fetchUserInfo = async (userId: number): Promise<Friend> => {
+    try {
+      const summary = await fetchUserSummaryById(userId);
+      return {
+        id: userId,
+        username: summary.username,
+        avatarUrl: summary.avatarUrl,
+        friendState: "unapplied",
+      };
+    } catch (error: unknown) {
+      console.error(`Failed to fetch user info for user ${userId}:`, error);
+      throw error;
+    }
+  };
+
+  const fetchFriends = useCallback(async () => {
+    setLoading(true);
+    try {
+      const friendsData = await Promise.all(userIds.map(fetchUserInfo));
+      setFriends(friendsData);
+    } catch (error: unknown) {
+      console.error('Failed to fetch friends:', error);
+      setError(`Failed to fetch friends: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFriends();
+  }, [fetchFriends]);
+
+  const sendFriendRequest = async (targetUserId: number) => {
+    try {
+      await sendFriendRequestRequest(targetUserId);
+      return true;
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to send friend request');
+      return false;
+    }
+  };
+
+  const handleEndSession = () => {
+    navigate("/home");
+  };
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
+  const handleFriendRequest = async (friendId: number) => {
+    const success = await sendFriendRequest(friendId);
+    if (success) {
+      setFriends(prevFriends =>
+        prevFriends.map(friend =>
+          friend.id === friendId ? { ...friend, friendState: "pending" } : friend
+        )
+      );
+    }
+  };
+
+  const handleCloseError = () => {
+    setError(null);
+  };
+
+  if (loading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  return (
+    <Container
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        height: "calc(100vh - 70px)",
+        boxSizing: "border-box",
+      }}
+    >
+      <Container sx={{ pt: 3 }}>
+        <TopSection />
+        <Box
+          sx={{
+            position: "relative",
+            display: "flex",
+            justifyContent: "flex-start",
+            alignItems: "center",
+            pt: 2,
+            pb: 2,
+          }}
+        >
+          <IconButton onClick={handleGoBack}>
+            <ArrowBack sx={{ fontSize: 40 }} />
+          </IconButton>
+          <Typography variant="h6" sx={{ ml: 2 }} fontWeight="bolder">
+            フレンド申請
+          </Typography>
+        </Box>
+
+        <Typography variant="body2" sx={{ marginBottom: 2 }} textAlign="left">
+          今日話した相手ともっと話したいときは、 フレンド申請をしてメッセージでセッション の続きを話そう！
+        </Typography>
+
+        <List sx={{ maxHeight: "50vh", overflow: "auto" }}>
+          {friends.map((friend) => (
+            <Paper key={friend.id} elevation={3} sx={{ marginBottom: 2, padding: 2 }}>
+              <ListItem alignItems="flex-start" sx={{ padding: 0 }}>
+                <ListItemAvatar>
+                  <Avatar src={friend.avatarUrl} alt={friend.username} />
+                </ListItemAvatar>
+                <ListItemText
+                  primary={friend.username}
+                  secondary={
+                    <>
+                      <Typography component="span" variant="body2" color="text.primary">
+                        User ID: {friend.id}
+                      </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
+              <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                <Button
+                  variant="contained"
+                  disabled={friend.friendState !== "unapplied"}
+                  onClick={() => handleFriendRequest(friend.id)}
+                >
+                  {friend.friendState === "unapplied" ? "フレンド申請" : "フレンド申請済"}
+                </Button>
+                <Button variant="contained">メッセージ</Button>
+              </Box>
+            </Paper>
+          ))}
+        </List>
+      </Container>
+
+      <Box sx={{ p: 2 }}>
+        <Typography variant="body2" sx={{ marginBottom: 2 }} textAlign="left">
+          フレンド申請は、 記録＞セッション履歴からでもできるよ！
+        </Typography>
+
+        <Button variant="contained" fullWidth onClick={handleEndSession}>
+          セッションを終わる→
+        </Button>
+      </Box>
+
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={handleCloseError}
+        message={error}
+      />
+    </Container>
+  );
+};
+
+export const FriendRequest: React.FC = () => {
+  return <FriendRequestComponent />;
+};
+
+export default FriendRequest;

@@ -1,0 +1,8 @@
+{
+    "trophies": [
+      { "icon": "🏆", "description": "アシスタントなしで終了" },
+      { "icon": "🏆", "description": "3回連続で参加" },
+      { "icon": "🏆", "description": "5セッション全てに参加" },
+      { "icon": "🏆", "description": "初めての参加" }
+    ]
+  }

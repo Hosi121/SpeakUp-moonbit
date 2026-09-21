@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/signaling"
+
+// Values
+pub fn connection_count(Int) -> Int
+
+pub fn create_hub() -> Int
+
+pub fn destroy_hub(Int) -> Unit
+
+pub fn join(Int, Int, Int, Int) -> Array[Delivery]
+
+pub fn leave(Int, Int) -> Array[Delivery]
+
+pub fn relay(Int, Int, String) -> Array[Delivery]
+
+// Errors
+
+// Types and methods
+pub(all) struct Delivery {
+  connection : Int
+  payload : String
+  close_code : Int
+}
+
+// Type aliases
+
+// Traits

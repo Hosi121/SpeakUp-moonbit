@@ -1,0 +1,1 @@
+export function handle(s: string, s2: string, n: number, s3: string, s4: string, fn_: (n: number, s: string) => void): void;

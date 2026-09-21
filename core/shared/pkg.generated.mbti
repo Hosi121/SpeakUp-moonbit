@@ -1,0 +1,184 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/shared"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn from_memo(MemoDto) -> UserNotes
+
+pub fn map_conversation(ConversationHistoryDto) -> ConversationHistoryItem
+
+pub fn map_event(EventDto) -> Event
+
+pub fn map_friend(FriendSummaryDto) -> FriendSummary
+
+pub fn map_profile(UserProfileDto) -> UserProfile
+
+pub fn map_session(SessionDto) -> SessionData
+
+pub fn map_user(UserDto) -> User
+
+pub fn normalize_avatar(String, String) -> String
+
+pub fn parse_signal(String) -> ParsedSignal
+
+pub fn to_memo(UserNotes) -> MemoDto
+
+// Errors
+
+// Types and methods
+pub(all) struct ConversationExample {
+  english : String
+  japanese : String
+} derive(ToJson, @json.FromJson)
+pub fn ConversationExample::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn ConversationExample::to_json(Self) -> Json
+
+pub(all) struct ConversationHistoryDto {
+  date : String
+  previous_date : String
+  sessions : Int
+  completion_rate : String
+  comment : String
+  examples : Array[ConversationExample]
+} derive(ToJson, @json.FromJson)
+pub fn ConversationHistoryDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn ConversationHistoryDto::to_json(Self) -> Json
+
+pub(all) struct ConversationHistoryItem {
+  date : String
+  previousDate : String
+  sessions : Int
+  completionRate : String
+  comment : String
+  examples : Array[ConversationExample]
+}
+
+pub(all) struct Event {
+  id : Int
+  eventStart : String
+  eventEnd : String
+  themeId : Int
+  theme : EventTheme
+}
+
+pub(all) struct EventDto {
+  id : Int
+  event_start : String
+  event_end : String
+  theme_id : Int
+  theme : EventThemeDto
+} derive(ToJson, @json.FromJson)
+pub fn EventDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn EventDto::to_json(Self) -> Json
+
+pub(all) struct EventTheme {
+  themeText : String
+  topic1 : String
+  topic2 : String
+  topic3 : String
+}
+
+pub(all) struct EventThemeDto {
+  theme_text : String
+  topic1 : String
+  topic2 : String
+  topic3 : String
+} derive(ToJson, @json.FromJson)
+pub fn EventThemeDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn EventThemeDto::to_json(Self) -> Json
+
+pub(all) struct FriendSummary {
+  id : Int
+  username : String
+  avatarUrl : String
+}
+
+pub(all) struct FriendSummaryDto {
+  id : Int
+  username : String
+  avatar_url : String
+} derive(ToJson, @json.FromJson)
+pub fn FriendSummaryDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn FriendSummaryDto::to_json(Self) -> Json
+
+pub(all) struct MemoDto {
+  memo1 : String
+  memo2 : String
+} derive(ToJson, @json.FromJson)
+pub fn MemoDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn MemoDto::to_json(Self) -> Json
+
+pub(all) struct ParsedSignal {
+  kind : String
+  token : String
+  room : Int
+  payload : String
+  isOffer : Bool
+  error : String
+}
+
+pub(all) struct SessionData {
+  theme : String
+  dateTime : String
+  sessions : Array[Int]
+}
+
+pub(all) struct SessionDto {
+  theme : String
+  date_time : String
+  sessions : Array[Int]
+} derive(ToJson, @json.FromJson)
+pub fn SessionDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn SessionDto::to_json(Self) -> Json
+
+pub(all) struct User {
+  id : Int
+  username : String
+  email : String
+  avatarUrl : String
+  createdAt : String
+}
+
+pub(all) struct UserDto {
+  id : Int
+  username : String
+  email : String
+  avatar_url : String
+  created_at : String
+} derive(ToJson, @json.FromJson)
+pub fn UserDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn UserDto::to_json(Self) -> Json
+
+pub(all) struct UserNotes {
+  carryInMemo : String
+  wordList : String
+}
+
+pub(all) struct UserProfile {
+  id : Int
+  username : String
+  email : String
+  avatarUrl : String
+  role : String
+  createdAt : String
+  updatedAt : String
+}
+
+pub(all) struct UserProfileDto {
+  id : Int
+  username : String
+  email : String
+  avatar_url : String
+  role : String
+  created_at : String
+  updated_at : String
+} derive(ToJson, @json.FromJson)
+pub fn UserProfileDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn UserProfileDto::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits

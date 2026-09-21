@@ -1,0 +1,19 @@
+import {
+  "hosi121/speakup/shared",
+}
+
+options(
+  link: {
+    "js": {
+      "format": "esm",
+      "exports": [
+        "create_hub:createHub",
+        "destroy_hub:destroyHub",
+        "join",
+        "leave",
+        "relay",
+        "connection_count:connectionCount",
+      ],
+    },
+  },
+)

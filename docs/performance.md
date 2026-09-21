@@ -1,0 +1,36 @@
+# 性能測定
+
+今回の測定では、MoonBit JS が Go より高速である根拠は得られなかった。中継 throughput の中央値は Go に対して **0.993 倍**でほぼ同程度。RSS は **7.0 倍**で、Node/V8 の常駐コストが目立つ。この比較で移植の利点として確認できたのは型と状態管理の統合であり、言語変更だけによる高速化ではない。
+
+| 指標（5 trial の中央値） | Go 比較用実装 | MoonBit → JS / Node |
+| --- | ---: | ---: |
+| forwarded messages/sec | 64,911 | 64,483 |
+| throughput の trial 間範囲 | 39,808–70,869 | 63,996–67,829 |
+| p50 中継 latency (ms) | 0.436 | 0.446 |
+| p95 中継 latency (ms) | 0.828 | 0.805 |
+| p99 中継 latency (ms) | 1.073 | 1.047 |
+| server RSS (MiB) | 12.32 | 86.68 |
+| server CPU time / 96,000 messages (s) | 1.21 | 1.30 |
+
+測定時刻: 2026-09-21T17:43:40.757Z。Intel(R) Core(TM) Ultra 7 255H、linux 6.6.87.2-microsoft-standard-WSL2、v24.13.0、go version go1.23.5 linux/amd64、moon 0.1.20260920 (914d7da 2026-09-20)。
+
+## 方法と比較の限界
+
+`npm run bench` で再現する。Linux の /proc を使用。
+
+- 32 rooms / 64 WebSocket connections。各 room は同時に一つの message を送る closed-loop 負荷で、room 間は並行。
+- 12 KiB の SDP で offer/answer 後、各 room 1,000 messages の warm-up、3,000 ICE messages を計測。全受信 payload を照合。
+- Go と MoonBit を一度に一方ずつ起動し、trial ごとに先行順を交換。Go は GOMAXPROCS=1、Node は単一 JS thread。ビルドやブラウザ試験と並走させていない。
+- client と server は同じ PC の loopback。latency は send から相手の受信までの host 内時間であり、ネットワーク越し RTT、音声 latency、通話開始時間ではない。client 側も Node なので client 処理が上限を作る可能性がある。
+- production の MoonBit hub を直接使うが、両ランタイムとも admission は合成 user/room。JWT、DB、TLS、TURN、rate limit、heartbeat を計測から除く。Go reference は mutex と接続ごとの writer lock を使う比較用プログラムであり、元の Gin/Ent アプリを起動した計測ではない。
+- 負荷 payload は ASCII。検証処理は両方にあるが、MoonBit/Go の Unicode 長、細かな parse allocation まで完全に同一ではない。実装・ライブラリ・runtime を含む比較であり、コンパイラだけの差を分離していない。
+- RSS は trial 最後の標本であり peak ではない。CPU は /proc の user+system tick の差分。allocator ごとの allocation 数や GC pause は未測定。
+- trial 間の揺らぎは大きく、1% 程度の差から優劣は判断できない。これは最大同時接続数や production capacity の認定ではない。
+
+元 Go は無同期 map と複数 writer を含むため、そのままの throughput を「正しく動く baseline」として使わない。DB を接続時に全件読む設計の改善効果と、言語/runtime 変更の効果を分けた。認証・DB・接続 churn を含む production-shaped replay は未実施。
+
+Go reference は別途 `BENCH_GO_RACE=1 BENCH_ROUNDS=1 BENCH_MESSAGES=300 node bench/run.mjs` で race detector を有効にして同時接続を実行できる。race 有効の数値はこの表へ混ぜない。
+
+native backend は純粋 core のコンパイル・テストまで。native HTTP/WS サーバはまだ作っていないため、Go に対する native の性能については結論を出さない。
+
+生データ: [bench/results.json](../bench/results.json)。比較実装: [Go](../bench/go/main.go)、[MoonBit host](../bench/moonbit-server.mjs)、[production core](../core/signaling/hub.mbt)。

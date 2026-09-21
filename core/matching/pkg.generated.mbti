@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/matching"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn pair_round(Array[Participant], Int, Int) -> Array[Pair]
+
+// Errors
+
+// Types and methods
+pub(all) struct Pair {
+  first : Int
+  second : Int
+}
+
+pub(all) struct Participant {
+  user_id : Int
+  rank : Int
+  participates_bit : Int
+} derive(@json.FromJson)
+pub fn Participant::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+
+// Type aliases
+
+// Traits

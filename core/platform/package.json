@@ -1,0 +1,7 @@
+{
+  "name": "@tsmbt-bridge/platform",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "bridge.js",
+  "private": true
+}

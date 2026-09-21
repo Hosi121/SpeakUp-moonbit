@@ -1,0 +1,4 @@
+core/platform/bridge.* linguist-generated=true
+core/**/pkg.generated.mbti linguist-generated=true
+contract/generated/* linguist-generated=true
+contract/fixtures.json linguist-generated=true

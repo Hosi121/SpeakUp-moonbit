@@ -1,0 +1,7 @@
+{
+  "repo": "https://github.com/Hosi121/SpeakUp",
+  "commit": "50c818025a804cd7c2524d0939b644d284613e51",
+  "node": "v24.13.0",
+  "go": "go version go1.23.5 linux/amd64",
+  "contract": "structural; intentional changes listed in docs/migration.md"
+}

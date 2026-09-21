@@ -1,0 +1,14 @@
+.tools/
+.mooncakes/
+_build/
+target/
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+uploads/
+*.log
+playwright-report/
+test-results/

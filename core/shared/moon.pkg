@@ -1,0 +1,23 @@
+import {
+  "moonbitlang/core/json",
+}
+
+options(
+  link: {
+    "js": {
+      "format": "esm",
+      "exports": [
+        "map_event:mapEvent",
+        "map_user:mapUser",
+        "map_profile:mapProfile",
+        "map_friend:mapFriend",
+        "from_memo:fromMemo",
+        "to_memo:toMemo",
+        "map_session:mapSession",
+        "map_conversation:mapConversation",
+        "parse_signal:parseSignal",
+        "normalize_avatar:normalizeAvatar",
+      ],
+    },
+  },
+)

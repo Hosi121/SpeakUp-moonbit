@@ -1,0 +1,11 @@
+import {
+  "hosi121/speakup/shared",
+  "hosi121/speakup/platform",
+  "hosi121/speakup/matching",
+  "moonbitlang/core/json",
+}
+
+options(
+  targets: { "runtime.mbt": [ "js" ], "routes.mbt": [ "js" ] },
+  link: { "js": { "format": "esm", "exports": [ "handle" ] } },
+)
