@@ -8,5 +8,15 @@ import {
 
 options(
   targets: { "js.mbt": [ "js" ] },
-  link: { "js": { "format": "esm", "exports": [ "handle" ] } },
+  link: {
+    "js": {
+      "format": "esm",
+      "exports": [
+        "handle",
+        "set_notifier:setNotifier",
+        "poll_expired:pollExpired",
+        "expire",
+      ],
+    },
+  },
 )

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Input, Textarea } from "../ui/Field";
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   conversationClock,
   type ConversationDto,
@@ -10,6 +10,7 @@ import {
   fetchReflection,
   saveReflection,
 } from "../../services/conversationService";
+import { LearningFeedback } from "../utils/LearningFeedback";
 import TopSection from "../utils/TopSection";
 
 export default function SessionRecordForm() {
@@ -165,6 +166,15 @@ function RecordForm({ id }: { id: number }) {
           保存
         </button>
       </form>
+      {complete && (
+        <>
+          <LearningFeedback id={id} saved={saved} />
+          <Link to={`/sessionfeedback?conversation=${id}`}>
+            6 つの質問で振り返る
+          </Link>
+          <Link to="/friendrequest">通話した相手にフレンド申請</Link>
+        </>
+      )}
       <button type="button" onClick={() => navigate("/sessionlist")}>
         通話一覧へ
       </button>

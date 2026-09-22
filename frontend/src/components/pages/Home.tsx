@@ -6,22 +6,27 @@ import TopWaves from "../utils/TopWaves";
 import HomeLogo from "../../assets/homeLogo";
 import { IconButton } from "../utils/IconButton";
 import { Icon } from "../ui/Icon";
-import type { Event } from "../../types/types";
-import { fetchEvents } from "../../services/eventService";
+import { mapEvent, type EventOverviewDto } from "../../../../dist/shared.js";
+import { fetchEventOverviews } from "../../services/features";
 
 export function Home() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventOverviewDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   useEffect(() => {
-    void fetchEvents()
+    void fetchEventOverviews()
       .then(setEvents)
       .catch(() => setError("データの取得に失敗しました。"))
       .finally(() => setLoading(false));
   }, []);
-  const next =
-    events.find((event) => new Date(event.eventStart).getTime() > Date.now()) ??
-    events[0];
+  const upcoming = events
+    .filter(
+      (item) =>
+        item.participates_bit > 0 &&
+        new Date(item.event.event_end).getTime() > Date.now(),
+    )
+    .sort((a, b) => a.event.event_start.localeCompare(b.event.event_start))[0];
+  const next = upcoming ? mapEvent(upcoming.event) : undefined;
   return (
     <BottomNavigationTemplate value="home">
       <div className="page stack">
@@ -35,6 +40,7 @@ export function Home() {
         </div>
         <section className="panel stack center">
           <h1>直近の参加予定</h1>
+          <Link to="/events">イベントを探して参加する</Link>
           {loading ? (
             <p role="status">読み込み中…</p>
           ) : error ? (

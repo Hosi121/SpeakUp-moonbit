@@ -7,6 +7,41 @@ priv suberror RequestError {
 let relay : @transport.Relay = @transport.Relay()
 
 ///|
+let activity : @transport.Relay = @transport.Relay()
+
+///|
+let subscribers : Map[Int, (Int, @transport.Peer)] = Map([])
+
+///|
+async fn activity_connection(
+  request : @http.Request,
+  conn : @http.ServerConnection,
+) -> Unit {
+  let ws = @websocket.from_http_server(request, conn)
+  defer conn.close()
+  activity.with_peer(ws, async fn(peer) {
+    let uid = @async.with_timeout(5000, async fn() {
+      let message = ws.recv()
+      guard message.kind is Text else { raise BadRequest }
+      let token = @shared.activity_token(
+        @utf8.decode(@transport.limited_body(message, 8192)),
+      )
+      let uid = @host.verify_token(token)
+      let result = @api.execute("GET", "/user/info", uid, "", "")
+      guard result.status == 200 else { raise BadRequest }
+      uid
+    })
+    subscribers[peer.id] = (uid, peer)
+    defer subscribers.remove(peer.id)
+    activity.send(peer, "{\"type\":\"refresh\"}")
+    // Subsequent client application messages are not part of this protocol.
+    ws.recv() |> ignore
+    raise BadRequest
+  })
+  @transport.drain_close(conn)
+}
+
+///|
 priv struct ConversationWork {
   lock : @async.Mutex
   mut users : Int
@@ -286,15 +321,19 @@ async fn handle(
     return
   }
   if header(request, "Upgrade").to_lower() == "websocket" {
-    if request.path != "/ws" ||
+    if (request.path != "/ws" && request.path != "/activity") ||
       !allowed ||
       origin == "" ||
-      relay.size() >= 10000 {
+      relay.size() + activity.size() >= 10000 {
       respond(conn, 403, "", "")
       conn.close()
       return
     }
-    connection(request, conn, service)
+    if request.path == "/activity" {
+      activity_connection(request, conn)
+    } else {
+      connection(request, conn, service)
+    }
     return
   }
   if request.meth is Options {
@@ -399,6 +438,14 @@ async fn main {
   @host.initialize()
   defer @host.close()
   defer relay.close()
+  defer activity.close()
+  @api.set_notifier(fn(uid) {
+    for (owner, peer) in subscribers.values() {
+      if owner == uid {
+        activity.send(peer, "{\"type\":\"refresh\"}")
+      }
+    }
+  })
   let addr = @host.env("HOST", fallback="127.0.0.1") +
     ":" +
     @host.env("PORT", fallback="8081")
@@ -407,6 +454,21 @@ async fn main {
   println("SpeakUp MoonBit native listening on " + addr)
   let mut active = 0
   @async.with_task_group(async fn(group) {
+    group.spawn_bg(no_wait=true, async fn() {
+      for ;; {
+        try {
+          for id in @api.overdue_conversations() {
+            with_conversation(id, async fn() {
+              let result = @api.expire_conversation(id)
+              publish_conversation(result.body)
+            })
+          }
+        } catch {
+          _ => println("Conversation deadline maintenance failed; retrying")
+        }
+        @async.sleep(1000)
+      }
+    })
     for ;; {
       let (conn, _) = server.accept()
       if active >= 10000 {

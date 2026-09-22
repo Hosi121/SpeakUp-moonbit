@@ -39,7 +39,7 @@ test('native dialog contains keyboard focus, restores it, and submits the event 
   await dialog.getByRole('button', { name: '作成', exact: true }).click();
   expect((await created).ok()).toBeTruthy();
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('article')).toContainText(theme);
+  await expect(page.getByRole('article', { name: '最後に作成したイベント', exact: true })).toContainText(theme);
   await page.getByRole('radio', { name: 'イベント管理' }).focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('radio', { name: 'ユーザー情報', exact: true })).toBeChecked();
@@ -110,7 +110,7 @@ test('pages fit narrow and desktop viewports and notifications close with Escape
     ['/login', 'サインイン'], ['/signup', 'サインアップ'], ['/home', '直近の参加予定'],
     ['/record', '記録'], ['/sessionlist', '通話'], ['/memo', '持ち込みメモ'],
     ['/settings', '設定'], ['/stats', '参加データ'], ['/conversation_history', '会話の記録'],
-    ['/session_history_friendlist', '履歴とフレンド'], ['/sessionfeedback', '最後に振り返りをしよう！'],
+    ['/session_history_friendlist', '履歴とフレンド'], ['/sessionfeedback', '会話の記録'], ['/events', 'イベント'], ['/friendrequest', 'フレンド申請'],
   ];
   for (const width of [320, 1024]) {
     await page.setViewportSize({ width, height: 800 });

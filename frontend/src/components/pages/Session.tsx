@@ -24,6 +24,7 @@ import {
   finishConversation,
   cancelConversation,
 } from "../../services/conversationService";
+import { useActivity } from "../../services/activity";
 import type { UserProfile } from "../../types/types";
 
 export const Session = () => {
@@ -37,6 +38,7 @@ export const Session = () => {
 };
 
 const ConversationSession = ({ id }: { id: number }) => {
+  const { clockOffset } = useActivity();
   const [memoOpen, setMemoOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [messages, setMessages] = useState<string[]>([]);
@@ -55,9 +57,10 @@ const ConversationSession = ({ id }: { id: number }) => {
   const [retry, setRetry] = useState(0);
   const [saving, setSaving] = useState(false);
   const ending = useRef(false);
-  const automaticFinish = useRef(false);
   const [showTopicPopup, setShowTopicPopup] = useState(false);
-  const clock = conversation ? conversationClock(conversation, now) : null;
+  const clock = conversation
+    ? conversationClock(conversation, now + clockOffset)
+    : null;
 
   useEffect(() => {
     if (clock?.phase !== "active") return;
@@ -217,15 +220,6 @@ const ConversationSession = ({ id }: { id: number }) => {
   useEffect(() => {
     if (clock?.phase === "completed")
       navigate(`/sessionrecord?conversation=${id}`, { replace: true });
-    if (
-      clock?.phase === "active" &&
-      clock.has_deadline &&
-      clock.remaining_seconds === 0 &&
-      !automaticFinish.current
-    ) {
-      automaticFinish.current = true;
-      void finish();
-    }
   }, [
     clock?.phase,
     clock?.has_deadline,

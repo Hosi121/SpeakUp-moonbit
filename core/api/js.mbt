@@ -50,3 +50,24 @@ pub fn handle(
     respond(result.status, result.body)
   })
 }
+
+///|
+pub fn poll_expired(done : (Int, Array[Int]) -> Unit) -> Unit {
+  run(async fn() noraise {
+    done(200, overdue_conversations()) catch {
+      _ => done(500, [])
+    }
+  })
+}
+
+///|
+pub fn expire(id : Int, done : (Int, String) -> Unit) -> Unit {
+  run(async fn() noraise {
+    try {
+      let result = expire_conversation(id)
+      done(result.status, result.body)
+    } catch {
+      _ => done(500, "")
+    }
+  })
+}

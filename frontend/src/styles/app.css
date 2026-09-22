@@ -505,3 +505,6 @@ body:has(dialog[open]) {
     transition: none !important;
   }
 }
+
+.badge { font-size: .7rem; border-radius: 1rem; padding: .1rem .35rem; color: white; background: var(--accent); }
+dl dd { margin: .5rem 0; font-weight: 700; font-size: 1.75rem; }

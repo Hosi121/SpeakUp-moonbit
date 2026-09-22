@@ -12,7 +12,7 @@ export function MemoInputField({
   value,
   setValue,
   label,
-  maxLength = 500,
+  maxLength = 255,
 }: MemoInputFieldProps) {
   const countId = useId();
   return (

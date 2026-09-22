@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "../ui/Field";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   conversationClock,
   conversationPartner,
@@ -13,10 +13,12 @@ import {
 import { fetchUserProfile, searchUsers } from "../../services/userService";
 import type { User, UserProfile } from "../../types/types";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
+import { useActivity } from "../../services/activity";
 import TopSection from "../utils/TopSection";
 
 export const SessionList = () => {
   const navigate = useNavigate();
+  const { revision, clockOffset } = useActivity();
   const [calls, setCalls] = useState<ConversationDto[]>([]);
   const [me, setMe] = useState<UserProfile | null>(null);
   const [query, setQuery] = useState("");
@@ -46,7 +48,7 @@ export const SessionList = () => {
   }, []);
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+  }, [refresh, revision]);
   const search = async () => {
     if (!query.trim()) return;
     setBusy(true);
@@ -81,6 +83,7 @@ export const SessionList = () => {
     <BottomNavigationTemplate value="session">
       <div className="page stack">
         <TopSection />
+        <Link to="/events">イベントへの参加登録</Link>
         <h1>通話</h1>
         {error && (
           <p role="alert" className="alert">
@@ -132,7 +135,7 @@ export const SessionList = () => {
           </p>
         )}
         {calls.map((call) => {
-          const clock = conversationClock(call, Date.now());
+          const clock = conversationClock(call, Date.now() + clockOffset);
           const partner = me ? conversationPartner(call, me.id).username : "";
           return (
             <article key={call.id} className="panel stack compact">

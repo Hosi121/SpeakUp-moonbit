@@ -45,7 +45,7 @@ MoonBit の業務処理は単一の非同期 event loop 上で動く。同期の
 - 接続時に UTF-8 と UTC を設定。`MYSQL_SSL_CA` を設定した場合は TLS とサーバ証明書検証を必須にする。
 - `DATABASE_URL` は `mysql://user:password@host:port/database`。user/password/database の percent encoding を扱う。今回の parser は DNS 名／IPv4 と query parameter のない URL に対応する。
 
-SDP／ICE の中継は DB を参照しない。media-ready 後の開始保存も reader と別の task で行う。会話の参加・開始・終了だけを会話 ID ごとの mutex で順序付ける。各 WebSocket に writer を一つ置き、送信待ち 256 KiB、入力 64 KiB、毎秒 100 messages、接続 10,000 件で制限する。5 秒の認証 timeout と ping/pong も持つ。async 0.22.1 は close 送信後に WebSocket reader を停止するため、残る close 応答を上限付きで読み捨ててから TCP を閉じ、proxy 越しのリセットを防ぐ。これらは防御上の設定値であり、処理能力を認定する数値ではない。
+SDP／ICE の中継は DB を参照しない。media-ready 後の開始保存も reader と別の task で行う。会話の参加・開始・終了・期限処理を会話 ID ごとの mutex で順序付ける。各 WebSocket に writer を一つ置き、送信待ち 256 KiB、入力 64 KiB、毎秒 100 messages、接続 10,000 件で制限する。5 秒の認証 timeout と ping/pong も持つ。async 0.22.1 は close 送信後に WebSocket reader を停止するため、残る close 応答を上限付きで読み捨ててから TCP を閉じ、proxy 越しのリセットを防ぐ。これらは防御上の設定値であり、処理能力を認定する数値ではない。
 
 ## 検証
 
@@ -60,3 +60,5 @@ npm run bench
 JS backend と同じ API／WebSocket tests を native に対して実行する。JWT は exp を必須とし、user_id は正の整数の十進文字列に限定する（比較用 JS backend も同じ規則）。jose との相互検証、改ざん・期限・issuer/audience・nbf を確認。avatar は multipart の別フィールドとバイナリを含めて検証する。DB 10 接続を実際の row lock で待たせ、その間にも ICE が中継されることを検証する。ブラウザ試験はイベント／随時の音声 RTP、再接続、終了通知、本人だけの振り返り保存を含む。
 
 `moonbitlang/async` は experimental API。native にしても Go より速くなるとは限らない。[測定結果](performance.md)は HTTP 認証や DB を除いた中継の比較で、実サービス全体や音声そのものの速さを表すものではない。Supabase／OpenAI／TURN の実サービス接続と production rollout は今回の検証対象外。
+
+アプリ内通知の `/activity` は別の bounded writer を利用し、認証後に本人向けの更新通知だけを送る。イベント期限は開始時刻から 300 秒として永続状態を走査し、ブラウザの生存に依存せず終了させる。詳細は [周辺機能](features.md)。

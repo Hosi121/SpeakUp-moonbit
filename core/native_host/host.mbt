@@ -502,22 +502,23 @@ pub async fn invoke(request : Json) -> Json {
       let theme = string(request, "kind") == "/chat/theme"
       let prompt = if theme {
         "会話のテーマとしてふさわしいものを一つだけ返してください。"
+      } else if string(request, "kind") == "/chat/feedback" {
+        "本人が書いた振り返りと英語表現に、日本語で短い改善案と英語の例文を返してください。音声を聞いた・会話能力を評価したとは言わず、入力文だけを根拠にしてください。"
       } else {
         "英語についての質問に、日本語で英語の表現を教えてください。"
       }
       let body : Json = {
         "model": env("OPENAI_MODEL", fallback="gpt-4.1-mini").to_json(),
         "messages": [
-          {
-            "role": "user",
-            "content": (prompt + "\n" + string(request, "content")).to_json(),
-          },
+          { "role": "system", "content": prompt.to_json() },
+          { "role": "user", "content": string(request, "content").to_json() },
         ],
         "max_tokens": (if theme { 100 } else { 1000 }).to_json(),
       }
       let (response, result) = @async.with_timeout(20000, async fn() {
         @http.post(
-          "https://api.openai.com/v1/chat/completions",
+          env("OPENAI_BASE_URL", fallback="https://api.openai.com/v1") +
+          "/chat/completions",
           body,
           headers=Map([
             (@http.CaseInsensitiveString("Content-Type"), "application/json"),

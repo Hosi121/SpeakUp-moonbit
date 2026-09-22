@@ -6,7 +6,17 @@ pub fn configure_host(Host) -> Unit
 
 pub async fn execute(String, String, Int, String, String) -> ApiResponse
 
+pub fn expire(Int, (Int, String) -> Unit) -> Unit
+
+pub async fn expire_conversation(Int) -> ApiResponse
+
 pub fn handle(String, String, Int, String, String, (Int, String) -> Unit) -> Unit
+
+pub async fn overdue_conversations() -> Array[Int]
+
+pub fn poll_expired((Int, Array[Int]) -> Unit) -> Unit
+
+pub fn set_notifier((Int) -> Unit) -> Unit
 
 // Errors
 pub(all) suberror HostError {

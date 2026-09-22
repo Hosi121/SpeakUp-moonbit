@@ -18,7 +18,7 @@
     "dev": "npm run build:core && npm run build:native && node scripts/dev.mjs",
     "check": "npm run build:core && tsc --noEmit && npm --prefix frontend run build && node scripts/check-boundaries.mjs",
     "test": "npm run build:core && npm run moon -- test && node --test tests/*.test.mjs",
-    "test:integration": "node --test tests/integration.test.mjs",
+    "test:integration": "node --test tests/integration.test.mjs tests/features.test.mjs",
     "bench": "node bench/run.mjs",
     "fixtures": "node scripts/capture.mjs",
     "db:migrate": "node --env-file-if-exists=.env server/migrate.ts",
@@ -27,7 +27,7 @@
     "test:browser": "playwright test --global-timeout=120000",
     "build:native": "node scripts/build-native.mjs",
     "start:native": "node scripts/start-native.mjs",
-    "test:integration:native": "SERVER_RUNTIME=native node --test tests/integration.test.mjs",
+    "test:integration:native": "SERVER_RUNTIME=native node --test tests/integration.test.mjs tests/features.test.mjs",
     "test:browser:native": "SERVER_RUNTIME=native playwright test --global-timeout=120000",
     "start:node": "node --env-file-if-exists=.env server/main.ts"
   },

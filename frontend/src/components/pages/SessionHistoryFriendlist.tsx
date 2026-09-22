@@ -1,25 +1,27 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import type { ConversationDto } from "../../../../dist/shared.js";
+import { fetchConversations } from "../../services/conversationService";
 import TopSection from "../utils/TopSection";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import { ChoiceGroup } from "../ui/ChoiceGroup";
 import FriendList from "../utils/FriendList";
-import SessionHistory from "../utils/SessionHistory";
-import { fetchSessionHistory } from "../../services/appData";
-import type { SessionHistoryItem } from "../../types/types";
-
 export function SessionHistoryFriendlist() {
-  const [history, setHistory] = useState<SessionHistoryItem[]>([]);
+  const [calls, setCalls] = useState<ConversationDto[] | null>(null);
   const [value, setValue] = useState("history");
-  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    void fetchSessionHistory()
+    let disposed = false;
+    void fetchConversations(true)
       .then((data) => {
-        setHistory(data);
-        setLoaded(true);
+        if (!disposed) setCalls(data);
       })
-      .catch(() => setError("履歴を取得できませんでした。"));
+      .catch(() => {
+        if (!disposed) setError("履歴を取得できませんでした。");
+      });
+    return () => {
+      disposed = true;
+    };
   }, []);
   return (
     <BottomNavigationTemplate value="record">
@@ -35,23 +37,27 @@ export function SessionHistoryFriendlist() {
             { value: "friends", label: "フレンド" },
           ]}
         />
-        {value === "history" ? (
-          <>
-            {error && (
-              <p role="alert" className="alert">
-                {error}
-              </p>
-            )}
-            {loaded && history.length === 0 && (
-              <p>
-                セッション履歴はありません。
-                <Link to="/sessionlist">通話へ</Link>
-              </p>
-            )}
-            <SessionHistory history={history} />
-          </>
-        ) : (
+        {value === "friends" ? (
           <FriendList />
+        ) : (
+          <>
+            {error && <p role="alert">{error}</p>}
+            {calls?.length === 0 && <p>終了した会話はまだありません。</p>}
+            {calls?.map((call) => (
+              <article key={call.id} className="panel stack">
+                <h2>{call.theme}</h2>
+                <p>{call.participants.map((p) => p.username).join(" / ")}</p>
+                <p>
+                  {new Date(call.started_at).toLocaleString()}・
+                  {call.event_id ? `ラウンド ${call.round}` : "随時通話"}
+                </p>
+                <Link to={`/sessionrecord?conversation=${call.id}`}>
+                  振り返りを開く
+                </Link>
+              </article>
+            ))}
+            <Link to="/friendrequest">通話した相手にフレンド申請</Link>
+          </>
         )}
       </div>
     </BottomNavigationTemplate>

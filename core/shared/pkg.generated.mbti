@@ -6,15 +6,33 @@ import {
 }
 
 // Values
+pub fn activity_token(String) -> String raise
+
 pub fn conversation_clock(ConversationDto, Double) -> ConversationClock raise
 
 pub fn conversation_partner(ConversationDto, Int) -> FriendSummaryDto raise
+
+pub fn decode_activity_token(String) -> String
 
 pub fn decode_conversation(String) -> ConversationDto
 
 pub fn decode_conversations(String) -> Array[ConversationDto]
 
+pub fn decode_events(String) -> Array[EventOverviewDto]
+
+pub fn decode_inbox(String) -> InboxDto
+
+pub fn decode_learning(String) -> LearningDto
+
 pub fn decode_reflection(String) -> ReflectionDto
+
+pub fn decode_roster(String) -> EventRosterDto
+
+pub fn decode_social(String) -> SocialDto
+
+pub fn decode_stats(String) -> StatsDto
+
+pub fn decode_thread(String) -> ThreadDto
 
 pub fn from_memo(MemoDto) -> UserNotes
 
@@ -51,6 +69,16 @@ pub fn view_conversation_partner(ConversationDto, Int) -> FriendSummaryDto
 // Errors
 
 // Types and methods
+pub(all) struct AchievementDto {
+  code : String
+  title : String
+  progress : Int
+  target : Int
+  earned : Bool
+} derive(ToJson, @json.FromJson)
+pub fn AchievementDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn AchievementDto::to_json(Self) -> Json
+
 pub(all) struct ConversationClock {
   phase : String
   remaining_seconds : Int
@@ -120,6 +148,29 @@ pub(all) struct EventDto {
 pub fn EventDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn EventDto::to_json(Self) -> Json
 
+pub(all) struct EventMemberDto {
+  user : FriendSummaryDto
+  participates_bit : Int
+  matched_bit : Int
+} derive(ToJson, @json.FromJson)
+pub fn EventMemberDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn EventMemberDto::to_json(Self) -> Json
+
+pub(all) struct EventOverviewDto {
+  event : EventDto
+  participates_bit : Int
+  registered_count : Int
+  matching_state : String
+} derive(ToJson, @json.FromJson)
+pub fn EventOverviewDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn EventOverviewDto::to_json(Self) -> Json
+
+pub(all) struct EventRosterDto {
+  members : Array[EventMemberDto]
+} derive(ToJson, @json.FromJson)
+pub fn EventRosterDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn EventRosterDto::to_json(Self) -> Json
+
 pub(all) struct EventTheme {
   themeText : String
   topic1 : String
@@ -150,12 +201,52 @@ pub(all) struct FriendSummaryDto {
 pub fn FriendSummaryDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn FriendSummaryDto::to_json(Self) -> Json
 
+pub(all) struct InboxDto {
+  items : Array[NotificationDto]
+  unread : Int
+  now : Double
+} derive(ToJson, @json.FromJson)
+pub fn InboxDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn InboxDto::to_json(Self) -> Json
+
+pub(all) struct LearningDto {
+  answers : Array[Int]
+  feedback : String
+  feedback_current : Bool
+  updated_at : String
+} derive(ToJson, @json.FromJson)
+pub fn LearningDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn LearningDto::to_json(Self) -> Json
+
 pub(all) struct MemoDto {
   memo1 : String
   memo2 : String
 } derive(ToJson, @json.FromJson)
 pub fn MemoDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn MemoDto::to_json(Self) -> Json
+
+pub(all) struct MessageDto {
+  id : Int
+  sender_id : Int
+  recipient_id : Int
+  body : String
+  created_at : String
+  read_at : String
+} derive(ToJson, @json.FromJson)
+pub fn MessageDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn MessageDto::to_json(Self) -> Json
+
+pub(all) struct NotificationDto {
+  id : Int
+  kind : String
+  actor : FriendSummaryDto
+  conversation_id : Int
+  message_id : Int
+  read : Bool
+  created_at : String
+} derive(ToJson, @json.FromJson)
+pub fn NotificationDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn NotificationDto::to_json(Self) -> Json
 
 pub(all) struct ParsedSignal {
   kind : String
@@ -189,6 +280,34 @@ pub(all) struct SessionDto {
 } derive(ToJson, @json.FromJson)
 pub fn SessionDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn SessionDto::to_json(Self) -> Json
+
+pub(all) struct SocialDto {
+  friends : Array[FriendSummaryDto]
+  incoming : Array[FriendSummaryDto]
+  outgoing : Array[FriendSummaryDto]
+} derive(ToJson, @json.FromJson)
+pub fn SocialDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn SocialDto::to_json(Self) -> Json
+
+pub(all) struct StatsDto {
+  total_calls : Int
+  event_calls : Int
+  direct_calls : Int
+  partners : Int
+  minutes : Int
+  reflections : Int
+  achievements : Array[AchievementDto]
+} derive(ToJson, @json.FromJson)
+pub fn StatsDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn StatsDto::to_json(Self) -> Json
+
+pub(all) struct ThreadDto {
+  peer : FriendSummaryDto
+  messages : Array[MessageDto]
+  has_older : Bool
+} derive(ToJson, @json.FromJson)
+pub fn ThreadDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn ThreadDto::to_json(Self) -> Json
 
 pub(all) struct User {
   id : Int

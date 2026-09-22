@@ -1,4 +1,4 @@
-# UI の構成と移植の残り
+# UI の構成
 
 React は描画とブラウザのライフサイクルを担当し、会話モデル・状態検査・共通 DTO は MoonBit から JS と型宣言を生成して利用する。native backend には React / MUI / Node のランタイム依存はない。
 
@@ -14,7 +14,7 @@ React は描画とブラウザのライフサイクルを担当し、会話モ�
 - フォーム送信、エラー表示、アバターの file input、ログアウト後の画面遷移を整えた。空の Vite デモ画面は `/login` への遷移に置換した。外部フォントのリクエストも削除した。
 - マイクチェックでは二重のマイク取得をやめ、非同期取得後に画面が閉じていた場合を含め、全 track・AudioContext・animation frame を解放する。非表示タブでは音量描画を止める。
 
-API、会話ライフサイクル、WebRTC adapter、MoonBit / TS2Mbt の公開境界は変更していない。元のピクセル配置を再現する互換移植ではなく、画面の操作目的を保ちながら標準要素へ整理した変更。
+MUI 削除時には API、会話ライフサイクル、WebRTC adapter、MoonBit / TS2Mbt の公開境界は変更していない。元のピクセル配置を再現する互換移植ではなく、画面の操作目的を保ちながら標準要素へ整理した変更。
 
 ## 同じ環境での build 比較
 
@@ -40,13 +40,15 @@ JS は約 40%、JS + CSS の gzip は約 37% 減。52 package を lockfile か�
 | --- | --- | --- |
 | `frontend/src/components` | React の画面・フォーム・UI 状態 | TS に残す。MUI は不要になった |
 | `frontend/src/services/voiceCall.ts`、音量計 | WebRTC / WebSocket / マイク / AudioContext の所有と後始末 | ブラウザ I/O adapter。MoonBit へ移しても Web API 境界は必要 |
-| `frontend/src/services/*` | HTTP、認証情報、モック、画面固有の DTO 変換 | 一部の変換は共通 MoonBit 済み。全 service が MoonBit という意味ではない |
+| `frontend/src/services/*` | HTTP、認証情報、画面固有の DTO 変換 | 一部の変換は共通 MoonBit 済み。全 service が MoonBit という意味ではない |
 | `server/main.ts`、`server/host.ts` | 比較・互換検証用の Node backend | default の native backend では実行しない |
 | `server/migrate.ts`、`server/seed.ts`、scripts/tests | DB 準備、生成、ビルド、検証 | 開発用ツール。常駐サーバーの依存と分ける |
 
 frontend の直接 runtime 依存は React / React DOM / React Router / Axios。次に依存を減らすなら HTTP adapter の Axios を標準 fetch に置換できるが、認証ヘッダー・エラー応答・multipart の契約を検証する別変更になる。React 自体を外す場合は描画、状態の更新、DOM / Web API bindings の設計が必要であり、サーバーの MoonBit 化とは独立した判断。
 
-移植残とは別に、旧通知の承認・拒否、実績、AI feedback、旧 `/sessionfeedback` の回答、`/message/:friendname` の相手への実メッセージ送信は未実装。旧 `/friendrequest` の候補も固定 ID の試作のまま。動作のなかったボタンは無効化または削除した。共通会話モデルの `/sessionrecord` にある本人の振り返りは実際に保存する。イベント参加・マッチング API の管理 UI 全面統合も残る。
+通知、フレンド申請の承認・見送り・取消、メッセージ、実績、AI アドバイス、選択式の振り返り、イベント参加・管理を共通 MoonBit API に接続した。固定候補や架空の実績を廃止し、会話履歴と保存済みデータを使う。[各機能のモデル・API・検証](features.md)を参照。
+
+これらの追加後は JS 457.20 kB / gzip 147.73 kB、CSS 約 7 kB。上の表は MUI 削除単独の比較として残す。機能追加に伴う依存パッケージの変更はない。
 
 ## 検証
 

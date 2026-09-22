@@ -3,6 +3,7 @@ import { Dialog } from "../ui/Dialog";
 import { Input } from "../ui/Field";
 import { Avatar } from "../ui/Avatar";
 import { ChoiceGroup } from "../ui/ChoiceGroup";
+import { EventList } from "./Events";
 import TopSection from "../utils/TopSection";
 import type { Event, User } from "../../types/types";
 import * as eventService from "../../services/eventService";
@@ -99,6 +100,7 @@ export default function AdminPage() {
       )}
       {section === "events" ? (
         <section className="stack">
+          <EventList admin refreshKey={lastCreated?.id ?? 0} />
           <button
             type="button"
             className="primary"
@@ -112,7 +114,10 @@ export default function AdminPage() {
             イベント作成
           </button>
           {lastCreated && (
-            <article className="panel stack">
+            <article
+              className="panel stack"
+              aria-label="最後に作成したイベント"
+            >
               <h2>最後に作成したイベント</h2>
               <p>
                 予定日時: {new Date(lastCreated.eventStart).toLocaleString()}

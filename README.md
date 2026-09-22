@@ -28,7 +28,7 @@ npm run dev
 
 `http://localhost:5173/login` を開きます。開発用アカウントは `alice@example.test` / `bob@example.test`、パスワードは両方 `speakup-local-only`。Alice は管理者です。二つの別ブラウザまたは別プロファイルでログインし、`/sessionlist` から同じ会話を選びます。マイクの許可が必要です。
 
-seed のイベント通話を選ぶか、Alice が「相手を選んで通話する」で Bob を検索して新規通話を作れます。Bob は一覧を更新して参加します。双方が接続すると開始し、一人が終了すると双方の画面が振り返りへ進みます。画面から退出するだけなら会話は未終了のまま再参加できます。
+seed のイベント通話を選ぶか、Alice が「相手を選んで通話する」で Bob を検索して新規通話を作れます。Bob には通知と一覧の更新が届き、自分で参加を選びます。双方が接続すると開始し、一人が終了すると双方の画面が振り返りへ進みます。画面から退出するだけなら再参加できます。イベント通話は開始から 300 秒でサーバーが終了させます。
 
 この認証は `.env.example` の `AUTH_MODE=development` を明示したときだけ有効です。Supabase を使う場合は `AUTH_MODE=supabase`、URL/key と RS256 の鍵を設定します。開発用鍵は起動ごとに生成されるため、サーバ再起動後は再ログインしてください。
 
@@ -87,6 +87,6 @@ Playwright はイベント／随時通話の双方で audio RTP 受信、退出�
 
 ## 現在の範囲
 
-Go backend の主要 route と通話を移植し、会話のライフサイクル・随時通話・振り返り・履歴を新モデルで実装しました。画面は React/TypeScript と標準 HTML/CSS。MUI・Emotion は削除し、別の UI framework は追加していません。[UI の構成と残る TypeScript](docs/frontend.md)を参照してください。backend I/O は MoonBit async と Connector/C・OpenSSL binding です。着信の push 通知、実績・AI feedback、イベント管理 UI の全面統合、サーバ側の厳密な期限管理、元の Ent DB の移行、production rollout は未実施です。[機能別の対応表と変更点](docs/migration.md)で区別しています。
+Go backend の主要 route と通話を移植し、会話のライフサイクル・随時通話・振り返り・履歴を新モデルで実装しました。画面は React/TypeScript と標準 HTML/CSS。MUI・Emotion は削除し、別の UI framework は追加していません。[UI の構成と残る TypeScript](docs/frontend.md)を参照してください。backend I/O は MoonBit async と Connector/C・OpenSSL binding です。フレンド申請と承認、保存されるメッセージ、アプリ内通知、実績、本人の選択回答・AI アドバイス、イベント参加・管理、サーバーによる期限終了も実装しています。[機能の詳細](docs/features.md)を参照してください。OS Web Push、元の Ent DB の移行、production rollout は未実施です。[機能別の対応表と変更点](docs/migration.md)で区別しています。
 
 公開したコードは本番への切替ではありません。元 repo はそのまま残しています。元チームのコード・画像の出典は [NOTICE.md](NOTICE.md) を参照してください。

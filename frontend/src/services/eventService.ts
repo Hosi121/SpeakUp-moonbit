@@ -1,12 +1,12 @@
 import { mapEvent as mapEventDto } from "../../../dist/shared.js";
 import api from "./api";
 import { Event, EventDetails } from "../types/types";
-import type { ChatThemeResponseDto, CreateEventDto, EventDto } from "../types/dto";
-import { isTestMode } from "./appMode";
-import { loadMockData, saveMockData } from "./mockStore";
-import type { TopicGroup } from "../types/types";
+import type {
+  ChatThemeResponseDto,
+  CreateEventDto,
+  EventDto,
+} from "../types/dto";
 import { toApiError } from "./errorUtils";
-
 
 const toCreateEventDto = (eventData: EventDetails): CreateEventDto => ({
   event_start: eventData.eventStart,
@@ -14,42 +14,8 @@ const toCreateEventDto = (eventData: EventDetails): CreateEventDto => ({
   topics: eventData.topics,
 });
 
-export const fetchEvents = async (): Promise<Event[]> => {
-  try {
-    if (isTestMode) {
-      return loadMockData<Event[]>("events");
-    }
-    const response = await api.get<EventDto[]>("/events");
-    return response.data.map(mapEventDto);
-  } catch (error) {
-    throw toApiError(error, "イベントの取得に失敗しました");
-  }
-};
-
 export const createEvent = async (eventData: EventDetails): Promise<Event> => {
   try {
-    if (isTestMode) {
-      const events = loadMockData<Event[]>("events");
-      const nextId =
-        events.length > 0 ? Math.max(...events.map((event) => event.id)) + 1 : 1;
-      const startAt = new Date(eventData.eventStart);
-      const endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
-      const [topic1 = "", topic2 = "", topic3 = ""] = eventData.topics;
-      const newEvent: Event = {
-        id: nextId,
-        eventStart: startAt.toISOString(),
-        eventEnd: endAt.toISOString(),
-        themeId: nextId,
-        theme: {
-          themeText: eventData.theme,
-          topic1,
-          topic2,
-          topic3,
-        },
-      };
-      saveMockData("events", [...events, newEvent]);
-      return newEvent;
-    }
     const payload = toCreateEventDto(eventData);
     const response = await api.post<EventDto>("/events", payload);
     return mapEventDto(response.data);
@@ -60,15 +26,6 @@ export const createEvent = async (eventData: EventDetails): Promise<Event> => {
 
 export const generateTheme = async (): Promise<string> => {
   try {
-    if (isTestMode) {
-      const topics = loadMockData<TopicGroup[]>("topics");
-      const themePool = topics.map((topic) => topic.theme).filter(Boolean);
-      if (themePool.length === 0) {
-        return "Sample theme";
-      }
-      const pickIndex = Math.floor(Math.random() * themePool.length);
-      return themePool[pickIndex];
-    }
     const prompt = "イベントのテーマを提案してください。";
     const response = await api.post<ChatThemeResponseDto>("/chat/theme", {
       content: prompt,

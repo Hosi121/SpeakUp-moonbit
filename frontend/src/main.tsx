@@ -5,6 +5,8 @@ import {
   RouterProvider,
   Navigate,
 } from "react-router-dom";
+import { ActivityLayout } from "./services/ActivityLayout";
+import { Events } from "./components/pages/Events";
 import App from "./App.tsx";
 import { Settings } from "./components/pages/Settings.tsx";
 import { Home } from "./components/pages/Home.tsx";
@@ -26,101 +28,101 @@ import FriendList from "./components/utils/FriendList.tsx";
 import "./styles/app.css";
 import { SessionHistoryFriendlist } from "./components/pages/SessionHistoryFriendlist.tsx";
 import TrophyNotification from "./components/pages/TrophyNotification.tsx";
-import { isTestMode } from "./services/appMode.ts";
-import { seedMockData } from "./services/mockStore.ts";
-
-if (isTestMode) {
-  seedMockData();
-}
 
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <App />,
-  },
-  {
-    path: "settings",
-    element: <Settings />,
-  },
-  {
-    path: "login",
-    element: <Login />,
-  },
-  {
-    path: "home",
-    element: <Home />,
-  },
-  {
-    path: "sessionlist",
-    element: <SessionList />,
-  },
-  {
-    path: "waiting",
-    element: <Navigate to="/sessionlist" replace />,
-  },
-  {
-    path: "miccheck",
-    element: <MicCheck />,
-  },
-  {
-    path: "session",
-    element: <Session />,
-  },
-  {
-    path: "sessioninterval",
-    element: <Navigate to="/sessionlist" replace />,
-  },
-  {
-    path: "sessionrecord",
-    element: <SessionRecordForm />,
-  },
-  {
-    path: "signup",
-    element: <SignUp />,
-  },
-  {
-    path: "record",
-    element: <Record />,
-  },
-  {
-    path: "memo",
-    element: <Memo />,
-  },
-  {
-    path: "message/:friendname",
-    element: <Message />,
-  },
-  {
-    path: "stats",
-    element: <Stats />,
-  },
-  {
-    path: "conversation_history",
-    element: <ConversationHistory />,
-  },
-  {
-    path: "admin",
-    element: <AdminPage />,
-  },
-  {
-    path: "friendlist",
-    element: <FriendList />,
-  },
-  {
-    path: "session_history_friendlist",
-    element: <SessionHistoryFriendlist />,
-  },
-  {
-    path: "friendrequest",
-    element: <FriendRequest />,
-  },
-  {
-    path: "sessionfeedback",
-    element: <SessionFeedback />,
-  },
-  {
-    path: "trophynotification",
-    element: <TrophyNotification />,
+    element: <ActivityLayout />,
+    children: [
+      { path: "events", element: <Events /> },
+      {
+        path: "/",
+        element: <App />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
+      },
+      {
+        path: "login",
+        element: <Login />,
+      },
+      {
+        path: "home",
+        element: <Home />,
+      },
+      {
+        path: "sessionlist",
+        element: <SessionList />,
+      },
+      {
+        path: "waiting",
+        element: <Navigate to="/sessionlist" replace />,
+      },
+      {
+        path: "miccheck",
+        element: <MicCheck />,
+      },
+      {
+        path: "session",
+        element: <Session />,
+      },
+      {
+        path: "sessioninterval",
+        element: <Navigate to="/sessionlist" replace />,
+      },
+      {
+        path: "sessionrecord",
+        element: <SessionRecordForm />,
+      },
+      {
+        path: "signup",
+        element: <SignUp />,
+      },
+      {
+        path: "record",
+        element: <Record />,
+      },
+      {
+        path: "memo",
+        element: <Memo />,
+      },
+      {
+        path: "message/:friendId",
+        element: <Message />,
+      },
+      {
+        path: "stats",
+        element: <Stats />,
+      },
+      {
+        path: "conversation_history",
+        element: <ConversationHistory />,
+      },
+      {
+        path: "admin",
+        element: <AdminPage />,
+      },
+      {
+        path: "friendlist",
+        element: <FriendList />,
+      },
+      {
+        path: "session_history_friendlist",
+        element: <SessionHistoryFriendlist />,
+      },
+      {
+        path: "friendrequest",
+        element: <FriendRequest />,
+      },
+      {
+        path: "sessionfeedback",
+        element: <SessionFeedback />,
+      },
+      {
+        path: "trophynotification",
+        element: <TrophyNotification />,
+      },
+    ],
   },
 ]);
 

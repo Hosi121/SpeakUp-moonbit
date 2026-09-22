@@ -60,6 +60,7 @@ test('event transaction, admin restriction, timezone, profile and persistent fri
   assert.ok((await request('/events', alice)).body.some(e => e.id === event.body.id));
   for (const time of ['2026-02-30T10:00:00', '2026-09-22', '']) assert.equal((await request('/events', alice, 'POST', { ...input, event_start: time })).status, 400);
   assert.equal((await request('/friend/register', alice, 'POST', { target_user_id: 2 })).status, 200);
+  assert.equal((await request('/friends/1/accept', bob, 'POST', {})).status, 200);
   assert.ok((await request('/friend/me', alice)).body.friends.some(f => f.id === 2));
   assert.equal((await request('/friend/register', alice, 'POST', { target_user_id: 1 })).status, 400);
   assert.equal((await request('/users/search?q=Bob', alice)).body[0].username, 'Bob');

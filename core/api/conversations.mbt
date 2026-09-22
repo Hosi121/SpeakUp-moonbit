@@ -66,14 +66,34 @@ async fn change_conversation(
   for attempt in 0..<4 {
     let row = conversation_row(id, uid)
     let before : @conversation.Snapshot = @json.from_json(row)
+    let dto = conversation_dto(row)
+    let now = (host().now_millis)()
+    let deadline = before.started_at + 300000
+    if action == "expire" &&
+      (
+        dto.event_id == 0 ||
+        before.started_at == 0 ||
+        now < deadline ||
+        before.ended_at > 0 ||
+        before.cancelled_at > 0
+      ) {
+      return dto
+    }
     let after = if action == "start" {
       @conversation.begin(before, uid, (host().now_millis)())
     } else if action == "cancel" {
       @conversation.cancel(before, uid, (host().now_millis)())
     } else {
-      @conversation.finish(before, uid, (host().now_millis)())
+      @conversation.finish(
+        before,
+        uid,
+        if dto.event_id > 0 && now > deadline {
+          deadline
+        } else {
+          now
+        },
+      )
     }
-    let dto = conversation_dto(row)
     if after.revision == before.revision {
       return dto
     }
@@ -89,6 +109,9 @@ async fn change_conversation(
       ],
     )
     if field(result, "affectedRows") == (1).to_json() {
+      for person in dto.participants {
+        notify_user(person.id)
+      }
       return {
         ..dto,
         started_at: after.started_at,
@@ -142,6 +165,15 @@ async fn create_direct(uid : Int, body : Json) -> @shared.ConversationDto {
           "sql": "INSERT INTO conversation_requests(user_id,request_id,conversation_id) VALUES(?,?,LAST_INSERT_ID())",
           "params": [uid.to_json(), request_id.to_json()],
         },
+        {
+          "sql": "INSERT INTO notifications(user_id,actor_id,event_key,kind,conversation_id) SELECT ?,?,CONCAT('call:',conversation_id),'call_invitation',conversation_id FROM conversation_requests WHERE user_id=? AND request_id=?",
+          "params": [
+            target.to_json(),
+            uid.to_json(),
+            uid.to_json(),
+            request_id.to_json(),
+          ],
+        },
       ],
     }) catch {
       Upstream("conflict") => Json::null()
@@ -158,6 +190,8 @@ async fn create_direct(uid : Int, body : Json) -> @shared.ConversationDto {
   if !dto.participants.any(fn(p) { p.id == target }) {
     raise Invalid(409, "Request ID belongs to a different conversation")
   }
+  notify_user(target)
+  notify_user(uid)
   dto
 }
 

@@ -32,6 +32,10 @@ for (const kind of ['direct', 'event']) test(`${kind} conversations share real a
       page.on('pageerror', error => errors.push(error.message));
     }
     const alice = contexts[0].pages()[0], bob = contexts[1].pages()[0];
+    if (kind === 'event') {
+      // Server time compensates for a browser clock an hour ahead.
+      for (const page of [alice, bob]) await page.clock.setFixedTime(new Date(Date.now() + 3600000));
+    }
     let id;
     const theme = `Browser event ${randomUUID()}`;
     if (kind === 'direct') {

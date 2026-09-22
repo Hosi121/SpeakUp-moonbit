@@ -83,11 +83,11 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 | callType | 両者が来てから通知。false も明示。旧 Go の省略された false は decoder で受理 |
 | JWT | RS256 のみ、issuer/audience を検証し exp を必須化。user_id は正の整数の十進文字列。既存の JWT を引き継がず再ログイン |
 | event 作成 | ADMIN/SUPERUSER のみ。30 分。timezone なしは旧 Go と同じ UTC、返却は UTC に正規化 |
-| friend 一覧 | 固定 Alice/Bob/Charlie モックからユーザー本人の DB 一覧へ |
+| friend | 2 人につき 1 行。受信者の承認で成立し、双方からメッセージを送れる。既存の片方向登録は申請中へ移行 |
 | 空の一覧 | `null` ではなく `[]` |
 | 会話・参加者 | event/round は任意。会話と二人の参加行を一括保存し、同一 event/round 内の二重割当を席の位置によらず拒否 |
 | 随時通話 | 対象ユーザーを指定して作成、request_id で並行再送を集約。相手も明示的に参加 |
-| 開始・終了 | 両者の media-ready で開始。終了は参加者の操作、時刻はサーバ保存。再送・再接続で開始終了を重複記録しない |
+| 開始・終了 | 両者の media-ready で開始。終了は参加者の操作またはイベントの 300 秒期限、時刻はサーバ保存。再送・再接続で開始終了を重複記録しない |
 | 振り返り・履歴 | 本人だけの記録を保存。履歴は終了済み会話の projection。キャンセルした予定は含めない |
 | pairing | rank 順、round で片側を回転。参加ビットと重複 ID を検証。奇数なら未ペアの一人は待機。全員の完全公平性・全 round の重複最小性を保証する最適化ではない |
 | roster 更新 | matching 開始時に event 行をロックして roster を凍結。公開 marker と会話を transaction で一括保存。空の結果も重複実行は 409、部分公開しない |
@@ -108,12 +108,12 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 | profile / update / avatar / user search | 実装済み |
 | memo / friends / events | 実装済み、MySQL 結合テストあり |
 | `/ws`, `/rooms`, `/rtc-config` | 実装済み、二ブラウザの実 RTP 受信確認あり |
-| `/events/:id/register`, `/events/:id/match` | 参加・マッチング API を追加。管理用 API、既存管理 UI への全面統合は未実施 |
+| `/events/:id/register`, `/events/:id/match` | 参加・マッチング API と参加者／管理画面を実装。参加ビット・待機者・公開状態を表示 |
 | `/conversations`, `/conversations/direct`, `/conversations/:id` | イベント／随時の共通 API。参加者だけが読み書きできる |
 | `/conversations/:id/finish`, `/cancel`, `/reflection` | 永続化と再送、並行操作を検証済み。開始 API は内部 WS controller 専用で HTTP からは不可 |
 | `/conversations/history`, 会話履歴 UI | 終了した会話の一覧と本人の振り返りを実装。旧モックの `/conversation_history` API は公開しない |
 | topics / sessions / session_history | 互換用 API。旧 `/session_history` はイベントに限定し、新 UI は共通の会話履歴を利用 |
-| notifications / achievements / AI feedback | 元 Go に対応 route がない、または UI モックのみ。未実装として残した |
+| notifications / friends / messages / stats / AI feedback | 新モデルで保存・認可・集計と画面を実装。[機能と検証](features.md) |
 | web-rtc-test の別試作 | 本体の通話経路へ統合、試作用 repo はコピーしていない |
 
 ## 検証と未実施範囲
@@ -122,4 +122,4 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 
 source oracle は `contract/source/` の元コード抜粋を実行して生成する。入力はケースとして定義するが expected は手書きしない。`npm run fixtures` で再生成でき、CI が差分を検査する。純粋変換と旧 Go の message/avatar シリアライズを対象にした structural parity であり、全 endpoint を旧稼働環境へ replay した比較ではない。
 
-MoonBit type check / JS test / native core / crypto test、TypeScript strict check、frontend production build、JS/native 両方の MySQL API/WS integration（全 DB 接続のロック待ち中の中継を含む）、初回移植 DB の更新、Playwright 二ブラウザの音声受信と再接続・終了・振り返りを検証する。Supabase/OpenAI への実 API 呼び出し、TURN 実回線、production traffic の shadow/replay、canary は未実施。元の Ent DB のデータ移行は別作業。元 Go repo を変更せず残しており、今回の公開による本番切替はない。
+MoonBit type check / JS test / native core / crypto test、TypeScript strict check、frontend production build、JS/native 両方の MySQL API/WS integration（全 DB 接続のロック待ち中の中継を含む）、初回移植 DB の更新、Playwright 二ブラウザの音声受信と再接続・終了・振り返りを検証する。AI アドバイスはローカル HTTP fixture で試験する。Supabase/OpenAI への実 API 呼び出し、TURN 実回線、production traffic の shadow/replay、canary は未実施。元の Ent DB のデータ移行は別作業。元 Go repo を変更せず残しており、今回の公開による本番切替はない。

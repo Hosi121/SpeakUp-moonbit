@@ -109,10 +109,10 @@ async function execute(r: ObjectValue): Promise<unknown> {
     case 'chat': {
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) throw new Error('not_configured');
-      const prompt = r.kind === '/chat/theme' ? '会話のテーマとしてふさわしいものを一つだけ返してください。' : '英語についての質問に、日本語で英語の表現を教えてください。';
-      const response = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST',
+      const prompt = r.kind === '/chat/theme' ? '会話のテーマとしてふさわしいものを一つだけ返してください。' : r.kind === '/chat/feedback' ? '本人が書いた振り返りと英語表現に、日本語で短い改善案と英語の例文を返してください。音声を聞いた・会話能力を評価したとは言わず、入力文だけを根拠にしてください。' : '英語についての質問に、日本語で英語の表現を教えてください。';
+      const response = await fetch(`${process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1'}/chat/completions`, { method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini', messages: [{ role: 'user', content: `${prompt}\n${text(r.content)}` }], max_tokens: r.kind === '/chat/theme' ? 100 : 1000 }),
+        body: JSON.stringify({ model: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini', messages: [{ role: 'system', content: prompt }, { role: 'user', content: text(r.content) }], max_tokens: r.kind === '/chat/theme' ? 100 : 1000 }),
         signal: AbortSignal.timeout(20_000) });
       if (!response.ok) throw new Error('upstream');
       const result: unknown = await response.json();

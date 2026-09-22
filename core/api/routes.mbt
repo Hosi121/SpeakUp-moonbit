@@ -129,34 +129,23 @@ async fn route(
       )
       return result.map(fn(v) raise { user(v).to_json() }).to_json()
     }
-    ("GET", "/friend/me") => {
-      let result = rows(
-        "SELECT u.id,u.username,u.avatar_url FROM friends f JOIN users u ON u.id=f.target_user_id WHERE f.user_id=? AND f.status='FRIEND' AND u.is_deleted=0 ORDER BY u.id",
-        params,
-      )
-      return {
-        "friends": result
-        .map(fn(v) raise {
-          let f : @shared.FriendSummaryDto = @json.from_json(v)
-          { ..f, avatar_url: (host().public_url)(f.avatar_url), }.to_json()
-        })
-        .to_json(),
-      }
-    }
-    ("POST", "/friend/register") => {
-      let other = number(body, "target_user_id")
-      if other == uid {
-        raise Invalid(400, "Cannot add yourself")
-      }
-      one("SELECT id FROM users WHERE id=? AND is_deleted=0", [other.to_json()])
-      |> ignore
+    ("GET", "/friend/me") => return { "friends": social(uid).friends.to_json() }
+    ("GET", "/friends") => return social(uid).to_json()
+    ("POST", "/friend/register") =>
+      return friendship(uid, number(body, "target_user_id"), "request").to_json()
+    ("GET", "/notifications") => return inbox(uid).to_json()
+    ("PUT", "/notifications/read") => {
+      let through = number(body, "through_id")
       query(
-        "INSERT INTO friends (user_id,target_user_id,status) VALUES (?,?,'FRIEND') ON DUPLICATE KEY UPDATE status='FRIEND'",
-        [uid.to_json(), other.to_json()],
+        "UPDATE notifications SET read_at=COALESCE(read_at,UTC_TIMESTAMP(3)) WHERE user_id=? AND id<=?",
+        [uid.to_json(), through.to_json()],
       )
       |> ignore
-      return { "message": "Friend added successfully" }
+      notify_user(uid)
+      return inbox(uid).to_json()
     }
+    ("GET", "/stats") => return stats(uid).to_json()
+    ("GET", "/events/overview") => return event_overviews(uid).to_json()
     ("GET", "/events") =>
       return rows(event_sql + " ORDER BY e.event_start DESC,e.id DESC", [])
         .map(fn(v) raise { event(v).to_json() })
@@ -270,6 +259,44 @@ async fn route(
   }
   let segments = path.split("/").map(fn(s) { s.to_owned() }).collect()
   match (verb, segments) {
+    ("POST", ["", "friends", id, action]) =>
+      return friendship(uid, path_id(id), action).to_json()
+    ("GET", ["", "messages", id]) =>
+      return thread(uid, path_id(id), 0).to_json()
+    ("GET", ["", "messages", id, "before", cursor]) =>
+      return thread(uid, path_id(id), path_id(cursor)).to_json()
+    ("POST", ["", "messages", id]) =>
+      return send_message(uid, path_id(id), body).to_json()
+    ("PUT", ["", "messages", id, "read"]) => {
+      let target = path_id(id)
+      require_friend(uid, target) |> ignore
+      let through = number(body, "through_id")
+      query(
+        "UPDATE direct_messages SET read_at=COALESCE(read_at,UTC_TIMESTAMP(3)) WHERE recipient_id=? AND sender_id=? AND id<=?",
+        [uid.to_json(), target.to_json(), through.to_json()],
+      )
+      |> ignore
+      query(
+        "UPDATE notifications SET read_at=COALESCE(read_at,UTC_TIMESTAMP(3)) WHERE user_id=? AND actor_id=? AND kind='message' AND message_id<=?",
+        [uid.to_json(), target.to_json(), through.to_json()],
+      )
+      |> ignore
+      notify_user(uid)
+      notify_user(target)
+      return thread(uid, target, 0).to_json()
+    }
+    ("GET", ["", "conversations", id, "learning"]) =>
+      return learning(path_id(id), uid).to_json()
+    ("PUT", ["", "conversations", id, "survey"]) =>
+      return save_survey(path_id(id), uid, body).to_json()
+    ("POST", ["", "conversations", id, "feedback"]) =>
+      return generate_feedback(path_id(id), uid).to_json()
+    ("GET", ["", "events", id, "roster"]) => {
+      if string(me, "role") == "USER" {
+        raise Invalid(403, "Administrator required")
+      }
+      return event_roster(path_id(id)).to_json()
+    }
     ("GET", ["", "conversations", id]) =>
       return conversation_dto(conversation_row(path_id(id), uid)).to_json()
     ("POST", ["", "conversations", id, "start"]) =>
@@ -398,13 +425,21 @@ async fn route(
         }
       }
       statements.push({
+        "sql": "INSERT INTO notifications(user_id,actor_id,event_key,kind,conversation_id) SELECT m.user_id,p.user_id,CONCAT('event-call:',m.conversation_id),'event_matched',m.conversation_id FROM conversation_members m JOIN conversation_members p ON p.conversation_id=m.conversation_id AND p.user_id<>m.user_id WHERE m.event_id=?",
+        "params": [id.to_json()],
+      })
+      statements.push({
         "sql": "SELECT c.id,a.user_id AS user_a,b.user_id AS user_b,c.event_id,c.round_no AS round FROM conversations c JOIN conversation_members a ON a.conversation_id=c.id AND a.seat=0 JOIN conversation_members b ON b.conversation_id=c.id AND b.seat=1 WHERE c.event_id=? ORDER BY c.round_no,c.id",
         "params": [id.to_json()],
       })
-      return invoke({
+      let result = invoke({
         "operation": "transaction",
         "statements": statements.to_json(),
       })
+      for person in roster {
+        notify_user(person.user_id)
+      }
+      return result
     }
     ("GET", ["", "users", "search", "id", id]) =>
       return user(
@@ -426,8 +461,8 @@ async fn route(
     ("GET", ["", "friend", name]) => {
       let f : @shared.FriendSummaryDto = @json.from_json(
         one(
-          "SELECT u.id,u.username,u.avatar_url FROM friends f JOIN users u ON u.id=f.target_user_id WHERE f.user_id=? AND u.username=? AND f.status='FRIEND'",
-          [uid.to_json(), name.to_json()],
+          "SELECT u.id,u.username,u.avatar_url FROM friendships f JOIN users u ON u.id=IF(f.low_user_id=?,f.high_user_id,f.low_user_id) WHERE (f.low_user_id=? OR f.high_user_id=?) AND u.username=? AND f.status='FRIEND'",
+          [uid.to_json(), uid.to_json(), uid.to_json(), name.to_json()],
         ),
       )
       return { ..f, avatar_url: (host().public_url)(f.avatar_url), }.to_json()

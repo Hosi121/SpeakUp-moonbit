@@ -2,9 +2,9 @@ import { createServer, type IncomingMessage } from 'node:http';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID, createHmac } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
-import { handle } from '../dist/api.js';
+import { handle, setNotifier, pollExpired, expire } from '../dist/api.js';
 import { createHub, destroyHub, join, leave, receive, publish, type Delivery } from '../dist/signaling.js';
-import { parseSignal, parseConversation } from '../dist/shared.js';
+import { parseSignal, parseConversation, parseActivityToken } from '../dist/shared.js';
 import { verifyToken, closePool } from './host.ts';
 
 const origins = new Set((process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173').split(','));
@@ -51,6 +51,56 @@ function deliver(messages: Delivery[]): void {
     if (m.close_code) ws.close(m.close_code, m.close_code === 1000 ? 'Conversation completed' : 'Invalid signaling state');
   }
 }
+const activityClients = new Map<WebSocket, number>();
+setNotifier(user => {
+  for (const [ws, owner] of activityClients) {
+    if (owner !== user || ws.readyState !== WebSocket.OPEN) continue;
+    if (ws.bufferedAmount > MAX_BUFFER) ws.terminate();
+    else ws.send('{"type":"refresh"}', error => { if (error) ws.terminate(); });
+  }
+});
+const activity = new WebSocketServer({ noServer: true, maxPayload: 8192, perMessageDeflate: false });
+activity.on('connection', (ws: WebSocket) => {
+  activityClients.set(ws, 0);
+  let authenticating = false;
+  let alive = true;
+  const timeout = setTimeout(() => ws.terminate(), 5000);
+  const heartbeat = setInterval(() => { if (!alive) ws.terminate(); else { alive = false; ws.ping(); } }, 30000);
+  ws.on('pong', () => { alive = true; });
+  ws.on('error', () => ws.terminate());
+  ws.on('close', () => { activityClients.delete(ws); clearTimeout(timeout); clearInterval(heartbeat); });
+  ws.on('message', (data, binary) => {
+    if (binary || authenticating) { ws.close(1008); return; }
+    authenticating = true;
+    void (async () => {
+      try {
+        const user = await verifyToken(parseActivityToken(data.toString()));
+        const result = await callApi('GET', '/user/info', user);
+        if (ws.readyState !== WebSocket.OPEN) return;
+        if (result.status !== 200) { ws.close(1008); return; }
+        clearTimeout(timeout);
+        activityClients.set(ws, user);
+        ws.send('{"type":"refresh"}');
+      } catch { ws.close(1008); }
+    })();
+  });
+});
+let expiring = false;
+const maintenance = setInterval(() => {
+  if (expiring) return;
+  expiring = true;
+  void (async () => {
+    try {
+      const ids = await new Promise<number[]>((resolve, reject) => pollExpired((status, ids) => status === 200 ? resolve(ids) : reject(new Error('Deadline scan failed'))));
+      for (const id of ids) await withConversation(id, async () => {
+        const result = await new Promise<ApiResult>(resolve => expire(id, (status, body) => resolve({ status, body })));
+        if (result.status !== 200) throw new Error('Deadline update failed');
+        publishConversation(result.body);
+      });
+    } catch { console.error('Conversation deadline maintenance failed; retrying'); }
+    finally { expiring = false; }
+  })();
+}, 1000);
 const server = createServer(async (req, res) => {
   const origin = req.headers.origin;
   if (origin && !origins.has(origin)) { res.writeHead(403).end(); return; }
@@ -58,6 +108,7 @@ const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,OPTIONS');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') { res.writeHead(204).end(); return; }
   try {
     const url = new URL(req.url ?? '/', 'http://localhost');
@@ -125,10 +176,11 @@ server.headersTimeout = 10_000;
 const websocket = new WebSocketServer({ noServer: true, maxPayload: 65536, perMessageDeflate: false });
 server.on('upgrade', (req, socket, head) => {
   const origin = req.headers.origin;
-  if (req.url !== '/ws' || !origin || !origins.has(origin) || clients.size >= MAX_CLIENTS) {
+  if (!['/ws', '/activity'].includes(req.url ?? '') || !origin || !origins.has(origin) || clients.size + activityClients.size >= MAX_CLIENTS) {
     socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n'); socket.destroy(); return;
   }
-  websocket.handleUpgrade(req, socket, head, ws => websocket.emit('connection', ws));
+  const target = req.url === '/activity' ? activity : websocket;
+  target.handleUpgrade(req, socket, head, ws => target.emit('connection', ws));
 });
 websocket.on('connection', (ws: WebSocket) => {
   const id = ++serial;
@@ -193,6 +245,8 @@ server.listen(Number(process.env.PORT ?? 8081), process.env.HOST ?? '127.0.0.1',
   console.log(`SpeakUp MoonBit listening on ${JSON.stringify(server.address())}`);
 });
 async function stop() {
+  clearInterval(maintenance);
+  for (const ws of activityClients.keys()) ws.terminate();
   for (const ws of clients.values()) ws.terminate();
   await new Promise<void>(resolve => server.close(() => resolve()));
   destroyHub(hub); await closePool();

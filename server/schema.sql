@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS event_match_publications (
 CREATE TABLE IF NOT EXISTS conversations (
  id INT PRIMARY KEY AUTO_INCREMENT, event_id INT NULL, round_no INT NULL,
  started_at DOUBLE NOT NULL DEFAULT 0, ended_at DOUBLE NOT NULL DEFAULT 0, cancelled_at DOUBLE NOT NULL DEFAULT 0, revision INT NOT NULL DEFAULT 0,
- UNIQUE(id,event_id,round_no), FOREIGN KEY(event_id) REFERENCES events(id),
+ UNIQUE(id,event_id,round_no), INDEX conversation_expiry(ended_at,cancelled_at,started_at,event_id), FOREIGN KEY(event_id) REFERENCES events(id),
  CHECK((event_id IS NULL AND round_no IS NULL) OR (event_id IS NOT NULL AND round_no IS NOT NULL AND round_no>0)), CHECK(revision BETWEEN 0 AND 2),
  CHECK(started_at >= 0 AND started_at <= 9007199254740991 AND started_at=FLOOR(started_at)),
  CHECK(ended_at=0 OR (started_at>0 AND ended_at>=started_at AND ended_at<=9007199254740991 AND ended_at=FLOOR(ended_at))),
@@ -67,4 +67,41 @@ CREATE TABLE IF NOT EXISTS schema_migrations (version INT PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS conversation_requests (
  user_id INT NOT NULL, request_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, conversation_id INT NOT NULL,
  PRIMARY KEY(user_id,request_id), UNIQUE(conversation_id), FOREIGN KEY(conversation_id) REFERENCES conversations(id), FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+-- One canonical pair and explicit recipient consent.
+CREATE TABLE IF NOT EXISTS friendships (
+ low_user_id INT NOT NULL, high_user_id INT NOT NULL, requested_by INT NOT NULL,
+ status ENUM('PENDING','FRIEND','DECLINED','BLOCKED') NOT NULL,
+ revision INT NOT NULL DEFAULT 1, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(low_user_id,high_user_id), INDEX(high_user_id,status),
+ FOREIGN KEY(low_user_id) REFERENCES users(id), FOREIGN KEY(high_user_id) REFERENCES users(id),
+ CHECK(low_user_id<high_user_id), CHECK(requested_by IN (low_user_id,high_user_id))
+);
+CREATE TABLE IF NOT EXISTS direct_messages (
+ id INT PRIMARY KEY AUTO_INCREMENT, sender_id INT NOT NULL, recipient_id INT NOT NULL,
+ request_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, body TEXT NOT NULL,
+ created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), read_at DATETIME(3) NULL,
+ UNIQUE(sender_id,request_id), INDEX(sender_id,recipient_id,id), INDEX(recipient_id,sender_id,id),
+ FOREIGN KEY(sender_id) REFERENCES users(id), FOREIGN KEY(recipient_id) REFERENCES users(id), CHECK(sender_id<>recipient_id)
+);
+CREATE TABLE IF NOT EXISTS notifications (
+ id INT PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, actor_id INT NOT NULL,
+ event_key VARCHAR(128) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ kind ENUM('friend_request','friend_accepted','call_invitation','message','event_matched') NOT NULL,
+ conversation_id INT NULL, message_id INT NULL, read_at DATETIME(3) NULL,
+ created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ UNIQUE(user_id,event_key), INDEX(user_id,read_at,id),
+ FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(actor_id) REFERENCES users(id),
+ FOREIGN KEY(conversation_id) REFERENCES conversations(id), FOREIGN KEY(message_id) REFERENCES direct_messages(id)
+);
+CREATE TABLE IF NOT EXISTS conversation_surveys (
+ conversation_id INT NOT NULL, user_id INT NOT NULL, answers VARCHAR(32) NOT NULL,
+ updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ PRIMARY KEY(conversation_id,user_id), FOREIGN KEY(conversation_id,user_id) REFERENCES conversation_members(conversation_id,user_id)
+);
+CREATE TABLE IF NOT EXISTS reflection_feedback (
+ conversation_id INT NOT NULL, user_id INT NOT NULL, source_comment TEXT NOT NULL, source_learned TEXT NOT NULL,
+ feedback TEXT NOT NULL, updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ PRIMARY KEY(conversation_id,user_id), FOREIGN KEY(conversation_id,user_id) REFERENCES conversation_reflections(conversation_id,user_id)
 );

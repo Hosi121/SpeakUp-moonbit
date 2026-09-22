@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "../ui/Field";
 import { signIn } from "../../services/authService";
-import { isTestMode } from "../../services/appMode";
 import Logo from "../../assets/logo";
 
 export default function Login() {
@@ -71,15 +70,6 @@ export default function Login() {
         <button type="submit" className="primary" disabled={busy}>
           {busy ? "サインイン中…" : "サインイン"}
         </button>
-        {isTestMode && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void login("test@example.com", "test")}
-          >
-            Test Login (Bypass)
-          </button>
-        )}
         <Link className="center" to="/signup">
           サインアップ
         </Link>

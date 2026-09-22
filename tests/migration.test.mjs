@@ -60,3 +60,18 @@ test('cross-seat double bookings accepted by the old schema roll back the entire
   assert.equal((await db.query('SELECT COUNT(*) AS n FROM conversation_members'))[0][0].n, 0);
   assert.equal((await db.query('SELECT COUNT(*) AS n FROM rooms'))[0][0].n, 2);
 }));
+
+
+test('legacy friendships preserve mutual consent, pending invitations, blocks and migration idempotency', () => withDatabase(async (db, migrate) => {
+  await db.query("INSERT INTO friends(user_id,target_user_id,status) VALUES (1,2,'FRIEND'),(2,1,'FRIEND'),(1,3,'FRIEND'),(2,3,'BLOCKED'),(3,2,'FRIEND')");
+  await migrate();
+  await migrate();
+  const [pairs] = await db.query('SELECT low_user_id,high_user_id,requested_by,status FROM friendships ORDER BY low_user_id,high_user_id');
+  assert.deepEqual(pairs.map(row => ({ ...row })), [
+    { low_user_id: 1, high_user_id: 2, requested_by: 1, status: 'FRIEND' },
+    { low_user_id: 1, high_user_id: 3, requested_by: 1, status: 'PENDING' },
+    { low_user_id: 2, high_user_id: 3, requested_by: 2, status: 'BLOCKED' },
+  ]);
+  const [notices] = await db.query('SELECT user_id,actor_id,kind FROM notifications');
+  assert.deepEqual(notices.map(row => ({ ...row })), [{ user_id: 3, actor_id: 1, kind: 'friend_request' }]);
+}));
