@@ -347,9 +347,10 @@ pub fn verify_token(header : String) -> Int raise {
   guard jwt.length() == 3 else { raise @api.HostError("credentials") }
   let key = key_store.val.unwrap()
   let metadata = @json.parse(@utf8.decode(unbase64(jwt[0].to_owned())))
-  guard field(metadata, "alg") == Json::string("RS256") &&
-    field(metadata, "crit") == Json::null() &&
-    field(metadata, "b64") == Json::null() else {
+  guard metadata is Object(protected_header) &&
+    field(metadata, "alg") == Json::string("RS256") &&
+    protected_header.get("crit") is None &&
+    protected_header.get("b64") is None else {
     raise @api.HostError("credentials")
   }
   guard c_verify(
@@ -372,9 +373,15 @@ pub fn verify_token(header : String) -> Int raise {
   guard field(payload, "exp") is Number(exp, ..) && exp > now else {
     raise @api.HostError("credentials")
   }
-  match field(payload, "nbf") {
-    Null => ()
-    Number(n, ..) if n <= now => ()
+  guard payload is Object(claims) else { raise @api.HostError("credentials") }
+  // Absence is allowed; explicit null or a string is not a NumericDate.
+  match claims.get("nbf") {
+    None => ()
+    Some(Number(n, ..)) if n <= now => ()
+    _ => raise @api.HostError("credentials")
+  }
+  match claims.get("iat") {
+    None | Some(Number(_, ..)) => ()
     _ => raise @api.HostError("credentials")
   }
   let id = string(payload, "user_id")

@@ -248,7 +248,7 @@ test('RS256 interoperates with jose and rejects altered claims or signatures', a
   const sign = overrides => new SignJWT({ ...claims, ...overrides }).setProtectedHeader({ alg: 'RS256' }).sign(privateKey);
   assert.equal((await request('/user/info', await sign({}))).body.id, 1);
   assert.equal((await request('/user/info', await sign({ aud: ['other', 'speakup'] }))).body.id, 1);
-  for (const invalid of [{ iss: 'wrong' }, { aud: 'wrong' }, { exp: seconds - 1 }, { nbf: seconds + 60 }, { user_id: '0' }, { user_id: '1.5' }, { user_id: '01' }, { user_id: '1e0' }, { user_id: 1 }, { exp: undefined }]) {
+  for (const invalid of [{ iss: 'wrong' }, { aud: 'wrong' }, { exp: seconds - 1 }, { nbf: seconds + 60 }, { user_id: '0' }, { user_id: '1.5' }, { user_id: '01' }, { user_id: '1e0' }, { user_id: 1 }, { exp: undefined }, { nbf: null }, { nbf: 'yesterday' }, { iat: null }, { iat: 'today' }]) {
     assert.equal((await request('/user/info', await sign(invalid))).status, 401);
   }
   const parts = alice.split('.');
