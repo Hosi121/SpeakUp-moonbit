@@ -1,0 +1,143 @@
+{
+  "measured_at": "2026-09-22T15:29:27.141Z",
+  "node": "v24.13.0",
+  "chromium": "153.0.8010.12",
+  "platform": "linux",
+  "cpu": "Intel(R) Core(TM) Ultra 7 255H",
+  "clients": [
+    {
+      "label": "axios-before",
+      "commit": "7cf05a4b043b5ff1bd5c42ffb820912696a1fc6d",
+      "dirty": true,
+      "assets": [
+        {
+          "file": "index-BIzghueG.js",
+          "bytes": 457706,
+          "gzip_bytes": 147802
+        },
+        {
+          "file": "index-DML2yhuY.css",
+          "bytes": 6966,
+          "gzip_bytes": 2295
+        }
+      ],
+      "packages": 345,
+      "runtime_packages": 35,
+      "direct_runtime_dependencies": [
+        "axios",
+        "react",
+        "react-dom",
+        "react-router-dom"
+      ],
+      "axios": "1.20.0"
+    },
+    {
+      "label": "fetch-after",
+      "commit": "7cf05a4b043b5ff1bd5c42ffb820912696a1fc6d",
+      "dirty": true,
+      "assets": [
+        {
+          "file": "index-3KKxAbuo.js",
+          "bytes": 416975,
+          "gzip_bytes": 130618
+        },
+        {
+          "file": "index-DML2yhuY.css",
+          "bytes": 6966,
+          "gzip_bytes": 2295
+        }
+      ],
+      "packages": 334,
+      "runtime_packages": 8,
+      "direct_runtime_dependencies": [
+        "react",
+        "react-dom",
+        "react-router-dom"
+      ],
+      "axios": null
+    }
+  ],
+  "results": [
+    {
+      "label": "axios-before",
+      "items": 1,
+      "payload_bytes": 217,
+      "concurrency": 1,
+      "requests": 160,
+      "median_ms": 2.2999999821186066,
+      "p95_ms": 3.4000000059604645,
+      "requests_per_second": 419.3971166448231
+    },
+    {
+      "label": "fetch-after",
+      "items": 1,
+      "payload_bytes": 217,
+      "concurrency": 1,
+      "requests": 160,
+      "median_ms": 1.9000000059604645,
+      "p95_ms": 2.899999976158142,
+      "requests_per_second": 503.6197670947548
+    },
+    {
+      "label": "axios-before",
+      "items": 1,
+      "payload_bytes": 217,
+      "concurrency": 6,
+      "requests": 960,
+      "median_ms": 4.5,
+      "p95_ms": 7.5999999940395355,
+      "requests_per_second": 869.0142120360805
+    },
+    {
+      "label": "fetch-after",
+      "items": 1,
+      "payload_bytes": 217,
+      "concurrency": 6,
+      "requests": 960,
+      "median_ms": 4,
+      "p95_ms": 7,
+      "requests_per_second": 893.3556672299691
+    },
+    {
+      "label": "axios-before",
+      "items": 100,
+      "payload_bytes": 17728,
+      "concurrency": 1,
+      "requests": 160,
+      "median_ms": 2.300000011920929,
+      "p95_ms": 3.2999999821186066,
+      "requests_per_second": 418.08204861506124
+    },
+    {
+      "label": "fetch-after",
+      "items": 100,
+      "payload_bytes": 17728,
+      "concurrency": 1,
+      "requests": 160,
+      "median_ms": 2.0999999940395355,
+      "p95_ms": 3.5999999940395355,
+      "requests_per_second": 434.7826087308629
+    },
+    {
+      "label": "axios-before",
+      "items": 100,
+      "payload_bytes": 17728,
+      "concurrency": 6,
+      "requests": 960,
+      "median_ms": 5.4000000059604645,
+      "p95_ms": 8.900000005960464,
+      "requests_per_second": 715.0837989303043
+    },
+    {
+      "label": "fetch-after",
+      "items": 100,
+      "payload_bytes": 17728,
+      "concurrency": 6,
+      "requests": 960,
+      "median_ms": 5.0999999940395355,
+      "p95_ms": 8.5,
+      "requests_per_second": 720.1800450273541
+    }
+  ],
+  "scope": "Headless Chromium, loopback HTTP/1.1, no cache, no DB/TLS/WAN; actual fetchInbox plus shared MoonBit decoder; alternating batches, eight measured rounds after warm-up."
+}

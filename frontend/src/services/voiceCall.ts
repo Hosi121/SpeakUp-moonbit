@@ -1,5 +1,5 @@
-import { parseSignal, parseConversation, conversationClock, type ConversationDto } from '../../../dist/shared.js';
-import api from './api';
+import { parseSignal, parseConversation, parseIceServers, conversationClock, type ConversationDto } from '../../../dist/shared.js';
+import { request } from './request';
 import { fetchConversation } from './conversationService';
 
 export type VoiceConnectionState = 'connecting' | 'waiting' | 'connected';
@@ -14,6 +14,7 @@ type VoiceOptions = {
 };
 export function startVoiceCall(options: VoiceOptions): { stop: () => void; mute: (muted: boolean) => void } {
   let stopped = false;
+  const controller = new AbortController();
   let stream: MediaStream | undefined;
   let pc: RTCPeerConnection | undefined;
   let ws: WebSocket | undefined;
@@ -22,6 +23,7 @@ export function startVoiceCall(options: VoiceOptions): { stop: () => void; mute:
   let muted = false;
   const stop = () => {
     stopped = true;
+    controller.abort();
     ws?.close(); pc?.close(); stream?.getTracks().forEach(t => t.stop());
     options.audio.srcObject = null;
   };
@@ -39,16 +41,20 @@ export function startVoiceCall(options: VoiceOptions): { stop: () => void; mute:
   };
   void (async () => {
     options.onConnection('connecting');
-    const conversation = await fetchConversation(options.conversationId);
+    const conversation = await fetchConversation(options.conversationId, { signal: controller.signal });
     if (stopped) return;
     options.onState(conversation);
     if (!conversationClock(conversation, Date.now()).can_join) { stop(); return; }
     // ICE configuration comes from the server; TURN secrets never enter Vite env.
-    const configurationResponse = await api.get<RTCConfiguration>('/rtc-config');
+    const iceServers = await request('GET', '/rtc-config', parseIceServers, undefined, { signal: controller.signal });
     if (stopped) return;
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     if (stopped) { stream.getTracks().forEach(t => t.stop()); return; }
-    pc = new RTCPeerConnection(configurationResponse.data);
+    pc = new RTCPeerConnection({ iceServers: iceServers.map(server => ({
+      urls: server.urls,
+      ...(server.username ? { username: server.username } : {}),
+      ...(server.credential ? { credential: server.credential } : {}),
+    })) });
     stream.getAudioTracks().forEach(t => { t.enabled = !muted; });
     stream.getTracks().forEach(t => pc?.addTrack(t, stream!));
     options.onLocal(stream);

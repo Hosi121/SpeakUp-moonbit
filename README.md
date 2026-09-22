@@ -45,7 +45,7 @@ MySQL は `127.0.0.1:3308`、backend は `127.0.0.1:8081`。**移植用の新規
 ## 型とコード生成
 
 ```text
-core/shared       DTO、画面向け変換、WebSocket 入力検証
+core/shared       DTO、画面向け変換、HTTP 応答・WebSocket 入力検証
 core/conversation 開始・終了・取消、再送時の不変条件（I/O なし）
 core/signaling    部屋と negotiation の状態管理（I/O なし）
 core/matching     rank / round / 参加ビットによるペア生成
@@ -63,6 +63,8 @@ frontend          React + 標準 HTML/CSS、型付きブラウザアダプター
 ```
 
 TS2Mbt と Mbt2TS は `@mizchi/ts@0.6.0` を固定して使います。共通型を TS に手で二重定義せず、MoonBit interface から生成します。手書きコード、生成 bridge、公開型の `any` / `Any` / `JSValue` を CI で禁止しています。
+
+frontend の直接 runtime 依存は React / React DOM / React Router の 3 つです。HTTP は標準 `fetch` と共通 MoonBit decoder を使います。Axios を含む 11 package の削除で JS gzip は約 148 → 131 kB になりました。[通信の契約とブラウザでの速度比較](docs/http-client.md)を記録しています。
 
 ```bash
 npm run generate       # bindings/host.d.ts → MoonBit、strict mode

@@ -1,28 +1,8 @@
-import api from "./api";
-import type { MemoDto } from "../types/dto";
+import { parseMemo, toMemo } from "../../../dist/shared.js";
 import type { UserNotes } from "../types/types";
-import { toApiError } from "./errorUtils";
-import { fromMemo, toMemo as toMemoDto } from "../../../dist/shared.js";
+import { request } from "./request";
 
-const fromMemoDto = (dto: MemoDto): UserNotes =>
-  fromMemo({ memo1: dto.memo1 ?? "", memo2: dto.memo2 ?? "" });
-
-// メモを取得する関数
-export const fetchMemo = async (): Promise<UserNotes> => {
-  try {
-    const response = await api.get<MemoDto>("/memo");
-    return fromMemoDto(response.data);
-  } catch (error) {
-    throw toApiError(error, "メモの取得に失敗しました");
-  }
-};
-
-// メモを保存する関数
-export const saveMemo = async (notes: UserNotes): Promise<UserNotes> => {
-  try {
-    const response = await api.put<MemoDto>("/memo", toMemoDto(notes));
-    return fromMemoDto(response.data);
-  } catch (error) {
-    throw toApiError(error, "メモの保存に失敗しました");
-  }
-};
+export const fetchMemo = (): Promise<UserNotes> =>
+  request("GET", "/memo", parseMemo);
+export const saveMemo = (notes: UserNotes): Promise<UserNotes> =>
+  request("PUT", "/memo", parseMemo, toMemo(notes));

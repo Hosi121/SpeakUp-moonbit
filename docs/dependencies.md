@@ -1,4 +1,6 @@
-# 依存関係の確認（2026-09-22）
+# 依存関係の確認
+
+## npm の更新と監査（2026-09-22）
 
 初回移植後の `npm audit` は frontend に 21 件（high 12、moderate 8、low 1）。互換範囲の更新後は high/critical 0、moderate 2。`npm audit fix --force` は使っていない。
 
@@ -13,6 +15,16 @@ Axios 1.13.2 → 1.20.0、Vite 7.3.1 → 7.3.6、React Router 6.30.3 → 6.30.6 
 
 更新後の TypeScript check、production build、API/WS 結合テスト、ブラウザの通話・ログイン・メモ保存を検証した。更新直後の JS bundle は約 698 kB → 713 kB、その後の会話モデル整理で約 708 kB。MUI 削除後は約 422 kB、lint の従来の hooks 警告 2 件と 500 kB を超える chunk の build 警告は解消した。MUI 削除による残存パッケージのバージョン変更はなく、Router の moderate 2 件は残る。
 
+
+## Axios の削除（2026-09-23）
+
+frontend の HTTP adapter を標準 `fetch` にし、Axios 1.20.0 を削除した。新しい runtime / dev 依存の追加、残存パッケージのバージョン更新はない。
+
+lockfile から削除した 11 package は `axios`、`agent-base`、`asynckit`、`combined-stream`、`delayed-stream`、`follow-redirects`、`form-data`、`https-proxy-agent`、`mime-db`、`mime-types`、`proxy-from-env`。全 package は 345 → 334、non-dev は 35 → 8。後者には、ビルドツールでも使う 16 package が dev のみに変わった分を含む。lockfile の個数であり、すべてがブラウザ bundle に入っていたという意味ではない。
+
+frontend の直接 runtime 依存は React / React DOM / React Router の 3 つ。backend / 開発ツールの npm 依存と Mooncakes の依存は変更していない。上記のセキュリティ監査は 2026-09-22 時点の記録であり、今回の削除で Router の advisory が解消されたとは扱わない。
+
+認証、HTTP エラー、multipart、キャンセルと、JS/native 両 backend に対する通話を検証する。JS gzip は 147,802 → 130,618 bytes。[測定条件と速度比較](http-client.md)、[UI 全体の依存削減](frontend.md)。
 
 ## SQL 抽象化で追加した MoonBit 依存
 

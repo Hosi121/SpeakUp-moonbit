@@ -66,7 +66,7 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 - TS2Mbt が callback に付ける opaque 型への変換だけ、正確な関数型を持つ `%identity` を一箇所使う。汎用 cast はない。この関数型が入力宣言と一致することを生成・型チェック・結合テストで確認する。
 - `moon build` の標準 `.d.ts` は struct を `any` にするため、その出力を直接配布しない。Mbt2TS が生成した interface から、実際の `moon.pkg` の export 一覧に一致する宣言と構造型を機械的に抽出する。trait method は JS export ではないため公開しない。生成結果を手編集しない。
 - MoonBit struct は JS で class instance。JSON の構造は一致するが、`Object.getPrototypeOf` や `instanceof` まで既存の plain object と同じではない。純粋な型変換の fixture は JSON 構造で比較する。MoonBit の Json/Map/Result/内部 enum は公開境界へ渡さない。
-- legacy の省略可能な memo は TS 側で空文字へ正規化し、MoonBit には必須文字列を渡す。ICE の nullable field は protocol decoder で個別に検証する。
+- legacy の省略可能な memo は MoonBit の HTTP decoder で空文字へ正規化する。ICE candidate の nullable field は protocol decoder で個別に検証し、`/rtc-config` の URL と credentials も MoonBit で検査してブラウザ用の具体的な型へ渡す。
 - `raise` を直接 export すると内部 Result が JS に漏れる compiler 挙動を実呼び出しで検出した。同期の公開入口は通常値か JS Error に変換し、直接 export を生成時に拒否する。Int の FromJson は小数を切り捨てるため、元の Json に対して整数性・範囲を検証する。[境界の回帰テスト](../tests/conversations.test.mjs)
 - DB の ID は signed 32-bit Int。HTTP/WS 入力で整数と範囲を検証する。会話の時刻は整数の epoch milliseconds（Double の安全な整数範囲）、既存 event/reflection の表示時刻は ISO 文字列。任意の event/round は両方 0 を随時通話とする平坦な DTO で渡し、Option の内部表現を公開しない。
 - `Json` はネットワーク・DB のシリアライズに使う。ドメインの任意 JS object としての `Any` は使わない。`npm run check` が手書き TS、MoonBit、生成 bridge、公開宣言を検査する。
@@ -96,6 +96,7 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 | avatar | 2 MiB 上限、画像形式確認、暗号学的乱数による保存名、設定された公開 origin |
 | chat | 認証必須、20 秒 timeout。model は環境変数で変更可能 |
 | UI dependencies | MUI / Emotion を削除。標準 form / dialog / radio / nav と CSS、少数の型付き React 部品へ。詳細は [frontend](frontend.md) |
+| frontend HTTP | Axios を削除し標準 fetch へ。Bearer 認証・HTTP エラー・multipart を維持。成功応答を共通 MoonBit decoder で検査し、不正な token は保存しない。通話準備中の退出で HTTP を abort。自動再送は追加しない。[契約と比較](http-client.md) |
 | UI 操作 | `/` はサインインへ。フォームは Enter 送信可能、設定の画像選択とログアウト遷移を修正。マイクチェック終了時は取得した全 track を停止 |
 
 これらはバグを含む既存動作の逐語的な互換再現ではなく、独立 repo としての意図的変更。既存サービスへの無停止切替を実施したものではない。

@@ -14,25 +14,43 @@ pub fn conversation_partner(ConversationDto, Int) -> FriendSummaryDto raise
 
 pub fn decode_activity_token(String) -> String
 
+pub fn decode_avatar_response(String) -> String
+
+pub fn decode_chat_response(String) -> String
+
 pub fn decode_conversation(String) -> ConversationDto
 
 pub fn decode_conversations(String) -> Array[ConversationDto]
 
+pub fn decode_event_response(String) -> Event
+
 pub fn decode_events(String) -> Array[EventOverviewDto]
+
+pub fn decode_ice_servers(String) -> Array[IceServerDto]
 
 pub fn decode_inbox(String) -> InboxDto
 
 pub fn decode_learning(String) -> LearningDto
 
+pub fn decode_memo_response(String) -> UserNotes
+
+pub fn decode_profile_response(String) -> UserProfile
+
 pub fn decode_reflection(String) -> ReflectionDto
 
 pub fn decode_roster(String) -> EventRosterDto
+
+pub fn decode_signup_response(String) -> SignUpResult
 
 pub fn decode_social(String) -> SocialDto
 
 pub fn decode_stats(String) -> StatsDto
 
 pub fn decode_thread(String) -> ThreadDto
+
+pub fn decode_token_response(String) -> String
+
+pub fn decode_users_response(String) -> Array[User]
 
 pub fn from_memo(MemoDto) -> UserNotes
 
@@ -201,6 +219,12 @@ pub(all) struct FriendSummaryDto {
 pub fn FriendSummaryDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn FriendSummaryDto::to_json(Self) -> Json
 
+pub(all) struct IceServerDto {
+  urls : Array[String]
+  username : String
+  credential : String
+}
+
 pub(all) struct InboxDto {
   items : Array[NotificationDto]
   unread : Int
@@ -280,6 +304,11 @@ pub(all) struct SessionDto {
 } derive(ToJson, @json.FromJson)
 pub fn SessionDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn SessionDto::to_json(Self) -> Json
+
+pub(all) struct SignUpResult {
+  success : Bool
+  message : String
+}
 
 pub(all) struct SocialDto {
   friends : Array[FriendSummaryDto]

@@ -16,7 +16,7 @@ React は描画とブラウザのライフサイクルを担当し、会話モ�
 
 MUI 削除時には API、会話ライフサイクル、WebRTC adapter、MoonBit / TS2Mbt の公開境界は変更していない。元のピクセル配置を再現する互換移植ではなく、画面の操作目的を保ちながら標準要素へ整理した変更。
 
-## 同じ環境での build 比較
+## MUI 削除時の build 比較
 
 変更前は `f6bfee4`。Node 24.13.0 / Vite 7.3.6、同じ lockfile の残存パッケージと production build を比較した。MUI を削除する際に残存パッケージのバージョン更新はない。
 
@@ -32,7 +32,22 @@ MUI 削除時には API、会話ライフサイクル、WebRTC adapter、MoonBit
 | lockfile の全 package（root 除外） | 397 | 345 |
 | lockfile の non-dev package | 117 | 35 |
 
-JS は約 40%、JS + CSS の gzip は約 37% 減。52 package を lockfile から削除し、ビルド用 Babel 等の 30 package が dev のみに変わった。CSS-in-JS を通常の CSS に出したため CSS 単体は増えている。これは今回の描画層全体の変更の結果であり、MUI 単独の純粋なサイズや実利用者の体感速度を測った値ではない。backend の中継速度とは別の測定。
+JS は約 40%、JS + CSS の gzip は約 37% 減。52 package を lockfile から削除し、ビルド用 Babel 等の 30 package が dev のみに変わった。CSS-in-JS を通常の CSS に出したため CSS 単体は増えている。これは MUI 削除時の描画層全体の変更の結果であり、MUI 単独の純粋なサイズや実利用者の体感速度を測った値ではない。backend の中継速度とは別の測定。
+
+## Axios の削除（2026-09-23）
+
+HTTP adapter を標準 `fetch` へ置換し、Axios と推移的依存の計 11 package を削除した。代替の HTTP ライブラリは追加せず、残った依存のバージョンも変更していない。認証、HTTP エラー、JSON、画像の multipart 送信を小さな adapter に集約し、成功応答の text を共通 MoonBit decoder へ渡す。ログイン、プロフィール、メモ、イベント、ICE 設定の型も生成した宣言を使う。
+
+| 指標 | Axios 版 (`7cf05a4`) | fetch 版 |
+| --- | ---: | ---: |
+| JS bundle (minified) | 457.71 kB | 416.98 kB |
+| JS gzip | 147.80 kB | 130.62 kB |
+| CSS gzip | 2.30 kB | 2.30 kB |
+| frontend の直接 runtime 依存 | 4 | 3 |
+| lockfile の全 package（root 除外） | 345 | 334 |
+| lockfile の non-dev package | 35 | 8 |
+
+JS gzip は 11.6% 減。ローカルの Chromium で実アプリの通知取得と MoonBit decoder を比較したところ、4 条件の中央値は約 6–17% 短縮した。一方、100 件の逐次取得の p95 は 3.3 → 3.6 ms と増えた。実回線や backend の高速化を示す値ではない。[HTTP の契約・測定条件・全結果と再現手順](http-client.md)を参照。
 
 ## 残っている TypeScript と依存
 
@@ -40,18 +55,18 @@ JS は約 40%、JS + CSS の gzip は約 37% 減。52 package を lockfile か�
 | --- | --- | --- |
 | `frontend/src/components` | React の画面・フォーム・UI 状態 | TS に残す。MUI は不要になった |
 | `frontend/src/services/voiceCall.ts`、音量計 | WebRTC / WebSocket / マイク / AudioContext の所有と後始末 | ブラウザ I/O adapter。MoonBit へ移しても Web API 境界は必要 |
-| `frontend/src/services/*` | HTTP、認証情報、画面固有の DTO 変換 | 一部の変換は共通 MoonBit 済み。全 service が MoonBit という意味ではない |
+| `frontend/src/services/*` | fetch、認証情報、共通 MoonBit decoder の呼び出し | 通信とブラウザ側の状態を TS に残し、応答の型検査と DTO 変換を MoonBit へ |
 | `server/main.ts`、`server/host.ts` | 比較・互換検証用の Node backend | default の native backend では実行しない |
 | `server/migrate.ts`、`server/seed.ts`、scripts/tests | DB 準備、生成、ビルド、検証 | 開発用ツール。常駐サーバーの依存と分ける |
 
-frontend の直接 runtime 依存は React / React DOM / React Router / Axios。次に依存を減らすなら HTTP adapter の Axios を標準 fetch に置換できるが、認証ヘッダー・エラー応答・multipart の契約を検証する別変更になる。React 自体を外す場合は描画、状態の更新、DOM / Web API bindings の設計が必要であり、サーバーの MoonBit 化とは独立した判断。
+frontend の直接 runtime 依存は React / React DOM / React Router の 3 つ。React 自体を外す場合は描画、状態の更新、DOM / Web API bindings の設計が必要であり、サーバーの MoonBit 化とは独立した判断。
 
 通知、フレンド申請の承認・見送り・取消、メッセージ、実績、AI アドバイス、選択式の振り返り、イベント参加・管理を共通 MoonBit API に接続した。固定候補や架空の実績を廃止し、会話履歴と保存済みデータを使う。[各機能のモデル・API・検証](features.md)を参照。
 
-これらの追加後は JS 457.20 kB / gzip 147.73 kB、CSS 約 7 kB。上の表は MUI 削除単独の比較として残す。機能追加に伴う依存パッケージの変更はない。
+機能追加後、Axios 削除前の JS は約 458 kB / gzip 約 148 kB、CSS 約 7 kB。MUI の表はその削除時点の比較として残す。機能追加に伴う依存パッケージの変更はない。
 
 ## 検証
 
-`npm run check`（動的型の監査を含む）、frontend lint、JS/MoonBit/native の既存テスト、JS/native API 結合テストを実行。ブラウザでは実 RTP 音声・再接続・終了・振り返りに加え、ミュート、通話中のメモ・トピック、ダイアログの Tab/Escape/フォーカス復帰、radio の矢印キー、イベント作成、プロフィール保存、ログアウト、マイク解放を確認する。
+`npm run check`（動的型の監査を含む）、frontend lint、JS/MoonBit/native の既存テスト、JS/native API 結合テストを実行。ブラウザでは実 RTP 音声・再接続・終了・振り返りに加え、ミュート、通話中のメモ・トピック、ダイアログの Tab/Escape/フォーカス復帰、radio の矢印キー、イベント作成、プロフィール保存、ログアウト、マイク解放を確認する。HTTP 置換ではエラー応答、不正なログイン token の拒否、multipart と通話準備中の通信キャンセルも検証する。
 
 320 px / 1024 px で主要画面の横はみ出しを検査し、ログイン・ホーム・通話一覧のスクリーンショットを出力する。自動ブラウザ検証は Chromium。Safari / Firefox 実機、スクリーンリーダーでの評価は未実施。

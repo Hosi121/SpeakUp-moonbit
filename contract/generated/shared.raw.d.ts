@@ -16,25 +16,43 @@ export function conversation_partner(arg0: ConversationDto, n: number): Result<F
 
 export function decode_activity_token(s: string): string;
 
+export function decode_avatar_response(s: string): string;
+
+export function decode_chat_response(s: string): string;
+
 export function decode_conversation(s: string): ConversationDto;
 
 export function decode_conversations(s: string): Array<ConversationDto>;
 
+export function decode_event_response(s: string): Event;
+
 export function decode_events(s: string): Array<EventOverviewDto>;
+
+export function decode_ice_servers(s: string): Array<IceServerDto>;
 
 export function decode_inbox(s: string): InboxDto;
 
 export function decode_learning(s: string): LearningDto;
 
+export function decode_memo_response(s: string): UserNotes;
+
+export function decode_profile_response(s: string): UserProfile;
+
 export function decode_reflection(s: string): ReflectionDto;
 
 export function decode_roster(s: string): EventRosterDto;
+
+export function decode_signup_response(s: string): SignUpResult;
 
 export function decode_social(s: string): SocialDto;
 
 export function decode_stats(s: string): StatsDto;
 
 export function decode_thread(s: string): ThreadDto;
+
+export function decode_token_response(s: string): string;
+
+export function decode_users_response(s: string): Array<User>;
 
 export function from_memo(value: MemoDto): UserNotes;
 
@@ -220,6 +238,12 @@ export function FriendSummaryDto_to_json(self : FriendSummaryDto): Json;
 
 export function FriendSummaryDto_from_json(arg0: Json, arg1: json.JsonPath): Result<FriendSummaryDto, json.JsonDecodeError>;
 
+export interface IceServerDto {
+  urls: Array<string>;
+  username: string;
+  credential: string;
+}
+
 export interface InboxDto extends ToJson, json.FromJson {
   items: Array<NotificationDto>;
   unread: number;
@@ -313,6 +337,11 @@ export interface SessionDto extends ToJson, json.FromJson {
 export function SessionDto_to_json(self : SessionDto): Json;
 
 export function SessionDto_from_json(arg0: Json, arg1: json.JsonPath): Result<SessionDto, json.JsonDecodeError>;
+
+export interface SignUpResult {
+  success: boolean;
+  message: string;
+}
 
 export interface SocialDto extends ToJson, json.FromJson {
   friends: Array<FriendSummaryDto>;

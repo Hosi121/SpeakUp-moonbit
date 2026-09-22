@@ -1,20 +1,16 @@
 import api from "./api";
 import { toApiError } from "./errorUtils";
+import type { HttpMethod, RequestOptions } from "./httpClient";
+export type { RequestOptions } from "./httpClient";
 export async function request<T>(
-  method: "GET" | "POST" | "PUT",
+  method: HttpMethod,
   url: string,
   decode: (text: string) => T,
   data?: object,
+  options?: RequestOptions,
 ): Promise<T> {
   try {
-    const response = await api.request<unknown>({
-      method,
-      url,
-      data,
-      responseType: "text",
-    });
-    if (typeof response.data !== "string") throw new Error("不正な応答です");
-    return decode(response.data);
+    return decode(await api(method, url, data, options));
   } catch (error) {
     throw toApiError(error, "データを取得・保存できませんでした");
   }
@@ -23,9 +19,10 @@ export async function command(
   method: "POST" | "PUT",
   url: string,
   data: object,
+  options?: RequestOptions,
 ): Promise<void> {
   try {
-    await api.request<unknown>({ method, url, data });
+    await api(method, url, data, options);
   } catch (error) {
     throw toApiError(error, "保存できませんでした");
   }

@@ -5,7 +5,7 @@ import {
   type ConversationDto,
   type ReflectionDto,
 } from "../../../dist/shared.js";
-import { request } from "./request";
+import { request, type RequestOptions } from "./request";
 
 export const fetchConversations = (
   history = false,
@@ -15,8 +15,11 @@ export const fetchConversations = (
     history ? "/conversations/history" : "/conversations",
     parseConversations,
   );
-export const fetchConversation = (id: number): Promise<ConversationDto> =>
-  request("GET", `/conversations/${id}`, parseConversation);
+export const fetchConversation = (
+  id: number,
+  options?: RequestOptions,
+): Promise<ConversationDto> =>
+  request("GET", `/conversations/${id}`, parseConversation, undefined, options);
 export const createDirectConversation = (
   target: number,
   requestId: string,
