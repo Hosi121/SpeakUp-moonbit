@@ -16,6 +16,7 @@ Linux x86_64、C compiler、MariaDB Connector/C・OpenSSL の開発ファイル�
 npm ci
 npm --prefix frontend ci
 bash scripts/install-moon.sh
+npm run moon -- update
 cp .env.example .env
 docker compose up -d --wait db
 npm run db:migrate

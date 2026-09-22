@@ -34,7 +34,7 @@ jobs:
           cache-dependency-path: bench/go/go.sum
       - run: sudo apt-get update && sudo apt-get install -y libmariadb-dev libssl-dev fonts-noto-cjk fonts-noto-color-emoji
       - run: npm ci && npm --prefix frontend ci
-      - run: bash scripts/install-moon.sh
+      - run: bash scripts/install-moon.sh && npm run moon -- update
       - run: npm run generate && npm run check
       - run: npm --prefix frontend run lint
       - run: npm run fixtures && git diff --exit-code -- contract core/platform

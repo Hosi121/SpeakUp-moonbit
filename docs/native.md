@@ -22,6 +22,7 @@ Node 24.13.0、固定版 MoonBit、C compiler、MariaDB Connector/C と OpenSSL 
 
 ```bash
 sudo apt-get install build-essential libmariadb-dev libssl-dev
+npm run moon -- update
 npm run build:core
 npm run build:native
 npm start
