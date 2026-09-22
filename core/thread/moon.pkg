@@ -1,0 +1,18 @@
+import {
+  "hosi121/speakup/shared",
+  "hosi121/speakup/browser_platform" @browser,
+  "moonbitlang/core/json",
+}
+
+options(
+  targets: { "browser.mbt": [ "js" ] },
+  link: {
+    "js": {
+      "format": "esm",
+      "exports": [
+        "create_controller:createThreadController",
+        "create_browser:createBrowserThread",
+      ],
+    },
+  },
+)

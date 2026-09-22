@@ -1,0 +1,2257 @@
+{
+  "measured_at": "2026-09-22T19:55:30.422Z",
+  "node": "v24.13.0",
+  "chromium": "153.0.8010.12",
+  "cpu": "Intel(R) Core(TM) Ultra 7 255H",
+  "builds": [
+    {
+      "label": "message-before",
+      "commit": "018634fda4bb1b006c0c6ca1d7f3cdcbaa9bba39",
+      "dirty": false,
+      "assets": [
+        {
+          "file": "Avatar-h2kvaNd_.js",
+          "bytes": 1426,
+          "gzip_bytes": 845
+        },
+        {
+          "file": "BottomNavigationTemplate-BvPlf7Q2.js",
+          "bytes": 705,
+          "gzip_bytes": 388
+        },
+        {
+          "file": "ChoiceGroup-NujipkPO.js",
+          "bytes": 415,
+          "gzip_bytes": 281
+        },
+        {
+          "file": "ConversationHistory-D935cRtE.js",
+          "bytes": 1407,
+          "gzip_bytes": 852
+        },
+        {
+          "file": "Dialog-CnJAXcSV.js",
+          "bytes": 709,
+          "gzip_bytes": 447
+        },
+        {
+          "file": "Events-zfelF1Zg.js",
+          "bytes": 4117,
+          "gzip_bytes": 1836
+        },
+        {
+          "file": "FriendList-fgRlE37n.js",
+          "bytes": 1096,
+          "gzip_bytes": 661
+        },
+        {
+          "file": "FriendRequest-w6SRq6UK.js",
+          "bytes": 3613,
+          "gzip_bytes": 1560
+        },
+        {
+          "file": "Home-BOdjudIE.js",
+          "bytes": 2442,
+          "gzip_bytes": 1329
+        },
+        {
+          "file": "Home-DAO-8Xlm.css",
+          "bytes": 113,
+          "gzip_bytes": 112
+        },
+        {
+          "file": "IconButton-DEUdQBfI.js",
+          "bytes": 195,
+          "gzip_bytes": 179
+        },
+        {
+          "file": "Memo-B9aWwyPc.js",
+          "bytes": 1850,
+          "gzip_bytes": 967
+        },
+        {
+          "file": "Message-Dk7E5_W9.js",
+          "bytes": 3095,
+          "gzip_bytes": 1588
+        },
+        {
+          "file": "MicCheck-DvnAYzaj.js",
+          "bytes": 2586,
+          "gzip_bytes": 1386
+        },
+        {
+          "file": "Record-Cb_DKC6X.js",
+          "bytes": 889,
+          "gzip_bytes": 502
+        },
+        {
+          "file": "Session-BgLectXl.js",
+          "bytes": 11996,
+          "gzip_bytes": 4956
+        },
+        {
+          "file": "SessionFeedback-C1YLsDdn.js",
+          "bytes": 2664,
+          "gzip_bytes": 1372
+        },
+        {
+          "file": "SessionHistoryFriendlist-BaOxaC6Y.js",
+          "bytes": 1632,
+          "gzip_bytes": 978
+        },
+        {
+          "file": "SessionList-Dqwo44cx.js",
+          "bytes": 3325,
+          "gzip_bytes": 1571
+        },
+        {
+          "file": "SessionRecordForm-9XL9Q3nD.js",
+          "bytes": 4365,
+          "gzip_bytes": 2022
+        },
+        {
+          "file": "Settings-C5iW3A6g.js",
+          "bytes": 2649,
+          "gzip_bytes": 1263
+        },
+        {
+          "file": "Stats-bZI5YCjS.js",
+          "bytes": 1551,
+          "gzip_bytes": 895
+        },
+        {
+          "file": "TopSection-CsIni_Fk.js",
+          "bytes": 2365,
+          "gzip_bytes": 1226
+        },
+        {
+          "file": "adminPage-B_SwT4f-.js",
+          "bytes": 4359,
+          "gzip_bytes": 1816
+        },
+        {
+          "file": "authService-CPjDS-2Y.js",
+          "bytes": 303,
+          "gzip_bytes": 224
+        },
+        {
+          "file": "conversationService-CneyS2gn.js",
+          "bytes": 522,
+          "gzip_bytes": 271
+        },
+        {
+          "file": "features-C5wauhtN.js",
+          "bytes": 1081,
+          "gzip_bytes": 531
+        },
+        {
+          "file": "homeLogo-D-Qw7mNd.js",
+          "bytes": 4517,
+          "gzip_bytes": 1700
+        },
+        {
+          "file": "index-BV6JYCRe.js",
+          "bytes": 161093,
+          "gzip_bytes": 53377
+        },
+        {
+          "file": "index-D8YwgkM9.css",
+          "bytes": 6854,
+          "gzip_bytes": 2243
+        },
+        {
+          "file": "memoService-DQGftQ2O.js",
+          "bytes": 147,
+          "gzip_bytes": 135
+        },
+        {
+          "file": "request-BslnW51p.js",
+          "bytes": 138183,
+          "gzip_bytes": 40822
+        },
+        {
+          "file": "userService-C6yZ1wl8.js",
+          "bytes": 312,
+          "gzip_bytes": 237
+        }
+      ],
+      "packages": 228,
+      "runtime_packages": 5,
+      "direct_runtime_dependencies": [
+        "react",
+        "react-dom"
+      ]
+    },
+    {
+      "label": "message-final",
+      "commit": "018634fda4bb1b006c0c6ca1d7f3cdcbaa9bba39",
+      "dirty": true,
+      "assets": [
+        {
+          "file": "Avatar-FgoZSPi-.js",
+          "bytes": 1426,
+          "gzip_bytes": 845
+        },
+        {
+          "file": "BottomNavigationTemplate-Bqeq7x68.js",
+          "bytes": 705,
+          "gzip_bytes": 386
+        },
+        {
+          "file": "ChoiceGroup-DTR-MreY.js",
+          "bytes": 415,
+          "gzip_bytes": 278
+        },
+        {
+          "file": "ConversationHistory-Cy2AF390.js",
+          "bytes": 1407,
+          "gzip_bytes": 854
+        },
+        {
+          "file": "Dialog-C7oGmf7G.js",
+          "bytes": 709,
+          "gzip_bytes": 443
+        },
+        {
+          "file": "Events-D5f1XJYq.js",
+          "bytes": 4117,
+          "gzip_bytes": 1837
+        },
+        {
+          "file": "FriendList-BfO5dWm8.js",
+          "bytes": 1096,
+          "gzip_bytes": 662
+        },
+        {
+          "file": "FriendRequest-CzRajVTD.js",
+          "bytes": 3613,
+          "gzip_bytes": 1563
+        },
+        {
+          "file": "Home-DAO-8Xlm.css",
+          "bytes": 113,
+          "gzip_bytes": 112
+        },
+        {
+          "file": "Home-DuJ06cUe.js",
+          "bytes": 2442,
+          "gzip_bytes": 1331
+        },
+        {
+          "file": "IconButton-6gpqQQXe.js",
+          "bytes": 195,
+          "gzip_bytes": 176
+        },
+        {
+          "file": "Memo-kWg-7za3.js",
+          "bytes": 1850,
+          "gzip_bytes": 969
+        },
+        {
+          "file": "Message-BpdFNb5N.js",
+          "bytes": 1999,
+          "gzip_bytes": 1024
+        },
+        {
+          "file": "MicCheck-BYuXNq7B.js",
+          "bytes": 2586,
+          "gzip_bytes": 1387
+        },
+        {
+          "file": "Record-DOFaw5XH.js",
+          "bytes": 889,
+          "gzip_bytes": 501
+        },
+        {
+          "file": "Session-OBdKaCKR.js",
+          "bytes": 11996,
+          "gzip_bytes": 4958
+        },
+        {
+          "file": "SessionFeedback-CeB-Lw6S.js",
+          "bytes": 2664,
+          "gzip_bytes": 1373
+        },
+        {
+          "file": "SessionHistoryFriendlist-DQXQPu9z.js",
+          "bytes": 1632,
+          "gzip_bytes": 979
+        },
+        {
+          "file": "SessionList-BLSiDhLn.js",
+          "bytes": 3325,
+          "gzip_bytes": 1573
+        },
+        {
+          "file": "SessionRecordForm-pXgoqlf2.js",
+          "bytes": 4365,
+          "gzip_bytes": 2023
+        },
+        {
+          "file": "Settings-4QSGXWTJ.js",
+          "bytes": 2649,
+          "gzip_bytes": 1263
+        },
+        {
+          "file": "Stats-Bi6fWL0d.js",
+          "bytes": 1551,
+          "gzip_bytes": 897
+        },
+        {
+          "file": "TopSection-BPJxsZee.js",
+          "bytes": 2365,
+          "gzip_bytes": 1227
+        },
+        {
+          "file": "adminPage-Eg6OTbK2.js",
+          "bytes": 4359,
+          "gzip_bytes": 1818
+        },
+        {
+          "file": "authService-DJphyXrV.js",
+          "bytes": 331,
+          "gzip_bytes": 246
+        },
+        {
+          "file": "conversationService-9wiSPqye.js",
+          "bytes": 522,
+          "gzip_bytes": 272
+        },
+        {
+          "file": "features-DJxI1RAE.js",
+          "bytes": 872,
+          "gzip_bytes": 456
+        },
+        {
+          "file": "homeLogo-htLHLX8z.js",
+          "bytes": 4517,
+          "gzip_bytes": 1700
+        },
+        {
+          "file": "index-D8YwgkM9.css",
+          "bytes": 6854,
+          "gzip_bytes": 2243
+        },
+        {
+          "file": "index-eQqOAAGn.js",
+          "bytes": 161276,
+          "gzip_bytes": 53429
+        },
+        {
+          "file": "memoService-BdqQqrzi.js",
+          "bytes": 147,
+          "gzip_bytes": 137
+        },
+        {
+          "file": "request-B3oIAq_F.js",
+          "bytes": 164719,
+          "gzip_bytes": 46964
+        },
+        {
+          "file": "userService-BatTP8wc.js",
+          "bytes": 307,
+          "gzip_bytes": 235
+        }
+      ],
+      "packages": 228,
+      "runtime_packages": 5,
+      "direct_runtime_dependencies": [
+        "react",
+        "react-dom"
+      ]
+    }
+  ],
+  "proof_assets": [
+    {
+      "file": "app-Big-Xvsf.js",
+      "bytes": 112657,
+      "gzip_bytes": 37052
+    },
+    {
+      "file": "message-Cn15GRTn.js",
+      "bytes": 3225,
+      "gzip_bytes": 1665
+    },
+    {
+      "file": "messageReact-B36KBepW.js",
+      "bytes": 145563,
+      "gzip_bytes": 47613
+    }
+  ],
+  "results": [
+    {
+      "name": "app-before",
+      "label": "message-before",
+      "profile": {
+        "name": "loopback",
+        "latency": 0,
+        "down": -1,
+        "up": -1,
+        "cpu": 1
+      },
+      "initial_median_ms": 94.40000000037253,
+      "send_median_ms": 42.19999999925494,
+      "js_gzip_bytes": 99224,
+      "js_requests": 8,
+      "runs": [
+        {
+          "initial_ms": 94.8999999994412,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 42.19999999925494
+        },
+        {
+          "initial_ms": 89.70000000018626,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            }
+          ],
+          "send_ms": 42
+        },
+        {
+          "initial_ms": 98.09999999962747,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            }
+          ],
+          "send_ms": 42.700000000186265
+        },
+        {
+          "initial_ms": 94.40000000037253,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 43.60000000055879
+        },
+        {
+          "initial_ms": 92.40000000037253,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 41.299999999813735
+        },
+        {
+          "initial_ms": 96.40000000037253,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 42
+        },
+        {
+          "initial_ms": 93.29999999981374,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 44.90000000037253
+        }
+      ]
+    },
+    {
+      "name": "app-moonbit",
+      "label": "message-final",
+      "profile": {
+        "name": "loopback",
+        "latency": 0,
+        "down": -1,
+        "up": -1,
+        "cpu": 1
+      },
+      "initial_median_ms": 90.79999999981374,
+      "send_median_ms": 42.200000000186265,
+      "js_gzip_bytes": 104774,
+      "js_requests": 8,
+      "runs": [
+        {
+          "initial_ms": 93.30000000074506,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 42.200000000186265
+        },
+        {
+          "initial_ms": 90.79999999981374,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            }
+          ],
+          "send_ms": 43.200000000186265
+        },
+        {
+          "initial_ms": 88.29999999981374,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            }
+          ],
+          "send_ms": 41.700000000186265
+        },
+        {
+          "initial_ms": 85.09999999962747,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            }
+          ],
+          "send_ms": 43.89999999944121
+        },
+        {
+          "initial_ms": 96.5,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 42.200000000186265
+        },
+        {
+          "initial_ms": 103.09999999962747,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 40.299999999813735
+        },
+        {
+          "initial_ms": 90,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 41.299999999813735
+        }
+      ]
+    },
+    {
+      "name": "isolated-react",
+      "label": "message-final",
+      "profile": {
+        "name": "loopback",
+        "latency": 0,
+        "down": -1,
+        "up": -1,
+        "cpu": 1
+      },
+      "initial_median_ms": 77.90000000037253,
+      "send_median_ms": 43.299999999813735,
+      "js_gzip_bytes": 84665,
+      "js_requests": 2,
+      "runs": [
+        {
+          "initial_ms": 77.90000000037253,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 43.299999999813735
+        },
+        {
+          "initial_ms": 70.90000000037253,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 42.90000000037253
+        },
+        {
+          "initial_ms": 77.6000000005588,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 42.89999999944121
+        },
+        {
+          "initial_ms": 79.59999999962747,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 43.5
+        },
+        {
+          "initial_ms": 82.29999999981374,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 43
+        },
+        {
+          "initial_ms": 75.70000000018626,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 44.200000000186265
+        },
+        {
+          "initial_ms": 83.29999999981374,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 44.5
+        }
+      ]
+    },
+    {
+      "name": "isolated-dom",
+      "label": "message-final",
+      "profile": {
+        "name": "loopback",
+        "latency": 0,
+        "down": -1,
+        "up": -1,
+        "cpu": 1
+      },
+      "initial_median_ms": 68.69999999925494,
+      "send_median_ms": 43.299999999813735,
+      "js_gzip_bytes": 38717,
+      "js_requests": 2,
+      "runs": [
+        {
+          "initial_ms": 60.799999999813735,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 41.59999999962747
+        },
+        {
+          "initial_ms": 77.29999999981374,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 42.700000000186265
+        },
+        {
+          "initial_ms": 57.39999999944121,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 43.700000000186265
+        },
+        {
+          "initial_ms": 67.79999999981374,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 43.299999999813735
+        },
+        {
+          "initial_ms": 82.29999999981374,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 45.200000000186265
+        },
+        {
+          "initial_ms": 73.90000000037253,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 43.299999999813735
+        },
+        {
+          "initial_ms": 68.69999999925494,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 44
+        }
+      ]
+    },
+    {
+      "name": "app-before",
+      "label": "message-before",
+      "profile": {
+        "name": "emulated-mobile",
+        "latency": 40,
+        "down": 200000,
+        "up": 93750,
+        "cpu": 4
+      },
+      "initial_median_ms": 950.1999999992549,
+      "send_median_ms": 130,
+      "js_gzip_bytes": 99224,
+      "js_requests": 8,
+      "runs": [
+        {
+          "initial_ms": 957.9000000003725,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 129.70000000018626
+        },
+        {
+          "initial_ms": 944.7000000001863,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 116.70000000018626
+        },
+        {
+          "initial_ms": 947.2999999998137,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 135.29999999981374
+        },
+        {
+          "initial_ms": 973.1999999992549,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 130
+        },
+        {
+          "initial_ms": 962.1999999992549,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 124.3999999994412
+        },
+        {
+          "initial_ms": 940,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            }
+          ],
+          "send_ms": 133.5
+        },
+        {
+          "initial_ms": 950.1999999992549,
+          "scripts": [
+            {
+              "file": "/assets/index-BV6JYCRe.js",
+              "gzip_bytes": 53377,
+              "raw_bytes": 161093
+            },
+            {
+              "file": "/assets/Message-Dk7E5_W9.js",
+              "gzip_bytes": 1588,
+              "raw_bytes": 3095
+            },
+            {
+              "file": "/assets/TopSection-CsIni_Fk.js",
+              "gzip_bytes": 1226,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Avatar-h2kvaNd_.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/Dialog-CnJAXcSV.js",
+              "gzip_bytes": 447,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-C5wauhtN.js",
+              "gzip_bytes": 531,
+              "raw_bytes": 1081
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+              "gzip_bytes": 388,
+              "raw_bytes": 705
+            },
+            {
+              "file": "/assets/request-BslnW51p.js",
+              "gzip_bytes": 40822,
+              "raw_bytes": 138183
+            }
+          ],
+          "send_ms": 141.20000000018626
+        }
+      ]
+    },
+    {
+      "name": "app-moonbit",
+      "label": "message-final",
+      "profile": {
+        "name": "emulated-mobile",
+        "latency": 40,
+        "down": 200000,
+        "up": 93750,
+        "cpu": 4
+      },
+      "initial_median_ms": 990.5,
+      "send_median_ms": 131.79999999981374,
+      "js_gzip_bytes": 104774,
+      "js_requests": 8,
+      "runs": [
+        {
+          "initial_ms": 983.7999999998137,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 132.70000000018626
+        },
+        {
+          "initial_ms": 976.0999999996275,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 113.8999999994412
+        },
+        {
+          "initial_ms": 1008,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 130.40000000037253
+        },
+        {
+          "initial_ms": 990.5,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 132.80000000074506
+        },
+        {
+          "initial_ms": 978.0999999996275,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 134.5
+        },
+        {
+          "initial_ms": 998.5,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 122.8999999994412
+        },
+        {
+          "initial_ms": 1001.5,
+          "scripts": [
+            {
+              "file": "/assets/index-eQqOAAGn.js",
+              "gzip_bytes": 53429,
+              "raw_bytes": 161276
+            },
+            {
+              "file": "/assets/Message-BpdFNb5N.js",
+              "gzip_bytes": 1024,
+              "raw_bytes": 1999
+            },
+            {
+              "file": "/assets/request-B3oIAq_F.js",
+              "gzip_bytes": 46964,
+              "raw_bytes": 164719
+            },
+            {
+              "file": "/assets/Avatar-FgoZSPi-.js",
+              "gzip_bytes": 845,
+              "raw_bytes": 1426
+            },
+            {
+              "file": "/assets/TopSection-BPJxsZee.js",
+              "gzip_bytes": 1227,
+              "raw_bytes": 2365
+            },
+            {
+              "file": "/assets/Dialog-C7oGmf7G.js",
+              "gzip_bytes": 443,
+              "raw_bytes": 709
+            },
+            {
+              "file": "/assets/features-DJxI1RAE.js",
+              "gzip_bytes": 456,
+              "raw_bytes": 872
+            },
+            {
+              "file": "/assets/BottomNavigationTemplate-Bqeq7x68.js",
+              "gzip_bytes": 386,
+              "raw_bytes": 705
+            }
+          ],
+          "send_ms": 131.79999999981374
+        }
+      ]
+    },
+    {
+      "name": "isolated-react",
+      "label": "message-final",
+      "profile": {
+        "name": "emulated-mobile",
+        "latency": 40,
+        "down": 200000,
+        "up": 93750,
+        "cpu": 4
+      },
+      "initial_median_ms": 822.0999999996275,
+      "send_median_ms": 130.20000000018626,
+      "js_gzip_bytes": 84665,
+      "js_requests": 2,
+      "runs": [
+        {
+          "initial_ms": 826.0999999996275,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 126.40000000037253
+        },
+        {
+          "initial_ms": 822.9000000003725,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 116.90000000037253
+        },
+        {
+          "initial_ms": 832.1999999992549,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 129.5
+        },
+        {
+          "initial_ms": 818.9000000003725,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 130.3999999994412
+        },
+        {
+          "initial_ms": 818.3000000007451,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 131
+        },
+        {
+          "initial_ms": 822.0999999996275,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 130.20000000018626
+        },
+        {
+          "initial_ms": 818.5,
+          "scripts": [
+            {
+              "file": "/assets/messageReact-B36KBepW.js",
+              "gzip_bytes": 47613,
+              "raw_bytes": 145563
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 130.69999999925494
+        }
+      ]
+    },
+    {
+      "name": "isolated-dom",
+      "label": "message-final",
+      "profile": {
+        "name": "emulated-mobile",
+        "latency": 40,
+        "down": 200000,
+        "up": 93750,
+        "cpu": 4
+      },
+      "initial_median_ms": 528.2000000001863,
+      "send_median_ms": 118.09999999962747,
+      "js_gzip_bytes": 38717,
+      "js_requests": 2,
+      "runs": [
+        {
+          "initial_ms": 513.7000000001863,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 116.5
+        },
+        {
+          "initial_ms": 534.8999999994412,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 119.40000000037253
+        },
+        {
+          "initial_ms": 521.7000000001863,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 117.90000000037253
+        },
+        {
+          "initial_ms": 540.4000000003725,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 119.5
+        },
+        {
+          "initial_ms": 539.0999999996275,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 118.09999999962747
+        },
+        {
+          "initial_ms": 528.2000000001863,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 115.79999999981374
+        },
+        {
+          "initial_ms": 517.7999999998137,
+          "scripts": [
+            {
+              "file": "/assets/message-Cn15GRTn.js",
+              "gzip_bytes": 1665,
+              "raw_bytes": 3225
+            },
+            {
+              "file": "/assets/app-Big-Xvsf.js",
+              "gzip_bytes": 37052,
+              "raw_bytes": 112657
+            }
+          ],
+          "send_ms": 123.09999999962747
+        }
+      ]
+    }
+  ],
+  "scope": "Gzip HTTP/1.1 loopback, fresh contexts, cache disabled, one warm-up + seven measured rounds with alternating order. Same 50-message fixture and successful send. In-page DOM mutation plus two animation frames; not LCP/INP. No real backend, notification websocket or IME benchmark.",
+  "comparison": "app-before vs app-moonbit preserves the existing app shell. isolated-react vs isolated-dom uses the same minimal HTML host, MoonBit controller and browser ports. Isolated pages are not equivalent to the full app shell."
+}

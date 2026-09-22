@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { emitDeclaration } from './boundaries/js-contract.mjs';
 mkdirSync('contract/generated', { recursive: true });
-for (const pkg of ['shared', 'signaling', 'api', 'matching']) {
+for (const pkg of ['shared', 'signaling', 'api', 'matching', 'thread']) {
   emitDeclaration({
     interfaceFile: `core/${pkg}/pkg.generated.mbti`,
     packageFile: `core/${pkg}/moon.pkg`,

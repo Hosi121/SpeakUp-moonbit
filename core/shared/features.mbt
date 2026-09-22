@@ -201,7 +201,7 @@ fn checked_inbox(text : String) -> InboxDto raise {
 }
 
 ///|
-fn checked_thread(text : String) -> ThreadDto raise {
+pub fn checked_thread(text : String) -> ThreadDto raise {
   let v = @json.parse(text)
   guard v is { "peer": peer, .. } else { fail("Expected peer") }
   validate_friend(peer)

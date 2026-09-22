@@ -1,7 +1,6 @@
 import {
   parseSocial,
   parseInbox,
-  parseThread,
   parseStats,
   parseEvents,
   parseRoster,
@@ -16,19 +15,6 @@ export const changeFriend = (
 export const fetchInbox = () => request("GET", "/notifications", parseInbox);
 export const readInbox = (through: number) =>
   request("PUT", "/notifications/read", parseInbox, { through_id: through });
-export const fetchThread = (id: number, before = 0) =>
-  request(
-    "GET",
-    `/messages/${id}${before ? `/before/${before}` : ""}`,
-    parseThread,
-  );
-export const sendMessage = (id: number, body: string, requestId: string) =>
-  request("POST", `/messages/${id}`, parseThread, {
-    body,
-    request_id: requestId,
-  });
-export const readThread = (id: number, through: number) =>
-  request("PUT", `/messages/${id}/read`, parseThread, { through_id: through });
 export const fetchStats = () => request("GET", "/stats", parseStats);
 export const fetchEventOverviews = () =>
   request("GET", "/events/overview", parseEvents);

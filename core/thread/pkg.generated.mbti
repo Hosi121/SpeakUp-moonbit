@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/thread"
+
+// Values
+pub fn create_browser(String) -> ThreadController
+
+pub fn create_controller(Double, ThreadPorts) -> ThreadController
+
+// Errors
+
+// Types and methods
+pub(all) struct MessageView {
+  id : Int
+  body : String
+  time : String
+  own : Bool
+  read : Bool
+}
+
+pub(all) struct ThreadController {
+  get_snapshot : () -> ThreadView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  refresh : () -> Unit
+  set_draft : (String) -> Unit
+  send : () -> Unit
+  load_older : () -> Unit
+}
+
+pub(all) struct ThreadPorts {
+  request : (String, String, String, (Double, String, Bool) -> Unit) -> () -> Unit
+  random_id : () -> String
+  format_time : (String) -> String
+  is_visible : () -> Bool
+  on_visibility : ((Bool) -> Unit) -> () -> Unit
+  on_activity : (() -> Unit) -> () -> Unit
+}
+
+pub(all) struct ThreadView {
+  valid : Bool
+  loaded : Bool
+  peer_name : String
+  peer_avatar : String
+  messages : Array[MessageView]
+  draft : String
+  error : String
+  sending : Bool
+  loading_older : Bool
+  has_older : Bool
+  can_send : Bool
+}
+
+// Type aliases
+
+// Traits

@@ -1,6 +1,6 @@
 # UI の構成
 
-React は描画とブラウザのライフサイクルを担当し、会話モデル・状態検査・共通 DTO は MoonBit から JS と型宣言を生成して利用する。native backend には React / MUI / Node のランタイム依存はない。
+フロントの状態・更新規則・通信制御を MoonBit に集め、表示層を交換できる構成へ移行している。メッセージ画面はその分離を実装済み。ほかの画面には React hooks や TS service が所有するロジックが残る。会話モデル・状態検査・共通 DTO は MoonBit から JS と型宣言を生成して利用する。native backend には React / MUI / Node のランタイム依存はない。
 
 ## MUI の削除
 
@@ -76,14 +76,16 @@ JS gzip は 11.6% 減。ローカルの Chromium で実アプリの通知取得�
 
 | 場所 | 役割 | 判断 |
 | --- | --- | --- |
-| `frontend/src/components` | React の画面・フォーム・UI 状態 | TS に残す。MUI は不要になった |
-| `frontend/src/services/voiceCall.ts`、音量計 | WebRTC / WebSocket / マイク / AudioContext の所有と後始末 | ブラウザ I/O adapter。MoonBit へ移しても Web API 境界は必要 |
-| `frontend/src/services/*` | fetch、認証情報、共通 MoonBit decoder の呼び出し | 通信とブラウザ側の状態を TS に残し、応答の型検査と DTO 変換を MoonBit へ |
-| `frontend/src/navigation`、`App.tsx` | History API、リンク、画面の読み込みと復帰 | ブラウザ UI adapter。ドメインの DTO は引き続き MoonBit から生成 |
+| `frontend/src/message/react.tsx` / `dom.ts` | 同じ MoonBit snapshot の描画、操作の転送 | 表示層。取得・再送・既読・ページングの判断は持たない |
+| `frontend/src/components` のほかの画面 | React の画面・フォーム・UI 状態 | 状態と操作規則の MoonBit 移行は未完了。TS に恒久的に残す方針ではない |
+| `frontend/src/services/voiceCall.ts`、音量計 | WebRTC / WebSocket / マイク / AudioContext の制御 | 接続順序・再試行・寿命の判断は MoonBit へ移す対象。個々の Web API 呼び出しは型付き binding に残す |
+| `frontend/src/services/browser.ts` | fetch / UUID / 時刻表示 / visibility / 更新通知の具体的な操作 | TS2Mbt で型付き binding を生成。要求の開始・中止と応答の解釈は `core/thread` |
+| `ActivityLayout.tsx`、ほかの `services/*` | 通知接続・認証・通信・ブラウザ側の状態 | メッセージ以外の orchestration はまだ TS に残る。MoonBit 移行対象 |
+| `frontend/src/navigation`、`App.tsx` | History API、リンク、画面の読み込みと復帰 | 現在のアプリシェル。画面ごとの状態移行後に分離を進める |
 | `server/main.ts`、`server/host.ts` | 比較・互換検証用の Node backend | default の native backend では実行しない |
 | `server/migrate.ts`、`server/seed.ts`、scripts/tests | DB 準備、生成、ビルド、検証 | 開発用ツール。常駐サーバーの依存と分ける |
 
-frontend の直接 runtime 依存は React / React DOM の 2 つ。React 自体を外す場合は描画、状態の更新、DOM / Web API bindings の設計が必要であり、サーバーの MoonBit 化とは独立した判断。
+frontend の直接 runtime 依存は React / React DOM の 2 つ。メッセージは `core/thread` が状態と I/O の寿命を所有し、React の `useSyncExternalStore` と素の DOM の両方から利用できる。DOM 単独ページの読み込みには React が含まれない。アプリ全体からの React 削除はまだ行っていない。[構成・検証・比較](message-controller.md)。
 
 通知、フレンド申請の承認・見送り・取消、メッセージ、実績、AI アドバイス、選択式の振り返り、イベント参加・管理を共通 MoonBit API に接続した。固定候補や架空の実績を廃止し、会話履歴と保存済みデータを使う。[各機能のモデル・API・検証](features.md)を参照。
 

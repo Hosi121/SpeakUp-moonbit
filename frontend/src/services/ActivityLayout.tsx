@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "../navigation/location";
 import type { InboxDto } from "../../../dist/shared.js";
 import { Activity } from "./activity";
+import { notifyActivity } from "./activityEvents";
 
 export function ActivityLayout({ children }: { children: ReactNode }) {
   useLocation(); // Login/logout navigation re-evaluates the local credential.
@@ -38,7 +39,7 @@ export function ActivityLayout({ children }: { children: ReactNode }) {
           if (disposed || sequence !== current) return;
           const started = Date.now();
           const inbox = await fetchInbox();
-          if (!disposed && sequence === current)
+          if (!disposed && sequence === current) {
             setState((s) => ({
               ...s,
               inbox,
@@ -47,13 +48,17 @@ export function ActivityLayout({ children }: { children: ReactNode }) {
               // The shared clock accepts integer epoch milliseconds.
               clockOffset: Math.round(inbox.now - (started + Date.now()) / 2),
             }));
+            notifyActivity();
+          }
         })().catch(() => {
-          if (!disposed && sequence === current)
+          if (!disposed && sequence === current) {
             setState((s) => ({
               ...s,
               error: "通知を取得できませんでした。",
               revision: s.revision + 1,
             }));
+            notifyActivity();
+          }
         });
       }, 100);
     };

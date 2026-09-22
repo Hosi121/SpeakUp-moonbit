@@ -37,7 +37,7 @@ jobs:
       - run: bash scripts/install-moon.sh && npm run moon -- update
       - run: npm run generate && npm run check
       - run: npm --prefix frontend run lint
-      - run: npm run fixtures && git diff --exit-code -- contract core/platform examples/js-boundary/src/platform examples/js-boundary/generated
+      - run: npm run fixtures && git diff --exit-code -- contract core/platform core/browser_platform core/client examples/js-boundary/src/platform examples/js-boundary/generated
       - run: npm run db:migrate && npm run db:seed
       - run: npm run build:native && node scripts/build-bench.mjs
       - run: npm test && npm run test:native

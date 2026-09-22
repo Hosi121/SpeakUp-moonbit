@@ -8,6 +8,8 @@ import {
 // Values
 pub fn activity_token(String) -> String raise
 
+pub fn checked_thread(String) -> ThreadDto raise
+
 pub fn conversation_clock(ConversationDto, Double) -> ConversationClock raise
 
 pub fn conversation_partner(ConversationDto, Int) -> FriendSummaryDto raise

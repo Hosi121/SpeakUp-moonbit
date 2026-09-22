@@ -1,0 +1,84 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/client"
+
+import {
+  "hosi121/speakup/shared",
+  "hosi121/speakup/thread",
+}
+
+// Values
+pub fn create_browser(String) -> @thread.ThreadController
+
+pub fn create_controller(Double, @thread.ThreadPorts) -> @thread.ThreadController
+
+pub fn decode_activity_token(String) -> String
+
+pub fn decode_avatar_response(String) -> String
+
+pub fn decode_chat_response(String) -> String
+
+pub fn decode_conversation(String) -> @shared.ConversationDto
+
+pub fn decode_conversations(String) -> Array[@shared.ConversationDto]
+
+pub fn decode_event_response(String) -> @shared.Event
+
+pub fn decode_events(String) -> Array[@shared.EventOverviewDto]
+
+pub fn decode_ice_servers(String) -> Array[@shared.IceServerDto]
+
+pub fn decode_inbox(String) -> @shared.InboxDto
+
+pub fn decode_learning(String) -> @shared.LearningDto
+
+pub fn decode_memo_response(String) -> @shared.UserNotes
+
+pub fn decode_profile_response(String) -> @shared.UserProfile
+
+pub fn decode_reflection(String) -> @shared.ReflectionDto
+
+pub fn decode_roster(String) -> @shared.EventRosterDto
+
+pub fn decode_signup_response(String) -> @shared.SignUpResult
+
+pub fn decode_social(String) -> @shared.SocialDto
+
+pub fn decode_stats(String) -> @shared.StatsDto
+
+pub fn decode_thread(String) -> @shared.ThreadDto
+
+pub fn decode_token_response(String) -> String
+
+pub fn decode_users_response(String) -> Array[@shared.User]
+
+pub fn from_memo(@shared.MemoDto) -> @shared.UserNotes
+
+pub fn map_conversation(@shared.ConversationHistoryDto) -> @shared.ConversationHistoryItem
+
+pub fn map_event(@shared.EventDto) -> @shared.Event
+
+pub fn map_friend(@shared.FriendSummaryDto) -> @shared.FriendSummary
+
+pub fn map_profile(@shared.UserProfileDto) -> @shared.UserProfile
+
+pub fn map_session(@shared.SessionDto) -> @shared.SessionData
+
+pub fn map_user(@shared.UserDto) -> @shared.User
+
+pub fn normalize_avatar(String, String) -> String
+
+pub fn parse_signal(String) -> @shared.ParsedSignal
+
+pub fn to_memo(@shared.UserNotes) -> @shared.MemoDto
+
+pub fn view_conversation_clock(@shared.ConversationDto, Double) -> @shared.ConversationClock
+
+pub fn view_conversation_partner(@shared.ConversationDto, Int) -> @shared.FriendSummaryDto
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -19,5 +19,7 @@ function walk(path) {
 for (const path of ['core', 'examples/js-boundary/src', 'server', 'frontend/src', 'dist']) walk(path);
 const diagnostics = readFileSync('core/platform/SCAFFOLD_DIAGNOSTICS.md', 'utf8');
 if (!diagnostics.includes('No unsupported exports were detected.')) { failed = true; console.error('TS2Mbt reported unsupported exports'); }
+const browserDiagnostics = readFileSync('core/browser_platform/SCAFFOLD_DIAGNOSTICS.md', 'utf8');
+if (!browserDiagnostics.includes('No unsupported exports were detected.')) { failed = true; console.error('TS2Mbt reported unsupported browser exports'); }
 if (failed) process.exit(1);
 console.log(`Boundary audit passed: ${count} TypeScript files; no any, Any or JSValue.`);

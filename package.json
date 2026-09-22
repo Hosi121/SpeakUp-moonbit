@@ -7,6 +7,7 @@
     "node": ">=24.13.0"
   },
   "imports": {
+    "#speakup/browser": "./frontend/src/services/browser.ts",
     "#speakup/host": "./server/host.ts",
     "#js-boundary/host": "./examples/js-boundary/host.mjs"
   },
@@ -21,7 +22,7 @@
     "test": "npm run build:core && npm run moon -- test --target js && node --test tests/*.test.mjs",
     "test:integration": "node --test tests/integration.test.mjs tests/features.test.mjs",
     "bench": "node bench/run.mjs",
-    "fixtures": "node scripts/capture.mjs",
+    "fixtures": "node scripts/capture.mjs && node scripts/capture-message.mjs",
     "db:migrate": "node --env-file-if-exists=.env server/migrate.ts",
     "db:seed": "node --env-file-if-exists=.env server/seed.ts",
     "test:native": "node scripts/test-native.mjs",
@@ -30,7 +31,7 @@
     "start:native": "node scripts/start-native.mjs",
     "test:integration:native": "SERVER_RUNTIME=native node --test tests/integration.test.mjs tests/features.test.mjs",
     "test:browser:native": "SERVER_RUNTIME=native playwright test --global-timeout=120000",
-    "test:navigation": "npm --prefix frontend run build && playwright test --config playwright.navigation.config.mjs --global-timeout=120000",
+    "test:navigation": "npm --prefix frontend run build && npm --prefix frontend run build:message-views && playwright test --config playwright.navigation.config.mjs --global-timeout=120000",
     "start:node": "node --env-file-if-exists=.env server/main.ts",
     "test:boundaries": "node scripts/test-boundaries.mjs"
   },

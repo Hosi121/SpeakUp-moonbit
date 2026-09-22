@@ -46,6 +46,9 @@ MySQL は `127.0.0.1:3308`、backend は `127.0.0.1:8081`。**移植用の新規
 
 ```text
 core/shared       DTO、画面向け変換、HTTP 応答・WebSocket 入力検証
+core/thread       メッセージ画面の状態・通信順序・再送・既読・キャンセル
+core/browser_platform  TS2Mbt で生成するブラウザ primitive の binding
+core/client       shared / thread を一度だけ JS にリンクする生成 entry
 core/conversation 開始・終了・取消、再送時の不変条件（I/O なし）
 core/signaling    部屋と negotiation の状態管理（I/O なし）
 core/matching     rank / round / 参加ビットによるペア生成
@@ -74,6 +77,8 @@ npm run check          # MoonBit / TS / frontend build / 動的型の検査
 ```
 
 標準 `.d.ts` の struct→any、Promise ABI、callback の opaque 型、JS prototype、数値範囲、JSON 境界については [移行記録](docs/migration.md#js-境界と-ts2mbt) に記載しています。
+
+メッセージ画面は MoonBit が状態と通信制御を所有し、React は snapshot の購読と描画を担当します。同じ controller を使う React 単独版と DOM 単独版もあり、後者は React を読み込みません。ほかの画面・通知接続・通話制御の TS 移行は残っています。[表示層を交換する構成と検証](docs/message-controller.md)
 
 ## 検証
 

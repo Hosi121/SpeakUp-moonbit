@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/browser_platform"
+
+// Values
+pub fn formatTime(String) -> String
+
+pub fn isVisible() -> Bool
+
+pub fn numberValue(String) -> Double
+
+pub fn onActivity(OnActivityListenerCallback) -> () -> Unit
+
+pub fn onVisibility((Bool) -> Unit) -> () -> Unit
+
+pub fn randomId() -> String
+
+pub fn requestText(String, String, String, (Double, String, Bool) -> Unit) -> () -> Unit
+
+// Errors
+
+// Types and methods
+#external
+pub type OnActivityListenerCallback
+
+// Type aliases
+
+// Traits

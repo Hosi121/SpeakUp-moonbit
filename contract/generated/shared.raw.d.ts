@@ -10,6 +10,8 @@ export interface ToJson {
 
 export function activity_token(s: string): Result<string, Error>;
 
+export function checked_thread(s: string): Result<ThreadDto, Error>;
+
 export function conversation_clock(arg0: ConversationDto, n: number): Result<ConversationClock, Error>;
 
 export function conversation_partner(arg0: ConversationDto, n: number): Result<FriendSummaryDto, Error>;

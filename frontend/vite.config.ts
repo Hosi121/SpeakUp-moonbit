@@ -2,8 +2,28 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  resolve: {
+    alias: {
+      "#speakup/browser": new URL("./src/services/browser.ts", import.meta.url)
+        .pathname,
+    },
+  },
   plugins: [react()],
+  build:
+    mode === "message-views"
+      ? {
+          outDir: "../_build/message-views",
+          emptyOutDir: true,
+          rollupOptions: {
+            input: {
+              message: new URL("./message-dom.html", import.meta.url).pathname,
+              messageReact: new URL("./message-react.html", import.meta.url)
+                .pathname,
+            },
+          },
+        }
+      : {},
   server: {
     host: "127.0.0.1",
     proxy: {
@@ -15,4 +35,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
