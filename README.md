@@ -4,9 +4,9 @@
 
 イベントのラウンド通話と、相手を選んで随時始める 1 対 1 通話を、同じ会話モデルで扱います。再接続しても会話の開始時刻を保ち、終了後は本人だけの振り返りを保存できます。[モデルと設計判断](docs/domain-model.md)にまとめています。
 
-SQL の接続・トランザクション管理、MySQL adapter、WebSocket の送信・終了処理は、別 repo の **[servicekit.mbt](https://github.com/Hosi121/servicekit.mbt)** を利用しています。`hosi121/sql` に共通 API を置き、`hosi121/mysql` と `hosi121/postgres` がそれぞれのドライバを接続します。`hosi121/ws_session` は DB に依存しません。SpeakUp は `vendor/servicekit` の Git submodule で commit を固定して参照します。通話 ID、認証、JSON 検証、JS callback の規約と型生成の検査はアプリ側に置きます。[切り分けの理由](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/design.md)
+SQL の接続・トランザクション管理、MySQL adapter、WebSocket の送信・終了処理は、別 repo の **[moonbit-sessions](https://github.com/Hosi121/moonbit-sessions)** を利用しています。`Hosi121/sql_session` が寿命管理を担い、ライブラリは既存の PostgreSQL client/pool と `moondb.AsyncDriver` を再利用します。SpeakUp が使うのは `Hosi121/mysql@0.3.0` と `Hosi121/ws_session@0.1.0` です。各 module は Apache-2.0 で個別配布します。現在は初回の Mooncakes 認証・公開待ちのため、`vendor/servicekit` の固定 commit を workspace 参照しています。registry 公開後に通常の依存解決へ切り替えます。[既存ライブラリとの役割分担](https://github.com/Hosi121/moonbit-sessions/blob/main/docs/ecosystem.md)
 
-共通 API は MySQL / PostgreSQL の両実 DB で同じ契約試験を実行しています。SpeakUp の native backend もその API を使いますが、アプリの SQL・schema・運用 DB は引き続き MySQL です。SQL 方言の自動変換やアプリ全体の PostgreSQL 対応を意味しません。[実装した抽象化と制約](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/database-abstraction.md)
+共通 API は MySQL / PostgreSQL の両実 DB で同じ契約試験を実行しています。SpeakUp の native backend もその API を使いますが、アプリの SQL・schema・運用 DB は引き続き MySQL です。SQL 方言の自動変換やアプリ全体の PostgreSQL 対応を意味しません。[実装した抽象化と制約](https://github.com/Hosi121/moonbit-sessions/blob/main/docs/database-abstraction.md)
 
 **今回の測定では native 化による高速化は確認できませんでした。** signaling 中継の中央値は Go 比較用実装の約 0.95 倍。中継プログラムの RSS は JS/Node の約 85 MiB に対し native は約 10.5 MiB でした。[測定方法と結果](docs/performance.md)を参照してください。
 
@@ -55,7 +55,7 @@ core/native_server    native HTTP / 通話 controller
 core/native_transport connection ID 管理、signaling の判断と配送
 core/native_io        HTTP 入力制限、async 0.22.1 の close drain
 core/native_host      共通 SQL API の利用・MySQL 設定・DB 値変換 / JWT / 外部 API
-vendor/servicekit     外部 repo: sql / mysql / postgres / ws_session（利用する module だけ登録）
+vendor/servicekit     外部 repo: sql_session / mysql / ws_session（公開までの開発用参照）
 core/wire, bridge     アプリの JSON 数値検査と JS callback 規約
 scripts/boundaries    固定版 TS2Mbt / Mbt2TS の生成・公開型検査
 examples/js-boundary  アプリの JS 境界を実行する契約 fixture

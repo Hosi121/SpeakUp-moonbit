@@ -14,4 +14,4 @@ TypeScript の strict consumer 検査の両方を通します。
 `#js-boundary/host` は root の `package.json` で `host.mjs` に解決します。
 
 Native MySQL / WebSocket の独立 consumer は
-[servicekit.mbt](https://github.com/Hosi121/servicekit.mbt/tree/main/examples) に移動しました。
+[moonbit-sessions](https://github.com/Hosi121/moonbit-sessions/tree/main/examples) に移動しました。

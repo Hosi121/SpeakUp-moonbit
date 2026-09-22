@@ -1,7 +1,7 @@
 import {
   "hosi121/speakup/signaling",
   "hosi121/speakup/native_io",
-  "hosi121/ws_session" @session,
+  "Hosi121/ws_session" @session,
   "moonbitlang/async",
   "moonbitlang/async/websocket",
 }

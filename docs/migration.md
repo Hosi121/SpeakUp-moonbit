@@ -118,9 +118,9 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 
 ## 検証と未実施範囲
 
-実行環境との境界を別 repo の [servicekit.mbt](https://github.com/Hosi121/servicekit.mbt) へ抽出した。初期の一括 `servicekit` module を見直し、`hosi121/mysql` と `hosi121/ws_session` の独立 module に分けた。`vendor/servicekit` の Git submodule で commit を固定し、`moon.work` は必要な `sql` / `mysql` / `ws_session` だけを登録する。ライブラリ側の CI は各 module と独立 consumer だけを一時 workspace に取り出してビルドする。Mooncakes / npm 登録は未実施。
+実行環境との境界を別 repo の [moonbit-sessions](https://github.com/Hosi121/moonbit-sessions) へ抽出した。初期の一括 `servicekit` module を見直し、`Hosi121/mysql` と `Hosi121/ws_session` の独立 module に分けた。`vendor/servicekit` の Git submodule で commit を固定し、`moon.work` は必要な `sql_session` / `mysql` / `ws_session` だけを登録する。ライブラリ側の CI は各 module と独立 consumer だけを一時 workspace に取り出してビルドする。Mooncakes / npm 登録は未実施。
 
-WebSocket の公開 API は ID を持たない `Session` と `with_session`。connection ID と signaling の登録・削除は `core/native_transport` が所有する。HTTP 入力制限と async 0.22.1 固有の close drain は `core/native_io` に置く。JSON 数値検査、空文字を成功とする callback、TS2Mbt / Mbt2TS の固定版と export 形式に依存する検査スクリプトは、一般的な bridge API と呼べる範囲ではないためアプリ内に残した。`examples/js-boundary` はその JS 実行・TypeScript consumer 契約を継続検証する。[mizchi のライブラリとの役割分担](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/design.md)
+WebSocket の公開 API は ID を持たない `Session` と `with_session`。connection ID と signaling の登録・削除は `core/native_transport` が所有する。HTTP 入力制限と async 0.22.1 固有の close drain は `core/native_io` に置く。JSON 数値検査、空文字を成功とする callback、TS2Mbt / Mbt2TS の固定版と export 形式に依存する検査スクリプトは、一般的な bridge API と呼べる範囲ではないためアプリ内に残した。`examples/js-boundary` はその JS 実行・TypeScript consumer 契約を継続検証する。[mizchi のライブラリとの役割分担](https://github.com/Hosi121/moonbit-sessions/blob/main/docs/design.md)
 
 DB pool はインスタンスごとに所有し、close 時に待機中の要求を拒否、実行中 worker は完了まで回収しない。ライブラリでは signed/unsigned 64 bit と Decimal / Blob を区別する。SpeakUp の JSON adapter は安全な整数範囲を確認して既存の number 契約へ戻す。WebSocket は従来の byte 上限に加え空 payload も数えるメッセージ数上限を持つ。この最初の抽出では外部依存の追加・更新をしていない。
 
@@ -133,7 +133,7 @@ MoonBit type check / JS test / native core / crypto test、TypeScript strict che
 
 ## 共通 SQL API への移行
 
-`servicekit.mbt` に `hosi121/sql@0.1.0` を追加し、MySQL adapter を 0.2.0 へ更新した。`core/native_host` は `Database[Value, Row, Command, TransactionOptions]` を保持し、query/transaction を共通の `run` / `with_transaction` で実行する。既存の host JSON 契約では引き続き最後の statement の結果を返すが、ライブラリの callback は途中の読み取り結果から次の処理を選べる。
+`moonbit-sessions` に `Hosi121/sql_session@0.1.0` を追加し、MySQL adapter を 0.3.0 へ更新した。`core/native_host` は `Database[Value, Row, Command, TransactionOptions]` を保持し、query/transaction を共通の `run` / `with_transaction` で実行する。既存の host JSON 契約では引き続き最後の statement の結果を返すが、ライブラリの callback は途中の読み取り結果から次の処理を選べる。
 
 共通層は接続の貸出期間、同一接続の同時操作拒否、待機上限と timeout、commit/rollback、キャンセル時の `errdefer` による後始末を管理する。SQL 方言と codec は adapter 側に残る。MySQL の行は列順を保つ配列になり、JSON 化で同名の列を検出した場合は上書きせずエラーにする。utf8mb4・UTC・matched-row count は SpeakUp の設定として明示した。
 
@@ -142,3 +142,16 @@ PostgreSQL adapter は既存の `moonbit-community/postgres@0.0.8` の client/po
 セッション設定のリセットにはコストがある。今回の変更で Go や従来の pool より高速になったとは主張しない。SQLite adapter、sqlc によるクエリ型生成との統合、SQL 方言の変換は今回の実装範囲に含まない。
 
 通知一覧と未読件数は同じ SQL 文で取得し、同時着信によって既読対象の ID と件数が食い違わないようにした。通話一覧の自動更新中も招待ボタンを操作できる。native HTTP は応答を開始した後の書き込み失敗で追加のエラー応答を送らず、その接続を終了する。大きい応答の途中で TCP を切断してもサーバが稼働し続けることを JS/native 両方で検証する。
+
+### 既存実装への接続と配布単位
+
+`servicekit.mbt` は `moonbit-sessions` に改名した。汎用 SQL 実装全体を保有する
+方向を改め、`sql_session` は callback・transaction・キャンセルの寿命管理に絞る。
+ライブラリは `moondb.AsyncDriver` を直接受け取り、既存の Value/Row/ExecResult を
+変換せずに使用できる。第三者の `moonpostgres` でも共通の実 DB 試験を通した。
+SpeakUp は native MySQL adapter の combined result API を継続使用する。
+
+5 module を Apache-2.0 で個別配布する構成とし、実際の ZIP からの独立ビルドを
+検証した。Mooncakes の初回公開は認証待ちなので、アプリは更新した submodule を
+暫定参照する。公開確認後、registry から取得した状態で再ビルド・実 DB 試験を
+通してから submodule を外す。Frontend / npm / TS2Mbt の依存は変更していない。
