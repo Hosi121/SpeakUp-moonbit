@@ -1,6 +1,6 @@
 # CI の待ち時間と検証範囲
 
-`Verify migration` は型・契約・単体試験と、実 DB・ブラウザ試験を並行実行する。
+`Verify migration` は型・契約・単体・DOM 試験と、実 DB・通話試験を並行実行する。
 既存の必須 status `verify` は両 job の成功を確認する。失敗・cancel・skip を成功として
 扱わない。同じ ref / PR の古い実行は新しい実行で取り消す。本番への配備は行わない。
 
@@ -8,8 +8,8 @@
 
 | job | 実行内容 |
 | --- | --- |
-| Types, contracts and unit tests | TS2Mbt / Mbt2TS、型・build・lint、凍結 source oracle、生成物差分、MoonBit JS 16件 / native 17件、DB 不要の Node 112件、独立 JS 境界 consumer |
-| API and browser integration | Node API 19件 + DB migration 4件、native API 19件、native backend 上の全 UI / RTP 16件、Node の通話・ログイン・メモ3件、production DOM / navigation 29件 |
+| Types, contracts and DOM | TS2Mbt / Mbt2TS、型・build・lint、凍結 source oracle、生成物差分、MoonBit JS 16件 / native 17件、DB 不要の Node 112件、独立 JS 境界 consumer、production DOM / navigation 29件 |
+| API and browser integration | Node API 19件 + DB migration 4件、native API 19件、native backend 上の全 UI / RTP 16件、Node の通話・ログイン・メモ3件 |
 | verify | 上の2 job が成功したことの確認 |
 
 Node の従来の135件は112 + 23へ分割しただけで、削除・skip はない。
@@ -32,6 +32,8 @@ DB を共有する browser worker は1のまま。異なる job は別 runner �
 - CI で一度も実行していなかった `native-bench` の事前 build を除いた。
   性能測定用 executable は `npm run bench` 自身が build する。
 - Go と native 単体試験の準備は DB 不要の job に移し、重いサーバ build と並行する。
+- production の frontend build と DOM 試験も DB 不要側へ移す。通話側は共有 JS のみ
+  build し、Vite の開発サーバで実 API と接続する。DOM 試験が native の build を待たない。
 - Chromium は従来と同じ headless shell を使う。使用しない headed Chromium の download を
   [`--only-shell`](https://playwright.dev/docs/browsers#chromium-headless-shell) で省く。
 - npm は lockfile cache を維持。MoonBit の大きな展開済み toolchain と Chromium は

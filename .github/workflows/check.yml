@@ -12,7 +12,7 @@ env:
   CI: true
 jobs:
   checks:
-    name: Types, contracts and unit tests
+    name: Types, contracts and DOM
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -22,8 +22,10 @@ jobs:
         with:
           go-version: 1.23.5
           cache-dependency-path: bench/go/go.sum
-      - name: Native test headers
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmariadb-dev libssl-dev
+      - name: Browser and native test dependencies
+        run: |
+          npx playwright install --with-deps --only-shell chromium
+          sudo apt-get install -y --no-install-recommends libmariadb-dev libssl-dev fonts-noto-cjk fonts-noto-color-emoji
       - run: npm run generate && npm run check
       - run: npm --prefix frontend run lint
       - name: Source oracles and generated contracts
@@ -31,6 +33,8 @@ jobs:
       - name: JS and native unit tests
         run: npm run test:unit && npm run test:native
       - run: npm run test:boundaries -- --no-build
+      - name: Production DOM and navigation contracts
+        run: npm --prefix frontend run build:message-views && npm run test:navigation:built
 
   integration:
     name: API and browser integration
@@ -56,8 +60,8 @@ jobs:
         run: |
           npx playwright install --with-deps --only-shell chromium
           sudo apt-get install -y --no-install-recommends libmariadb-dev libssl-dev fonts-noto-cjk fonts-noto-color-emoji
-      - name: Build JS and both DOM entries once
-        run: npm run build:core && npm --prefix frontend run build && npm --prefix frontend run build:message-views
+      - name: Build shared JS once
+        run: npm run build:core
       - name: Native build ABI
         id: native-abi
         shell: bash
@@ -89,8 +93,6 @@ jobs:
       - name: Node call transport parity
         if: success() || (failure() && steps.browser-native.conclusion == 'failure')
         run: npm run test:browser:node-parity
-      - name: Production DOM and navigation contracts
-        run: npm run test:navigation:built
 
   # Preserve the existing required status: neither a failed nor a skipped job is green.
   verify:
