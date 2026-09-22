@@ -37,15 +37,24 @@ test('friend consent, live private messages and durable unread notifications acr
     for (const user of [a, b]) await expect(user.page.getByRole('log')).toContainText(content);
     await b.page.reload();
     await expect(b.page.getByRole('log')).toContainText(content);
+    // Read the existing fixture notifications before mounting the home page.
+    // Only the next message can then make its unread button appear.
+    const baseline = await request.put('http://127.0.0.1:8081/notifications/read', { headers: b.headers, data: { through_id: 2147483647 } });
+    expect(baseline.ok()).toBeTruthy();
+    expect((await baseline.json()).unread).toBe(0);
     await b.page.goto('/home');
+    await b.page.getByRole('button', { name: '通知', exact: true }).click();
+    const dialog = b.page.getByRole('dialog', { name: '通知', exact: true });
+    const markRead = dialog.getByRole('button', { name: '表示した通知まで既読にする' });
+    await expect(markRead).toHaveCount(0);
     const second = `通知 ${randomUUID()}`;
     await a.page.getByLabel('メッセージを入力').fill(second);
     await a.page.getByRole('button', { name: '送信', exact: true }).click();
-    await b.page.getByRole('button', { name: '通知', exact: true }).click();
-    const dialog = b.page.getByRole('dialog', { name: '通知', exact: true });
+    await expect(a.page.getByRole('log')).toContainText(second);
+    await expect(markRead).toBeVisible();
     await expect(dialog).toContainText('新しいメッセージがあります');
-    await dialog.getByRole('button', { name: '表示した通知まで既読にする' }).click();
-    await expect(dialog.getByRole('button', { name: '表示した通知まで既読にする' })).toHaveCount(0);
+    await markRead.click();
+    await expect(markRead).toHaveCount(0);
     expect(errors).toEqual([]);
   } finally { await a.context.close(); await b.context.close(); await db.end(); }
 });
