@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { decodeNote, echo } from '../dist/servicekit-example.js';
-import { emitDeclaration } from '../packages/servicekit/tools/js-contract.mjs';
+import { decodeNote, echo } from '../dist/js-boundary.js';
+import { emitDeclaration } from '../scripts/boundaries/js-contract.mjs';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

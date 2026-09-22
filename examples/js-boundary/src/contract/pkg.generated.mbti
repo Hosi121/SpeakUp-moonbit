@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "hosi121/servicekit_example/contract"
+package "hosi121/js_boundary_fixture/contract"
 
 import {
   "moonbitlang/core/json",

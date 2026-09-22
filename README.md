@@ -4,7 +4,7 @@
 
 イベントのラウンド通話と、相手を選んで随時始める 1 対 1 通話を、同じ会話モデルで扱います。再接続しても会話の開始時刻を保ち、終了後は本人だけの振り返りを保存できます。[モデルと設計判断](docs/domain-model.md)にまとめています。
 
-MySQL worker / pool、WebSocket の接続寿命、JSON 数値検証、JS callback と型生成は、独立 MoonBit module **[servicekit](packages/servicekit/README.md)** に切り出しています。SpeakUp への依存がない [小さな利用例](examples/servicekit) からも使い、別 workspace へ持ち出して検証します。
+MySQL worker / pool と WebSocket の送信・終了処理は、別 repo の **[servicekit.mbt](https://github.com/Hosi121/servicekit.mbt)** に切り出しています。`hosi121/mysql` と `hosi121/ws_session` は別々に利用でき、SpeakUp は `vendor/servicekit` の Git submodule で commit を固定して参照します。通話 ID、認証、JSON 検証、JS callback の規約と型生成の検査はアプリ側に置きます。[切り分けの理由](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/design.md)
 
 **今回の測定では native 化による高速化は確認できませんでした。** signaling 中継の中央値は Go 比較用実装の約 0.95 倍。中継プログラムの RSS は JS/Node の約 85 MiB に対し native は約 10.5 MiB でした。[測定方法と結果](docs/performance.md)を参照してください。
 
@@ -15,6 +15,7 @@ Linux x86_64、C compiler、MariaDB Connector/C・OpenSSL の開発ファイル�
 ```bash
 # Ubuntu: sudo apt-get install build-essential libmariadb-dev libssl-dev
 # sudo なしの Ubuntu 24.04: bash scripts/install-native-deps.sh
+git submodule update --init --recursive
 npm ci
 npm --prefix frontend ci
 bash scripts/install-moon.sh
@@ -49,10 +50,13 @@ core/signaling    部屋と negotiation の状態管理（I/O なし）
 core/matching     rank / round / 参加ビットによるペア生成
 core/api          HTTP 入力検査、業務処理、SQL と応答構築
 core/native_server    native HTTP / 通話 controller
-core/native_transport signaling の判断と配送
-core/native_host      servicekit の設定・DB 値変換 / JWT / 外部 API
-packages/servicekit   再利用できる native・JS 境界（独立 module）
-examples/servicekit   SpeakUp に依存しない利用例・契約試験
+core/native_transport connection ID 管理、signaling の判断と配送
+core/native_io        HTTP 入力制限、async 0.22.1 の close drain
+core/native_host      mysql pool の設定・DB 値変換 / JWT / 外部 API
+vendor/servicekit     外部 repo: mysql / ws_session の独立 module
+core/wire, bridge     アプリの JSON 数値検査と JS callback 規約
+scripts/boundaries    固定版 TS2Mbt / Mbt2TS の生成・公開型検査
+examples/js-boundary  アプリの JS 境界を実行する契約 fixture
 core/platform     TS2Mbt で生成した JS host binding
 server            比較用 JS backend、DB migration / seed
 frontend          React + 標準 HTML/CSS、型付きブラウザアダプター
@@ -76,8 +80,9 @@ DB の起動・migration・seed 後に実行します。
 ```bash
 npm test
 npm run test:native
-npm run test:servicekit
-npm run test:servicekit:mysql
+npm run test:boundaries
+npm run test:infrastructure
+npm run test:infrastructure:mysql
 npm run test:integration:native
 npx playwright install chromium
 npm run test:browser

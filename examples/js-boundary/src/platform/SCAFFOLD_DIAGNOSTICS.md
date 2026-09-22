@@ -12,4 +12,4 @@ This classification mirrors the real-world bridge quality policy. It is informat
 
 | package | class | policy |
 | --- | --- | --- |
-| `#servicekit-example/host` | unclassified | Add an explicit fallback policy before accepting this package into the real-world corpus. |
+| `#js-boundary/host` | unclassified | Add an explicit fallback policy before accepting this package into the real-world corpus. |

@@ -1,5 +1,5 @@
 import {
-  "hosi121/servicekit/websocket" @connections,
+  "hosi121/speakup/native_io",
   "hosi121/speakup/api",
   "hosi121/speakup/shared",
   "hosi121/speakup/native_transport" @transport,

@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "hosi121/servicekit/bridge"
+package "hosi121/speakup/bridge"
 
 // Values
 pub async fn await_text(((String, String) -> Unit) -> Unit) -> String raise BridgeError

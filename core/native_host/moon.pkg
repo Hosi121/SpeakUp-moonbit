@@ -1,8 +1,8 @@
 import {
   "hosi121/speakup/api",
   "moonbitlang/async",
-  "hosi121/servicekit/mysql",
-  "hosi121/servicekit/wire",
+  "hosi121/mysql",
+  "hosi121/speakup/wire",
   "moonbitlang/async/http",
   "moonbitlang/core/env",
   "moonbitlang/core/json",

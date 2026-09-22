@@ -3,7 +3,7 @@
 
 // Load the generated bridge JS before calling these externs.
 
-#module("#servicekit-example/host")
+#module("#js-boundary/host")
 pub extern "js" fn echo(value : String, done : EchoDoneCallback) -> Unit = "echo"
 
 #warnings("-3")

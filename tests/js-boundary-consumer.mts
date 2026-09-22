@@ -1,4 +1,4 @@
-import { decodeNote, echo, type Note } from '../../dist/servicekit-example.js';
+import { decodeNote, echo, type Note } from '../dist/js-boundary.js';
 const note: Note = decodeNote('{"id":1,"created_at":1,"text":"ok"}');
 const id: number = note.id;
 echo(String(id), (error: string, value: string) => console.log(error, value));

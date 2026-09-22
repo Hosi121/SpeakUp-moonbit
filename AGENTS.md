@@ -1,6 +1,9 @@
 # SpeakUp MoonBit
 
 Use the MoonBit migration and JS binding skills for MoonBit changes.
+Native MySQL and WebSocket session primitives live in the external
+`vendor/servicekit` Git submodule. Make changes in its repository, verify there,
+then update the pinned submodule commit; do not restore an application-local copy.
 Domain code belongs in `core/`; React rendering and platform I/O stay in adapters.
 Do not introduce `Any`, `JSValue`, generic unchecked casts, or TypeScript `any`
 into handwritten code. Parse untrusted JSON at ingress. Generated bindings are

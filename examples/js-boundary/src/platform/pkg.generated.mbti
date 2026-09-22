@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "hosi121/servicekit_example/platform"
+package "hosi121/js_boundary_fixture/platform"
 
 // Values
 pub fn echo(String, EchoDoneCallback) -> Unit

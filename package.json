@@ -8,7 +8,7 @@
   },
   "imports": {
     "#speakup/host": "./server/host.ts",
-    "#servicekit-example/host": "./examples/servicekit/host.mjs"
+    "#js-boundary/host": "./examples/js-boundary/host.mjs"
   },
   "scripts": {
     "moon": "node scripts/moon.mjs",
@@ -18,7 +18,7 @@
     "start": "node scripts/start-native.mjs",
     "dev": "npm run build:core && npm run build:native && node scripts/dev.mjs",
     "check": "npm run build:core && tsc --noEmit && npm --prefix frontend run build && node scripts/check-boundaries.mjs",
-    "test": "npm run build:core && npm run moon -- test && node --test tests/*.test.mjs",
+    "test": "npm run build:core && npm run moon -- test --target js && node --test tests/*.test.mjs",
     "test:integration": "node --test tests/integration.test.mjs tests/features.test.mjs",
     "bench": "node bench/run.mjs",
     "fixtures": "node scripts/capture.mjs",
@@ -31,8 +31,9 @@
     "test:integration:native": "SERVER_RUNTIME=native node --test tests/integration.test.mjs tests/features.test.mjs",
     "test:browser:native": "SERVER_RUNTIME=native playwright test --global-timeout=120000",
     "start:node": "node --env-file-if-exists=.env server/main.ts",
-    "test:servicekit": "node scripts/test-servicekit.mjs",
-    "test:servicekit:mysql": "node scripts/test-servicekit.mjs --mysql"
+    "test:boundaries": "node scripts/test-boundaries.mjs",
+    "test:infrastructure": "node scripts/test-infrastructure.mjs",
+    "test:infrastructure:mysql": "node scripts/test-infrastructure.mjs --mysql"
   },
   "dependencies": {
     "jose": "6.2.12",

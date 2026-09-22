@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, readdirSync, copyFileSync } from 'node:fs';
-const r = spawnSync(process.execPath, ['scripts/moon.mjs', 'build', '--release'], { stdio: 'inherit' });
+const r = spawnSync(process.execPath, ['scripts/moon.mjs', 'build', '--target', 'js', '--release'], { stdio: 'inherit' });
 if (r.status !== 0) process.exit(r.status ?? 1);
 mkdirSync('dist', { recursive: true });
 function copy(dir) {
@@ -10,7 +10,7 @@ function copy(dir) {
   }
 }
 copy('_build/js/release/build/hosi121/speakup');
-copyFileSync('_build/js/release/build/hosi121/servicekit_example/contract/contract.js', 'dist/servicekit-example.js');
+copyFileSync('_build/js/release/build/hosi121/js_boundary_fixture/contract/contract.js', 'dist/js-boundary.js');
 for (const args of [['scripts/moon.mjs', 'info'], ['scripts/emit-types.mjs']]) {
   const step = spawnSync(process.execPath, args, { stdio: 'inherit' });
   if (step.status !== 0) process.exit(step.status ?? 1);

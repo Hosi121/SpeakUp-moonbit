@@ -1,5 +1,6 @@
 members = [
   ".",
-  "packages/servicekit",
-  "examples/servicekit",
+  "vendor/servicekit/mysql",
+  "vendor/servicekit/ws_session",
+  "examples/js-boundary",
 ]

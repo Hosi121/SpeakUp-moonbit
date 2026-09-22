@@ -1,8 +1,8 @@
 import {
-  "hosi121/servicekit/wire",
+  "hosi121/speakup/wire",
   "moonbitlang/core/json",
-  "hosi121/servicekit/bridge",
-  "hosi121/servicekit_example/platform",
+  "hosi121/speakup/bridge",
+  "hosi121/js_boundary_fixture/platform",
 }
 
 options(

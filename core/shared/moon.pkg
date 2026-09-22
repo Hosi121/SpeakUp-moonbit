@@ -1,5 +1,5 @@
 import {
-  "hosi121/servicekit/wire",
+  "hosi121/speakup/wire",
   "moonbitlang/core/json",
   "hosi121/speakup/conversation",
 }
