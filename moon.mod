@@ -7,3 +7,7 @@ preferred_target = "js"
 source = "core"
 
 repository = "https://github.com/Hosi121/SpeakUp-moonbit"
+
+import {
+  "moonbitlang/async@0.22.1",
+}

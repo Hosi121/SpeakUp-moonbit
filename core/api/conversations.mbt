@@ -25,12 +25,12 @@ fn conversation_dto(v : Json) -> @shared.ConversationDto raise {
       {
         id: s.first,
         username: string(v, "first_username"),
-        avatar_url: @platform.publicUrl(string(v, "first_avatar")),
+        avatar_url: (host().public_url)(string(v, "first_avatar")),
       },
       {
         id: s.second,
         username: string(v, "second_username"),
-        avatar_url: @platform.publicUrl(string(v, "second_avatar")),
+        avatar_url: (host().public_url)(string(v, "second_avatar")),
       },
     ],
     event_start: iso(string(v, "event_start")),
@@ -67,11 +67,11 @@ async fn change_conversation(
     let row = conversation_row(id, uid)
     let before : @conversation.Snapshot = @json.from_json(row)
     let after = if action == "start" {
-      @conversation.begin(before, uid, @platform.nowMillis())
+      @conversation.begin(before, uid, (host().now_millis)())
     } else if action == "cancel" {
-      @conversation.cancel(before, uid, @platform.nowMillis())
+      @conversation.cancel(before, uid, (host().now_millis)())
     } else {
-      @conversation.finish(before, uid, @platform.nowMillis())
+      @conversation.finish(before, uid, (host().now_millis)())
     }
     let dto = conversation_dto(row)
     if after.revision == before.revision {

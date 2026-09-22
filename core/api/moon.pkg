@@ -7,10 +7,6 @@ import {
 }
 
 options(
-  targets: {
-    "runtime.mbt": [ "js" ],
-    "routes.mbt": [ "js" ],
-    "conversations.mbt": [ "js" ],
-  },
+  targets: { "js.mbt": [ "js" ] },
   link: { "js": { "format": "esm", "exports": [ "handle" ] } },
 )

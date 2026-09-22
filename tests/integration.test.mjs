@@ -4,7 +4,12 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { WebSocket } from 'ws';
 import mysql from 'mysql2/promise';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, generateKeyPairSync } from 'node:crypto';
+import { SignJWT, importPKCS8, importSPKI, jwtVerify } from 'jose';
+const testKeys = generateKeyPairSync('rsa', { modulusLength: 2048, privateKeyEncoding: { type: 'pkcs8', format: 'pem' }, publicKeyEncoding: { type: 'spki', format: 'pem' } });
+import { nativeEnv, nativeExecutable } from '../scripts/native-env.mjs';
+const native = process.env.SERVER_RUNTIME === 'native';
+const serverExecutable = process.env.TEST_NATIVE_EXECUTABLE ?? nativeExecutable;
 
 // Only the disposable, seeded port database. No source application secrets.
 const base = 'http://127.0.0.1:18081';
@@ -22,8 +27,8 @@ before(async () => {
   database = await mysql.createConnection(process.env.TEST_DATABASE_URL ?? 'mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit');
   const [user] = await database.execute("INSERT INTO users(username,email) VALUES('Outside',?)", [`outside-${randomUUID()}@example.test`]);
   outsiderId = user.insertId;
-  child = spawn(process.execPath, ['server/main.ts'], { env: { ...process.env,
-    AUTH_MODE: 'development', DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit', PORT: '18081', HOST: '127.0.0.1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  child = spawn(native ? serverExecutable : process.execPath, native ? [] : ['server/main.ts'], { env: { ...(native ? nativeEnv() : process.env),
+    AUTH_MODE: 'development', JWT_PRIVATE_KEY: testKeys.privateKey, JWT_PUBLIC_KEY: testKeys.publicKey, DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit', PORT: '18081', HOST: '127.0.0.1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.on('data', b => logs += b); child.stderr.on('data', b => logs += b);
   await Promise.race([
     (async () => { for (let i = 0; i < 100; i++) { try { const r = await fetch(base + '/health'); if (r.ok) return; } catch {} await new Promise(r => setTimeout(r, 50)); } throw new Error(logs); })(),
@@ -31,7 +36,7 @@ before(async () => {
   ]);
   alice = await login('alice@example.test'); bob = await login('bob@example.test');
 });
-after(async () => { child?.kill('SIGTERM'); if (child && child.exitCode === null) await once(child, 'exit'); await database?.end(); });
+after(async () => { child?.kill('SIGTERM'); if (child && child.exitCode === null) await once(child, 'exit'); await database?.end(); assert.doesNotMatch(logs, /ERROR: AddressSanitizer|runtime error:/); });
 
 test('authentication, memo isolation and concurrent upsert', async () => {
   assert.equal((await request('/memo')).status, 401);
@@ -232,4 +237,78 @@ test('cancelling a pending invitation is idempotent and creates no learning hist
   assert.equal(second.body.started_at, 0); assert.equal(second.body.ended_at, 0);
   assert.ok(!(await request('/conversations/history', alice)).body.some(value => value.id === call.id));
   assert.ok(!(await request('/conversations', alice)).body.some(value => value.id === call.id));
+});
+
+test('RS256 interoperates with jose and rejects altered claims or signatures', async () => {
+  const publicKey = await importSPKI(testKeys.publicKey, 'RS256');
+  assert.equal((await jwtVerify(alice, publicKey, { issuer: 'speakup', audience: 'speakup' })).payload.user_id, '1');
+  const privateKey = await importPKCS8(testKeys.privateKey, 'RS256');
+  const seconds = Math.floor(Date.now() / 1000);
+  const claims = { user_id: '1', iss: 'speakup', aud: 'speakup', iat: seconds, exp: seconds + 300 };
+  const sign = overrides => new SignJWT({ ...claims, ...overrides }).setProtectedHeader({ alg: 'RS256' }).sign(privateKey);
+  assert.equal((await request('/user/info', await sign({}))).body.id, 1);
+  assert.equal((await request('/user/info', await sign({ aud: ['other', 'speakup'] }))).body.id, 1);
+  for (const invalid of [{ iss: 'wrong' }, { aud: 'wrong' }, { exp: seconds - 1 }, { nbf: seconds + 60 }, { user_id: '0' }, { user_id: '1.5' }, { user_id: '01' }, { user_id: '1e0' }, { user_id: 1 }, { exp: undefined }]) {
+    assert.equal((await request('/user/info', await sign(invalid))).status, 401);
+  }
+  const parts = alice.split('.');
+  const tampered = [parts[0], Buffer.from(JSON.stringify({ ...claims, user_id: '2' })).toString('base64url'), parts[2]].join('.');
+  assert.equal((await request('/user/info', tampered)).status, 401);
+});
+
+test('avatar multipart parsing preserves image bytes and rejects invalid content', async () => {
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
+  const send = async bytes => {
+    const form = new FormData(); form.set('description', 'first field'); form.set('avatar', new Blob([bytes]), 'untrusted.png');
+    return fetch(base + '/user/avatar', { method: 'PUT', headers: { Authorization: `Bearer ${alice}` }, body: form });
+  };
+  const wrongField = new FormData(); wrongField.set('wrong', new Blob([png]), 'avatar');
+  assert.equal((await fetch(base + '/user/avatar', { method: 'PUT', headers: { Authorization: `Bearer ${alice}` }, body: wrongField })).status, 400);
+  const response = await send(png);
+  assert.equal(response.status, 200);
+  const profile = (await request('/user/info', alice)).body;
+  const path = new URL(profile.avatar_url).pathname;
+  const image = await fetch(base + path);
+  assert.equal(image.headers.get('content-type'), 'image/png');
+  assert.deepEqual(Buffer.from(await image.arrayBuffer()), png);
+  assert.equal((await send(png)).status, 200, 'an existing upload directory must be reusable');
+  assert.equal((await send(Buffer.from('not an image'))).status, 400);
+  assert.equal((await send(Buffer.alloc(2 * 1024 * 1024 + 1))).status, 413);
+  // Do not change later browser snapshots or leave a fake avatar on the seed.
+  await database.execute("UPDATE users SET avatar_url='' WHERE id=1");
+});
+
+test('signaling progresses while every database worker waits on a row lock', { timeout: 15000 }, async () => {
+  const call = await direct();
+  const a = connect(), b = connect();
+  let pending = [];
+  try {
+    await Promise.all([once(a.ws, 'open'), once(b.ws, 'open')]);
+    a.ws.send(JSON.stringify({ type: 'Authorization', token: `Bearer ${alice}`, room: call.id }));
+    await a.next();
+    b.ws.send(JSON.stringify({ type: 'Authorization', token: `Bearer ${bob}`, room: call.id }));
+    await Promise.all([a.next(), b.next()]);
+    b.ws.send(JSON.stringify({ type: 'offer', offer: { type: 'offer', sdp: 'v=0\r\n' } })); await a.next();
+    a.ws.send(JSON.stringify({ type: 'answer', answer: { type: 'answer', sdp: 'v=0\r\n' } })); await b.next();
+    await database.beginTransaction();
+    await database.execute('SELECT user_id FROM memos WHERE user_id=1 FOR UPDATE');
+    pending = Array.from({ length: 10 }, () => request('/memo', alice, 'PUT', { memo1: 'DB locked', memo2: '' }));
+    let blocked = false;
+    const deadline = Date.now() + 3000;
+    while (Date.now() < deadline) {
+      const [processes] = await database.query('SHOW FULL PROCESSLIST');
+      if (processes.filter(p => p.Info?.startsWith('INSERT INTO memos')).length === 10) { blocked = true; break; }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    assert.ok(blocked, 'all 10 database slots must be waiting before measuring relay progress');
+    for (let i = 0; i < 10; i++) {
+      const ice = { type: 'ice-candidate', candidate: { candidate: `candidate:${i} 1 udp 1 127.0.0.1 9999 typ host`, sdpMid: '0', sdpMLineIndex: 0 } };
+      b.ws.send(JSON.stringify(ice)); assert.deepEqual(await a.next(), ice);
+    }
+  } finally {
+    await database.rollback();
+    const results = await Promise.all(pending);
+    a.ws.terminate(); b.ws.terminate();
+    assert.ok(results.every(r => r.status === 200));
+  }
 });

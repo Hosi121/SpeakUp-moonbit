@@ -32,13 +32,16 @@ jobs:
         with:
           go-version: 1.23.5
           cache-dependency-path: bench/go/go.sum
+      - run: sudo apt-get update && sudo apt-get install -y libmariadb-dev libssl-dev fonts-noto-cjk fonts-noto-color-emoji
       - run: npm ci && npm --prefix frontend ci
       - run: bash scripts/install-moon.sh
       - run: npm run generate && npm run check
       - run: npm --prefix frontend run lint
       - run: npm run fixtures && git diff --exit-code -- contract core/platform
       - run: npm run db:migrate && npm run db:seed
+      - run: npm run build:native && node scripts/build-bench.mjs
       - run: npm test && npm run test:native
+      - run: npm run test:integration:native
       - run: npx playwright install --with-deps chromium
-      - run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk fonts-noto-color-emoji
       - run: npm run test:browser
+      - run: npm run test:browser:native

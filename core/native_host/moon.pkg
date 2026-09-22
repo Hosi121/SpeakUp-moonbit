@@ -1,0 +1,17 @@
+import {
+  "hosi121/speakup/api",
+  "moonbitlang/async",
+  "moonbitlang/async/raw_fd",
+  "moonbitlang/async/http",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/base64",
+}
+
+supported_targets = "native"
+
+options(
+  "native-stub": [ "host.c" ],
+  link: { "native": { "cc-link-flags": "-lmariadb -lcrypto -lpthread" } },
+)

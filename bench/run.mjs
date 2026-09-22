@@ -8,7 +8,9 @@ import { WebSocket } from 'ws';
 
 mkdirSync('.tools', { recursive: true });
 execFileSync('go', ['build', ...(process.env.BENCH_GO_RACE ? ['-race'] : []), '-o', '../../.tools/go-bench', '.'], { cwd: 'bench/go', stdio: 'inherit' });
-const rounds = Number(process.env.BENCH_ROUNDS ?? 5);
+execFileSync(process.execPath, ['scripts/build-bench.mjs'], { stdio: 'inherit' });
+const kinds = ['go-corrected', 'moonbit-js', 'moonbit-native'];
+const rounds = Number(process.env.BENCH_ROUNDS ?? 6);
 const roomCount = Number(process.env.BENCH_ROOMS ?? 32);
 const messages = Number(process.env.BENCH_MESSAGES ?? 3000);
 const results = [];
@@ -29,9 +31,9 @@ async function connect(port, room, user) {
   });
   await once(ws, 'open'); return { ws, next };
 }
-for (let round = 0; round < rounds; round++) for (const kind of (round % 2 ? ['moonbit-js', 'go-corrected'] : ['go-corrected', 'moonbit-js'])) {
-  const port = kind === 'go-corrected' ? 18101 : 18102;
-  const child = kind === 'go-corrected' ? spawn('.tools/go-bench', { env: { ...process.env, PORT: String(port), GOMAXPROCS: '1' } }) : spawn(process.execPath, ['bench/moonbit-server.mjs'], { env: { ...process.env, PORT: String(port) } });
+for (let round = 0; round < rounds; round++) for (const kind of (round % 2 ? [...kinds.slice(round % 3), ...kinds.slice(0, round % 3)].reverse() : [...kinds.slice(round % 3), ...kinds.slice(0, round % 3)])) {
+  const port = 18101 + kinds.indexOf(kind);
+  const child = kind === 'go-corrected' ? spawn('.tools/go-bench', { env: { ...process.env, PORT: String(port), GOMAXPROCS: '1' } }) : kind === 'moonbit-native' ? spawn('.tools/native-bench', { env: { ...process.env, PORT: String(port) } }) : spawn(process.execPath, ['bench/moonbit-server.mjs'], { env: { ...process.env, PORT: String(port) } });
   let log = ''; child.stderr.on('data', b => log += b);
   const pairs = [];
   try {
@@ -61,5 +63,5 @@ for (let round = 0; round < rounds; round++) for (const kind of (round % 2 ? ['m
     results.push(row); console.log(JSON.stringify(row));
   } finally { for (const pair of pairs) for (const c of pair) c.ws.terminate(); child.kill(); await once(child, 'exit'); if (/DATA RACE/.test(log)) throw new Error(log); }
 }
-const report = { measuredAt: new Date().toISOString(), cpu: cpus()[0].model, logicalCpus: cpus().length, os: `${platform()} ${release()}`, node: process.version, go: execFileSync('go', ['version'], { encoding: 'utf8' }).trim(), moon: execFileSync(process.execPath, ['scripts/moon.mjs', 'version'], { encoding: 'utf8' }).split('\n')[0], methodology: 'Loopback, 32 concurrent room tasks by default, one message in flight per room, 1000 warmup messages per room, one Go scheduler CPU, Node single JS thread. Alternating runtime order. No auth/DB in either server. Measures signaling relay only, not RTP or production capacity. Correctness checks every received payload. RSS is an end-of-trial sample, not peak.', results };
-writeFileSync(process.env.BENCH_GO_RACE ? '.tools/race-results.json' : 'bench/results.json', JSON.stringify(report, null, 2) + '\n');
+const report = { measuredAt: new Date().toISOString(), cpu: cpus()[0].model, logicalCpus: cpus().length, os: `${platform()} ${release()}`, node: process.version, go: execFileSync('go', ['version'], { encoding: 'utf8' }).trim(), moon: execFileSync(process.execPath, ['scripts/moon.mjs', 'version'], { encoding: 'utf8' }).split('\n')[0], methodology: 'Loopback, 32 concurrent room tasks by default, one message in flight per room, 1000 warmup messages per room, one Go scheduler CPU, Node single JS thread, native single MoonBit event loop. Rotating runtime order (all six permutations with six rounds). No auth/DB in either server. Measures signaling relay only, not RTP or production capacity. Correctness checks every received payload. RSS is an end-of-trial sample, not peak.', results };
+writeFileSync(process.env.BENCH_OUTPUT ?? (process.env.BENCH_GO_RACE ? '.tools/race-results.json' : 'bench/results.json'), JSON.stringify(report, null, 2) + '\n');

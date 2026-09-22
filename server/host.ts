@@ -58,8 +58,8 @@ export async function verifyToken(header: string): Promise<number> {
   const match = /^Bearer (\S+)$/i.exec(header);
   const k = await keys;
   if (!match || !k) throw new Error('credentials');
-  const { payload } = await jwtVerify(match[1], k.publicKey, { algorithms: ['RS256'], issuer: 'speakup', audience: 'speakup' });
-  const id = typeof payload.user_id === 'string' ? Number(payload.user_id) : NaN;
+  const { payload } = await jwtVerify(match[1], k.publicKey, { algorithms: ['RS256'], issuer: 'speakup', audience: 'speakup', requiredClaims: ['exp'] });
+  const id = typeof payload.user_id === 'string' && /^[1-9][0-9]{0,9}$/.test(payload.user_id) ? Number(payload.user_id) : NaN;
   if (!Number.isInteger(id) || id <= 0 || id > 2147483647) throw new Error('credentials');
   return id;
 }

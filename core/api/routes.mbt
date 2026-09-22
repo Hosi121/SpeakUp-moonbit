@@ -38,7 +38,7 @@ async fn route(
     let id = number(u, "id")
     let token = invoke({ "operation": "issue_token", "user_id": id.to_json() })
     query("UPDATE users SET updated_at=? WHERE id=?", [
-      @platform.now().to_json(),
+      (host().now)().to_json(),
       id.to_json(),
     ])
     |> ignore
@@ -73,7 +73,7 @@ async fn route(
         [
           username.to_json(),
           email.to_json(),
-          @platform.now().to_json(),
+          (host().now)().to_json(),
           uid.to_json(),
         ],
       )
@@ -88,11 +88,11 @@ async fn route(
       }
       query("UPDATE users SET avatar_url=?,updated_at=? WHERE id=?", [
         avatar.to_json(),
-        @platform.now().to_json(),
+        (host().now)().to_json(),
         uid.to_json(),
       ])
       |> ignore
-      return { "avatar_url": @platform.publicUrl(avatar).to_json() }
+      return { "avatar_url": (host().public_url)(avatar).to_json() }
     }
     ("GET", "/memo") => {
       let result = rows("SELECT memo1,memo2 FROM memos WHERE user_id=?", params)
@@ -138,7 +138,7 @@ async fn route(
         "friends": result
         .map(fn(v) raise {
           let f : @shared.FriendSummaryDto = @json.from_json(v)
-          { ..f, avatar_url: @platform.publicUrl(f.avatar_url), }.to_json()
+          { ..f, avatar_url: (host().public_url)(f.avatar_url), }.to_json()
         })
         .to_json(),
       }
@@ -166,7 +166,7 @@ async fn route(
         raise Invalid(403, "Administrator required")
       }
       let start = string(body, "event_start")
-      let times = @platform.eventTimes(
+      let times = (host().event_times)(
         if start == "" {
           string(body, "dateTime")
         } else {
@@ -421,7 +421,7 @@ async fn route(
       if avatar == "" {
         raise Invalid(404, "User has no avatar")
       }
-      return { "avatar_url": @platform.publicUrl(avatar).to_json() }
+      return { "avatar_url": (host().public_url)(avatar).to_json() }
     }
     ("GET", ["", "friend", name]) => {
       let f : @shared.FriendSummaryDto = @json.from_json(
@@ -430,7 +430,7 @@ async fn route(
           [uid.to_json(), name.to_json()],
         ),
       )
-      return { ..f, avatar_url: @platform.publicUrl(f.avatar_url), }.to_json()
+      return { ..f, avatar_url: (host().public_url)(f.avatar_url), }.to_json()
     }
     _ => raise Invalid(404, "Not found")
   }

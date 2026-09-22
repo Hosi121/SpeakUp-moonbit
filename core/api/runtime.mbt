@@ -5,31 +5,38 @@ priv suberror ApiError {
 }
 
 ///|
-async fn suspend(
-  f : ((String) -> Unit, (ApiError) -> Unit) -> Unit,
-) -> String raise ApiError = "%async.suspend"
+pub(all) suberror HostError {
+  HostError(String)
+}
 
 ///|
-fn completion(f : (String, String) -> Unit) -> @platform.DispatchDoneCallback = "%identity"
+pub(all) struct Host {
+  invoke : async (Json) -> Json
+  now : () -> String
+  now_millis : () -> Double
+  public_url : (String) -> String
+  event_times : (String) -> String
+}
 
 ///|
-fn run(f : async () -> Unit noraise) -> Unit = "%async.run"
+let configured_host : Ref[Host?] = { val: None, }
+
+///|
+pub fn configure_host(value : Host) -> Unit {
+  configured_host.val = Some(value)
+}
+
+///|
+fn host() -> Host {
+  configured_host.val.unwrap()
+}
 
 ///|
 async fn invoke(request : Json) -> Json {
-  let text = suspend(fn(ok, err) {
-    @platform.dispatch(
-      request.stringify(),
-      completion(fn(error, value) {
-        if error == "" {
-          ok(value)
-        } else {
-          err(Upstream(error))
-        }
-      }),
-    )
-  })
-  @json.parse(text)
+  (host().invoke)(request) catch {
+    HostError(code) => raise Upstream(code)
+    e => raise e
+  }
 }
 
 ///|
@@ -114,7 +121,7 @@ fn profile(v : Json) -> @shared.UserProfileDto raise {
   let p : @shared.UserProfileDto = @json.from_json(v)
   {
     ..p,
-    avatar_url: @platform.publicUrl(p.avatar_url),
+    avatar_url: (host().public_url)(p.avatar_url),
     created_at: iso(p.created_at),
     updated_at: iso(p.updated_at),
   }
@@ -164,45 +171,53 @@ let user_columns : String = "id, username, email, avatar_url, role, created_at, 
 let event_sql : String = "SELECT e.id, e.event_start, e.event_end, e.theme_id, t.theme_text, t.topic1, t.topic2, t.topic3 FROM events e JOIN ai_themes t ON t.id=e.theme_id"
 
 ///|
-pub fn handle(
+pub(all) struct ApiResponse {
+  status : Int
+  body : String
+}
+
+///|
+fn response(status : Int, body : String) -> ApiResponse {
+  { status, body, }
+}
+
+///|
+pub async fn execute(
   verb : String,
   path : String,
   uid : Int,
   body : String,
   query_text : String,
-  respond : (Int, String) -> Unit,
-) -> Unit {
-  run(async fn() noraise {
-    try {
-      let value = if body == "" {
-        Json::empty_object()
-      } else {
-        @json.parse(body) catch {
-          _ => raise Invalid(400, "Invalid JSON")
-        }
+) -> ApiResponse {
+  try {
+    let value = if body == "" {
+      Json::empty_object()
+    } else {
+      @json.parse(body) catch {
+        _ => raise Invalid(400, "Invalid JSON")
       }
-      guard value is Object(_) else { raise Invalid(400, "Expected object") }
-      let result = route(verb, path, uid, value, query_text)
-      respond(200, result.stringify())
-    } catch {
-      Invalid(code, message) =>
-        respond(code, ({ "error": message.to_json() } : Json).stringify())
-      Upstream("credentials") =>
-        respond(401, "{\"error\":\"Invalid email or password\"}")
-      Upstream("not_configured") =>
-        respond(503, "{\"error\":\"External service is not configured\"}")
-      Upstream("conflict") => respond(409, "{\"error\":\"Already exists\"}")
-      @conversation.NotParticipant =>
-        respond(403, "{\"error\":\"Not a participant\"}")
-      @conversation.NotStarted =>
-        respond(409, "{\"error\":\"Both participants must connect first\"}")
-      @conversation.AlreadyCompleted =>
-        respond(409, "{\"error\":\"Conversation already completed\"}")
-      @conversation.AlreadyStarted =>
-        respond(
-          409, "{\"error\":\"Conversation already started; finish it instead\"}",
-        )
-      _ => respond(500, "{\"error\":\"Request failed\"}")
     }
-  })
+    guard value is Object(_) else { raise Invalid(400, "Expected object") }
+    let result = route(verb, path, uid, value, query_text)
+    response(200, result.stringify())
+  } catch {
+    Invalid(code, message) =>
+      response(code, ({ "error": message.to_json() } : Json).stringify())
+    Upstream("credentials") =>
+      response(401, "{\"error\":\"Invalid email or password\"}")
+    Upstream("not_configured") =>
+      response(503, "{\"error\":\"External service is not configured\"}")
+    Upstream("conflict") => response(409, "{\"error\":\"Already exists\"}")
+    @conversation.NotParticipant =>
+      response(403, "{\"error\":\"Not a participant\"}")
+    @conversation.NotStarted =>
+      response(409, "{\"error\":\"Both participants must connect first\"}")
+    @conversation.AlreadyCompleted =>
+      response(409, "{\"error\":\"Conversation already completed\"}")
+    @conversation.AlreadyStarted =>
+      response(
+        409, "{\"error\":\"Conversation already started; finish it instead\"}",
+      )
+    _ => response(500, "{\"error\":\"Request failed\"}")
+  }
 }

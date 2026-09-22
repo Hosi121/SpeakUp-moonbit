@@ -13,9 +13,9 @@
     "moon": "node scripts/moon.mjs",
     "generate": "node scripts/generate.mjs",
     "build:core": "node scripts/build.mjs",
-    "build": "npm run build:core && npm --prefix frontend run build",
-    "start": "node --env-file-if-exists=.env server/main.ts",
-    "dev": "npm run build:core && node scripts/dev.mjs",
+    "build": "npm run build:core && npm run build:native && npm --prefix frontend run build",
+    "start": "node scripts/start-native.mjs",
+    "dev": "npm run build:core && npm run build:native && node scripts/dev.mjs",
     "check": "npm run build:core && tsc --noEmit && npm --prefix frontend run build && node scripts/check-boundaries.mjs",
     "test": "npm run build:core && npm run moon -- test && node --test tests/*.test.mjs",
     "test:integration": "node --test tests/integration.test.mjs",
@@ -23,8 +23,13 @@
     "fixtures": "node scripts/capture.mjs",
     "db:migrate": "node --env-file-if-exists=.env server/migrate.ts",
     "db:seed": "node --env-file-if-exists=.env server/seed.ts",
-    "test:native": "node scripts/moon.mjs test --target native core/shared core/signaling core/matching core/conversation",
-    "test:browser": "playwright test --global-timeout=120000"
+    "test:native": "node scripts/test-native.mjs",
+    "test:browser": "playwright test --global-timeout=120000",
+    "build:native": "node scripts/build-native.mjs",
+    "start:native": "node scripts/start-native.mjs",
+    "test:integration:native": "SERVER_RUNTIME=native node --test tests/integration.test.mjs",
+    "test:browser:native": "SERVER_RUNTIME=native playwright test --global-timeout=120000",
+    "start:node": "node --env-file-if-exists=.env server/main.ts"
   },
   "dependencies": {
     "jose": "6.2.12",

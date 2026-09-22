@@ -8,16 +8,19 @@
 flowchart LR
   UI[React / TypeScript] --> S[MoonBit shared: DTO / 変換 / protocol]
   UI --> B[Browser WebRTC adapter]
-  B <-->|SDP / ICE| W[Node WebSocket transport]
+  B <-->|SDP / ICE| W[MoonBit native WebSocket transport]
   W --> H[MoonBit signaling state machine]
-  UI --> N[Node HTTP transport]
+  UI --> N[MoonBit native HTTP transport]
   N --> A[MoonBit API / matching]
   A --> S
   A --> C[MoonBit conversation lifecycle]
   S --> C
-  A --> G[TS2Mbt generated typed bridge]
-  G --> IO[Node MySQL / JWT / external HTTP adapters]
-  IO --> DB[(MySQL connection pool)]
+  A --> G[型付き Host interface]
+  G --> IO[Native DB workers / OpenSSL / async HTTP]
+  G -. 比較用 JS backend .-> J[TS2Mbt generated bridge]
+  J --> JS[Node adapters]
+  IO --> DB[(MySQL)]
+  JS --> DB
   B <-->|音声: direct または TURN| P[相手のブラウザ]
 ```
 
@@ -25,7 +28,7 @@ React/MUI の描画とブラウザの WebRTC オブジェクトを TS に残し�
 
 イベントのラウンドと随時通話を同じ会話で扱うよう、ドメインを再設計した。[会話モデル](domain-model.md)に遷移、参加者の制約、履歴・振り返り、接続との分離を記載している。
 
-`core/shared` に DTO と画面向け変換を定義し、frontend と backend が同じ型を使う。画面固有の型・モック専用の型まで無理に共有していない。JS target の一つの MoonBit module であり、frontend 全体を MoonBit の UI framework に書き直したものではない。
+`core/shared` に DTO と画面向け変換を定義し、frontend と backend が同じ型を使う。画面固有の型・モック専用の型まで無理に共有していない。JS と native の両 target を持つ MoonBit module であり、frontend 全体を MoonBit の UI framework に書き直したものではない。
 
 ## 通話サーバのボトルネック
 
@@ -43,7 +46,7 @@ frontend でも offerer と開始回数が render 内のローカル変数、開
 
 新構成は認証後に DB で room membership を一回調べ、接続後は MoonBit の map で転送先を引く。待機→両者到着→offer→answer の順序を検証し、切断・重複接続を扱う。1 接続あたり 64 KiB/frame、100 messages/sec、送信 backlog 256 KiB、認証待ち 5 秒、ping/pong と全体接続数の上限を持つ。
 
-JS 出力の Node 実行では、JSON 検証・認証・転送が一つの event loop の CPU を共有する。大きな同期処理、接続急増時の RSA 検証、DB pool の待ち、遅い接続への送信が候補になる。部屋単位の状態は一つのプロセスにあるため、複数プロセス化には同じ部屋を同じ所有者へ送るルーティングが必要。この版は単一プロセスを対象とする。
+native でも JS/Node でも、JSON 検証・認証・転送が一つの event loop の CPU を共有する。native は DB の同期処理を C worker に分離するが、CPU の並列処理を自動で増やす構成ではない。大きな同期処理、接続急増時の RSA 検証、DB pool の待ち、遅い接続への送信が候補になる。部屋単位の状態は一つのプロセスにあるため、複数プロセス化には同じ部屋を同じ所有者へ送るルーティングが必要。この版は単一プロセスを対象とする。
 
 異なる NAT 間で直接つながらない場合は TURN が必要。`/rtc-config` はサーバ側の TURN secret から期限付き credentials を作る。ローカル試験は host candidate であり、実インターネット上の TURN 実機試験は未実施。[TURN の説明](https://webrtc.org/getting-started/turn-server)
 
@@ -68,7 +71,9 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 - DB の ID は signed 32-bit Int。HTTP/WS 入力で整数と範囲を検証する。会話の時刻は整数の epoch milliseconds（Double の安全な整数範囲）、既存 event/reflection の表示時刻は ISO 文字列。任意の event/round は両方 0 を随時通話とする平坦な DTO で渡し、Option の内部表現を公開しない。
 - `Json` はネットワーク・DB のシリアライズに使う。ドメインの任意 JS object としての `Any` は使わない。`npm run check` が手書き TS、MoonBit、生成 bridge、公開宣言を検査する。
 
-`mizchi/js` / `mizchi/npm_typed` / `mizchi/x` も用途を確認した。この版は Node の既存 HTTP/WS/MySQL/JWT ランタイムと React を保つ JS target を選び、共通の小さな host interface を TS2Mbt で生成した。サーバ I/O の native 移植は実施していない。shared/signaling/matching の純粋部分は native でもコンパイル可能。native の I/O は [`moonbitlang/async`](https://docs.moonbitlang.com/en/latest/language/async-experimental.html) や [`mizchi/x`](https://github.com/mizchi/x) を次の候補にできるが、現測定から native サーバの速さを推測しない。
+`mizchi/js` / `mizchi/npm_typed` / `mizchi/x` も用途を確認した。初回は JS target と小さな host interface を TS2Mbt で生成した。現在は業務 API に型付き Host を注入し、native は MoonBit async と Connector/C・OpenSSL、JS は従来の生成 bridge を使う。frontend の DTO とドメインモデルを共通に保ち、実行環境の依存を分離する。[native の構成・検証・制約](native.md)。
+
+Mbt2TS の公開宣言には JS export から到達する型だけを抽出する。native 専用の async Host や内部 Json interface は TypeScript ABI へ出さない。MySQL の native binding は全て opaque な型と具体的な引数・返値を持ち、任意の JS 値に相当する型を導入しない。
 
 ## 意図的な変更
 
@@ -76,7 +81,7 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 | --- | --- |
 | WebSocket Authorization | `room` を必須化。JWT 検証とその部屋の参加者確認をしてから join |
 | callType | 両者が来てから通知。false も明示。旧 Go の省略された false は decoder で受理 |
-| JWT | RS256 のみ、issuer/audience/exp を検証。既存の JWT を引き継がず再ログイン |
+| JWT | RS256 のみ、issuer/audience を検証し exp を必須化。user_id は正の整数の十進文字列。既存の JWT を引き継がず再ログイン |
 | event 作成 | ADMIN/SUPERUSER のみ。30 分。timezone なしは旧 Go と同じ UTC、返却は UTC に正規化 |
 | friend 一覧 | 固定 Alice/Bob/Charlie モックからユーザー本人の DB 一覧へ |
 | 空の一覧 | `null` ではなく `[]` |
@@ -88,7 +93,7 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 | roster 更新 | matching 開始時に event 行をロックして roster を凍結。公開 marker と会話を transaction で一括保存。空の結果も重複実行は 409、部分公開しない |
 | DB | MySQL は維持するが新規 schema。Ent の edge 列を使う旧 DB をそのまま接続しない |
 | メモ | user_id の UNIQUE と upsert で同時更新の重複作成を防止 |
-| avatar | 2 MiB 上限、画像形式確認、UUID の保存名、設定された公開 origin |
+| avatar | 2 MiB 上限、画像形式確認、暗号学的乱数による保存名、設定された公開 origin |
 | chat | 認証必須、20 秒 timeout。model は環境変数で変更可能 |
 
 これらはバグを含む既存動作の逐語的な互換再現ではなく、独立 repo としての意図的変更。既存サービスへの無停止切替を実施したものではない。
@@ -115,4 +120,4 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 
 source oracle は `contract/source/` の元コード抜粋を実行して生成する。入力はケースとして定義するが expected は手書きしない。`npm run fixtures` で再生成でき、CI が差分を検査する。純粋変換と旧 Go の message/avatar シリアライズを対象にした structural parity であり、全 endpoint を旧稼働環境へ replay した比較ではない。
 
-MoonBit type check / JS test / native core test、TypeScript strict check、frontend production build、MySQL API/WS integration、初回移植 DB の更新、Playwright 二ブラウザの音声受信と再接続・終了・振り返りを検証する。Supabase/OpenAI への実 API 呼び出し、TURN 実回線、production traffic の shadow/replay、canary は未実施。元の Ent DB のデータ移行は別作業。元 Go repo を変更せず残しており、今回の公開による本番切替はない。
+MoonBit type check / JS test / native core / crypto test、TypeScript strict check、frontend production build、JS/native 両方の MySQL API/WS integration（全 DB 接続のロック待ち中の中継を含む）、初回移植 DB の更新、Playwright 二ブラウザの音声受信と再接続・終了・振り返りを検証する。Supabase/OpenAI への実 API 呼び出し、TURN 実回線、production traffic の shadow/replay、canary は未実施。元の Ent DB のデータ移行は別作業。元 Go repo を変更せず残しており、今回の公開による本番切替はない。

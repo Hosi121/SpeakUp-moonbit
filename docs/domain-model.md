@@ -79,4 +79,4 @@ SDP/ICE の中継はその queue や DB を通らない。JSON を検証して�
 
 初回移植の schema からは `db:migrate` が一度だけ旧 `rooms` をコピーし、ID を保つ。旧表は保存し、新コードは会話表を読む。再実行で完了状態を初期化しない。旧 FINISHED には時刻がないため時刻を捏造せず停止する。旧表に二重割当があった場合もコピーを rollback する。いずれも移植 repo 用の隔離 DB でテストしている。
 
-元の Go/Ent DB の直接変換、本番切替、複数 signaling プロセスへの分散、native I/O サーバは対象外。旧 Go と新 JS の処理速度については [性能測定](performance.md) に条件と限界を分けて記載する。
+元の Go/Ent DB の直接変換、本番切替、複数 signaling プロセスへの分散は対象外。native I/O サーバは実装し、JS と同じ結合・ブラウザ試験を通す。Go 比較用実装・JS・native の処理速度については [性能測定](performance.md) に条件と限界を分けて記載する。

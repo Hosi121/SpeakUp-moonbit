@@ -1,0 +1,14 @@
+import {
+  "hosi121/speakup/native_transport" @transport,
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/async/websocket",
+  "moonbitlang/async/socket",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "native"
+
+pkgtype(kind: "executable")

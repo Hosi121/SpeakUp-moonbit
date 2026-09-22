@@ -1,0 +1,24 @@
+import {
+  "hosi121/speakup/api",
+  "hosi121/speakup/shared",
+  "hosi121/speakup/native_transport" @transport,
+  "hosi121/speakup/native_host" @host,
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/async/websocket",
+  "moonbitlang/async/socket",
+  "moonbitlang/async/io",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/os_error",
+  "moonbitlang/async/signal",
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "native"
+
+pkgtype(kind: "executable")
+
+options(
+  link: { "native": { "cc-link-flags": "-lmariadb -lcrypto -lpthread" } },
+)

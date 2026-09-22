@@ -23,9 +23,25 @@ for (const pkg of ['shared', 'signaling', 'api', 'matching']) {
     }
   }
   const source = ts.createSourceFile(out, readFileSync(out, 'utf8'), ts.ScriptTarget.Latest, true);
+  // Only include types reachable from the JS link exports. The API package also
+  // exposes native host injection, which is not part of the browser/Node ABI.
+  const required = new Set();
+  const collect = node => {
+    if (ts.isTypeReferenceNode(node) && ts.isIdentifier(node.typeName)) required.add(node.typeName.text);
+    ts.forEachChild(node, collect);
+  };
+  for (const node of source.statements) {
+    if (ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text)) collect(node);
+  }
+  for (let previous = -1; previous !== required.size;) {
+    previous = required.size;
+    for (const node of source.statements) {
+      if (ts.isInterfaceDeclaration(node) && required.has(node.name.text)) collect(node);
+    }
+  }
   const nodes = [];
   for (const node of source.statements) {
-    if (ts.isInterfaceDeclaration(node) && node.name.text !== 'ToJson') {
+    if (ts.isInterfaceDeclaration(node) && required.has(node.name.text) && node.name.text !== 'ToJson') {
       nodes.push(ts.factory.updateInterfaceDeclaration(node, node.modifiers, node.name, node.typeParameters, undefined, node.members));
     } else if (ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text)) {
       nodes.push(ts.factory.updateFunctionDeclaration(node, node.modifiers, node.asteriskToken, ts.factory.createIdentifier(names.get(node.name.text)), node.typeParameters, node.parameters, node.type, undefined));

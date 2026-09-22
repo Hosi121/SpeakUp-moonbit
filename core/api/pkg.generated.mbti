@@ -2,11 +2,30 @@
 package "hosi121/speakup/api"
 
 // Values
+pub fn configure_host(Host) -> Unit
+
+pub async fn execute(String, String, Int, String, String) -> ApiResponse
+
 pub fn handle(String, String, Int, String, String, (Int, String) -> Unit) -> Unit
 
 // Errors
+pub(all) suberror HostError {
+  HostError(String)
+}
 
 // Types and methods
+pub(all) struct ApiResponse {
+  status : Int
+  body : String
+}
+
+pub(all) struct Host {
+  invoke : async (Json) -> Json
+  now : () -> String
+  now_millis : () -> Double
+  public_url : (String) -> String
+  event_times : (String) -> String
+}
 
 // Type aliases
 
