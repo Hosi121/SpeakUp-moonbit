@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "../../navigation/links";
 import { navigate } from "../../navigation/location";
 import { Input } from "../ui/Field";
-import { signUp } from "../../services/authService";
+import { loadAuth, preloadAuth } from "../../services/authLoader";
 import Logo from "../../assets/logo";
 
 export default function SignUp() {
@@ -11,10 +11,12 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const submit = async () => {
+  const submit = async (form: HTMLFormElement) => {
     setBusy(true);
     setError("");
     try {
+      const { signUp } = await loadAuth();
+      if (!form.isConnected) return;
       await signUp(username, email, password);
       navigate("/login");
     } catch (error) {
@@ -31,7 +33,7 @@ export default function SignUp() {
         className="auth-form stack"
         onSubmit={(event) => {
           event.preventDefault();
-          void submit();
+          void submit(event.currentTarget);
         }}
       >
         <div className="brand-mark">
@@ -41,6 +43,7 @@ export default function SignUp() {
         <Input
           label="ユーザー名(セッション時の表示名)"
           autoComplete="nickname"
+          onFocus={preloadAuth}
           required
           value={username}
           onChange={(event) => setUsername(event.target.value)}
@@ -49,6 +52,7 @@ export default function SignUp() {
           label="Email"
           type="email"
           autoComplete="email"
+          onFocus={preloadAuth}
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -57,6 +61,7 @@ export default function SignUp() {
           label="パスワード"
           type="password"
           autoComplete="new-password"
+          onFocus={preloadAuth}
           required
           minLength={8}
           value={password}

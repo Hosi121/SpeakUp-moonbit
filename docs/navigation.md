@@ -1,5 +1,7 @@
 # 画面遷移と初回表示の軽量化
 
+このページは `7bf6ffc` で行った画面分割の記録。現在の認証フォームの先読みと追加計測は [認証コードの初期読み込み](auth-loading.md)を参照。
+
 2026-09-23、React Router を削除し、ブラウザの History API で既存の平坦な画面一覧を切り替える構成にした。frontend の直接 runtime 依存は React / React DOM。HTTP 応答の検査とドメイン型は引き続き MoonBit と Mbt2TS の生成宣言を使う。
 
 ## 実装の範囲

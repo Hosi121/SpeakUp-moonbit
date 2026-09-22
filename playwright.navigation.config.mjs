@@ -5,7 +5,8 @@ export default defineConfig({
   timeout: 30_000, use: { baseURL: 'http://127.0.0.1:5174', trace: 'retain-on-failure' },
   webServer: {
     command: 'npm --prefix frontend run preview -- --host 127.0.0.1 --port 5174 --strictPort',
-    url: 'http://127.0.0.1:5174/login', timeout: 30_000,
+    wait: { stdout: /Local:.*5174/ }, timeout: 30_000,
+    stdout: 'pipe', stderr: 'pipe',
     gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium', launchOptions: { args: [

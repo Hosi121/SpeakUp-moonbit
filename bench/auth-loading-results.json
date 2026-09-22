@@ -1,0 +1,2204 @@
+{
+  "navigation": {
+    "measured_at": "2026-09-22T18:25:59.177Z",
+    "node": "v24.13.0",
+    "chromium": "153.0.8010.12",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255H",
+    "clients": [
+      {
+        "label": "auth-eager",
+        "commit": "7bf6ffc25bdb67152b4c87d1591eeb44fb386b48",
+        "dirty": false,
+        "assets": [
+          {
+            "file": "Avatar-DILJP49U.js",
+            "bytes": 1426,
+            "gzip_bytes": 840
+          },
+          {
+            "file": "BottomNavigationTemplate-C579hah8.js",
+            "bytes": 705,
+            "gzip_bytes": 390
+          },
+          {
+            "file": "ChoiceGroup-C6tpevha.js",
+            "bytes": 415,
+            "gzip_bytes": 280
+          },
+          {
+            "file": "ConversationHistory-BXcpqc9W.js",
+            "bytes": 1346,
+            "gzip_bytes": 827
+          },
+          {
+            "file": "Dialog-Br1onKUy.js",
+            "bytes": 709,
+            "gzip_bytes": 447
+          },
+          {
+            "file": "Events-CXSejYTV.js",
+            "bytes": 4002,
+            "gzip_bytes": 1782
+          },
+          {
+            "file": "FriendList-CWj6LylW.js",
+            "bytes": 1015,
+            "gzip_bytes": 626
+          },
+          {
+            "file": "FriendRequest-P9m0LifK.js",
+            "bytes": 3526,
+            "gzip_bytes": 1514
+          },
+          {
+            "file": "Home-7dZgUs6H.js",
+            "bytes": 2353,
+            "gzip_bytes": 1283
+          },
+          {
+            "file": "Home-DAO-8Xlm.css",
+            "bytes": 113,
+            "gzip_bytes": 112
+          },
+          {
+            "file": "IconButton-lzf2mUEh.js",
+            "bytes": 195,
+            "gzip_bytes": 178
+          },
+          {
+            "file": "Memo-CGFYdu5T.js",
+            "bytes": 1789,
+            "gzip_bytes": 938
+          },
+          {
+            "file": "Message-D_lvWwDQ.js",
+            "bytes": 3000,
+            "gzip_bytes": 1550
+          },
+          {
+            "file": "MicCheck-egFiG8xj.js",
+            "bytes": 2525,
+            "gzip_bytes": 1361
+          },
+          {
+            "file": "Record-DkYkoQmj.js",
+            "bytes": 828,
+            "gzip_bytes": 471
+          },
+          {
+            "file": "Session-ByAj17kq.js",
+            "bytes": 11961,
+            "gzip_bytes": 4945
+          },
+          {
+            "file": "SessionFeedback-DEH12Bi7.js",
+            "bytes": 2577,
+            "gzip_bytes": 1328
+          },
+          {
+            "file": "SessionHistoryFriendlist-Uy6DHDgo.js",
+            "bytes": 1566,
+            "gzip_bytes": 950
+          },
+          {
+            "file": "SessionList-DQXI4-qg.js",
+            "bytes": 3259,
+            "gzip_bytes": 1535
+          },
+          {
+            "file": "SessionRecordForm-DS_2om6R.js",
+            "bytes": 4262,
+            "gzip_bytes": 1977
+          },
+          {
+            "file": "Settings-DnHmKfpb.js",
+            "bytes": 2588,
+            "gzip_bytes": 1234
+          },
+          {
+            "file": "Stats-BHoPawXZ.js",
+            "bytes": 1476,
+            "gzip_bytes": 862
+          },
+          {
+            "file": "TopSection-BDpO4zvt.js",
+            "bytes": 2321,
+            "gzip_bytes": 1207
+          },
+          {
+            "file": "adminPage-C5NbU_6m.js",
+            "bytes": 4293,
+            "gzip_bytes": 1787
+          },
+          {
+            "file": "conversationService-zYqeddWh.js",
+            "bytes": 520,
+            "gzip_bytes": 278
+          },
+          {
+            "file": "homeLogo-D8uGFtJ3.js",
+            "bytes": 4517,
+            "gzip_bytes": 1697
+          },
+          {
+            "file": "index-C970d2Z1.js",
+            "bytes": 300700,
+            "gzip_bytes": 94870
+          },
+          {
+            "file": "index-D8YwgkM9.css",
+            "bytes": 6854,
+            "gzip_bytes": 2243
+          },
+          {
+            "file": "memoService-biu8AsR7.js",
+            "bytes": 140,
+            "gzip_bytes": 133
+          },
+          {
+            "file": "userService-ksy_sL2h.js",
+            "bytes": 315,
+            "gzip_bytes": 241
+          }
+        ],
+        "packages": 228,
+        "runtime_packages": 5,
+        "direct_runtime_dependencies": [
+          "react",
+          "react-dom"
+        ]
+      },
+      {
+        "label": "auth-lazy",
+        "commit": "7bf6ffc25bdb67152b4c87d1591eeb44fb386b48",
+        "dirty": true,
+        "assets": [
+          {
+            "file": "Avatar-h2kvaNd_.js",
+            "bytes": 1426,
+            "gzip_bytes": 845
+          },
+          {
+            "file": "BottomNavigationTemplate-BvPlf7Q2.js",
+            "bytes": 705,
+            "gzip_bytes": 388
+          },
+          {
+            "file": "ChoiceGroup-NujipkPO.js",
+            "bytes": 415,
+            "gzip_bytes": 281
+          },
+          {
+            "file": "ConversationHistory-D935cRtE.js",
+            "bytes": 1407,
+            "gzip_bytes": 852
+          },
+          {
+            "file": "Dialog-CnJAXcSV.js",
+            "bytes": 709,
+            "gzip_bytes": 447
+          },
+          {
+            "file": "Events-zfelF1Zg.js",
+            "bytes": 4117,
+            "gzip_bytes": 1836
+          },
+          {
+            "file": "FriendList-fgRlE37n.js",
+            "bytes": 1096,
+            "gzip_bytes": 661
+          },
+          {
+            "file": "FriendRequest-w6SRq6UK.js",
+            "bytes": 3613,
+            "gzip_bytes": 1560
+          },
+          {
+            "file": "Home-BOdjudIE.js",
+            "bytes": 2442,
+            "gzip_bytes": 1329
+          },
+          {
+            "file": "Home-DAO-8Xlm.css",
+            "bytes": 113,
+            "gzip_bytes": 112
+          },
+          {
+            "file": "IconButton-DEUdQBfI.js",
+            "bytes": 195,
+            "gzip_bytes": 179
+          },
+          {
+            "file": "Memo-B9aWwyPc.js",
+            "bytes": 1850,
+            "gzip_bytes": 967
+          },
+          {
+            "file": "Message-Dk7E5_W9.js",
+            "bytes": 3095,
+            "gzip_bytes": 1588
+          },
+          {
+            "file": "MicCheck-DvnAYzaj.js",
+            "bytes": 2586,
+            "gzip_bytes": 1386
+          },
+          {
+            "file": "Record-Cb_DKC6X.js",
+            "bytes": 889,
+            "gzip_bytes": 502
+          },
+          {
+            "file": "Session-BgLectXl.js",
+            "bytes": 11996,
+            "gzip_bytes": 4956
+          },
+          {
+            "file": "SessionFeedback-C1YLsDdn.js",
+            "bytes": 2664,
+            "gzip_bytes": 1372
+          },
+          {
+            "file": "SessionHistoryFriendlist-BaOxaC6Y.js",
+            "bytes": 1632,
+            "gzip_bytes": 978
+          },
+          {
+            "file": "SessionList-Dqwo44cx.js",
+            "bytes": 3325,
+            "gzip_bytes": 1571
+          },
+          {
+            "file": "SessionRecordForm-9XL9Q3nD.js",
+            "bytes": 4365,
+            "gzip_bytes": 2022
+          },
+          {
+            "file": "Settings-C5iW3A6g.js",
+            "bytes": 2649,
+            "gzip_bytes": 1263
+          },
+          {
+            "file": "Stats-bZI5YCjS.js",
+            "bytes": 1551,
+            "gzip_bytes": 895
+          },
+          {
+            "file": "TopSection-CsIni_Fk.js",
+            "bytes": 2365,
+            "gzip_bytes": 1226
+          },
+          {
+            "file": "adminPage-B_SwT4f-.js",
+            "bytes": 4359,
+            "gzip_bytes": 1816
+          },
+          {
+            "file": "authService-CPjDS-2Y.js",
+            "bytes": 303,
+            "gzip_bytes": 224
+          },
+          {
+            "file": "conversationService-CneyS2gn.js",
+            "bytes": 522,
+            "gzip_bytes": 271
+          },
+          {
+            "file": "features-C5wauhtN.js",
+            "bytes": 1081,
+            "gzip_bytes": 531
+          },
+          {
+            "file": "homeLogo-D-Qw7mNd.js",
+            "bytes": 4517,
+            "gzip_bytes": 1700
+          },
+          {
+            "file": "index-BV6JYCRe.js",
+            "bytes": 161093,
+            "gzip_bytes": 53377
+          },
+          {
+            "file": "index-D8YwgkM9.css",
+            "bytes": 6854,
+            "gzip_bytes": 2243
+          },
+          {
+            "file": "memoService-DQGftQ2O.js",
+            "bytes": 147,
+            "gzip_bytes": 135
+          },
+          {
+            "file": "request-BslnW51p.js",
+            "bytes": 138183,
+            "gzip_bytes": 40822
+          },
+          {
+            "file": "userService-C6yZ1wl8.js",
+            "bytes": 312,
+            "gzip_bytes": 237
+          }
+        ],
+        "packages": 228,
+        "runtime_packages": 5,
+        "direct_runtime_dependencies": [
+          "react",
+          "react-dom"
+        ]
+      }
+    ],
+    "results": [
+      {
+        "profile": {
+          "name": "loopback",
+          "latency": 0,
+          "downloadThroughput": -1,
+          "uploadThroughput": -1,
+          "cpu": 1
+        },
+        "path": "/login",
+        "label": "auth-eager",
+        "initial_median_ms": 59.59999999997672,
+        "signup_median_ms": 27,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-C970d2Z1.js",
+            "encoded_bytes": 94870,
+            "decoded_bytes": 300700
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 59.59999999997672,
+            "signup_ms": 27,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 58.40000000002328,
+            "signup_ms": 26,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 56.699999999953434,
+            "signup_ms": 27.699999999953434,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 61.90000000002328,
+            "signup_ms": 26.29999999993015,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 57.59999999997672,
+            "signup_ms": 28.5,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 60.39999999990687,
+            "signup_ms": 26.699999999953434,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 69,
+            "signup_ms": 28.599999999976717,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "loopback",
+          "latency": 0,
+          "downloadThroughput": -1,
+          "uploadThroughput": -1,
+          "cpu": 1
+        },
+        "path": "/login",
+        "label": "auth-lazy",
+        "initial_median_ms": 57,
+        "signup_median_ms": 27.400000000023283,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-BV6JYCRe.js",
+            "encoded_bytes": 53377,
+            "decoded_bytes": 161093
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 51.29999999993015,
+            "signup_ms": 29.199999999953434,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 58.800000000046566,
+            "signup_ms": 27.400000000023283,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 53.40000000002328,
+            "signup_ms": 28.29999999993015,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 61,
+            "signup_ms": 26.29999999993015,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 51.79999999993015,
+            "signup_ms": 28.599999999976717,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 61.20000000006985,
+            "signup_ms": 25.300000000046566,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 57,
+            "signup_ms": 24.300000000046566,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "loopback",
+          "latency": 0,
+          "downloadThroughput": -1,
+          "uploadThroughput": -1,
+          "cpu": 1
+        },
+        "path": "/home",
+        "label": "auth-eager",
+        "initial_median_ms": 80.29999999993015,
+        "signup_median_ms": null,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-C970d2Z1.js",
+            "encoded_bytes": 94870,
+            "decoded_bytes": 300700
+          },
+          {
+            "file": "/assets/Home-7dZgUs6H.js",
+            "encoded_bytes": 1283,
+            "decoded_bytes": 2353
+          },
+          {
+            "file": "/assets/BottomNavigationTemplate-C579hah8.js",
+            "encoded_bytes": 390,
+            "decoded_bytes": 705
+          },
+          {
+            "file": "/assets/Avatar-DILJP49U.js",
+            "encoded_bytes": 840,
+            "decoded_bytes": 1426
+          },
+          {
+            "file": "/assets/TopSection-BDpO4zvt.js",
+            "encoded_bytes": 1207,
+            "decoded_bytes": 2321
+          },
+          {
+            "file": "/assets/Dialog-Br1onKUy.js",
+            "encoded_bytes": 447,
+            "decoded_bytes": 709
+          },
+          {
+            "file": "/assets/homeLogo-D8uGFtJ3.js",
+            "encoded_bytes": 1697,
+            "decoded_bytes": 4517
+          },
+          {
+            "file": "/assets/IconButton-lzf2mUEh.js",
+            "encoded_bytes": 178,
+            "decoded_bytes": 195
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 80.29999999993015,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 72.5,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 84.59999999997672,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 87.40000000002328,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 78.5,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 72.09999999997672,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 95.69999999995343,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "loopback",
+          "latency": 0,
+          "downloadThroughput": -1,
+          "uploadThroughput": -1,
+          "cpu": 1
+        },
+        "path": "/home",
+        "label": "auth-lazy",
+        "initial_median_ms": 71.40000000002328,
+        "signup_median_ms": null,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-BV6JYCRe.js",
+            "encoded_bytes": 53377,
+            "decoded_bytes": 161093
+          },
+          {
+            "file": "/assets/Home-BOdjudIE.js",
+            "encoded_bytes": 1329,
+            "decoded_bytes": 2442
+          },
+          {
+            "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+            "encoded_bytes": 388,
+            "decoded_bytes": 705
+          },
+          {
+            "file": "/assets/Avatar-h2kvaNd_.js",
+            "encoded_bytes": 845,
+            "decoded_bytes": 1426
+          },
+          {
+            "file": "/assets/TopSection-CsIni_Fk.js",
+            "encoded_bytes": 1226,
+            "decoded_bytes": 2365
+          },
+          {
+            "file": "/assets/Dialog-CnJAXcSV.js",
+            "encoded_bytes": 447,
+            "decoded_bytes": 709
+          },
+          {
+            "file": "/assets/features-C5wauhtN.js",
+            "encoded_bytes": 531,
+            "decoded_bytes": 1081
+          },
+          {
+            "file": "/assets/request-BslnW51p.js",
+            "encoded_bytes": 40822,
+            "decoded_bytes": 138183
+          },
+          {
+            "file": "/assets/homeLogo-D-Qw7mNd.js",
+            "encoded_bytes": 1700,
+            "decoded_bytes": 4517
+          },
+          {
+            "file": "/assets/IconButton-DEUdQBfI.js",
+            "encoded_bytes": 179,
+            "decoded_bytes": 195
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 64.40000000002328,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 70.39999999990687,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 70.29999999993015,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 71.40000000002328,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 85.59999999997672,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 79.60000000009313,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 85.10000000009313,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "emulated-mobile",
+          "latency": 40,
+          "downloadThroughput": 200000,
+          "uploadThroughput": 93750,
+          "cpu": 4
+        },
+        "path": "/login",
+        "label": "auth-eager",
+        "initial_median_ms": 756.8999999999069,
+        "signup_median_ms": 35.5,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-C970d2Z1.js",
+            "encoded_bytes": 94870,
+            "decoded_bytes": 300700
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 763.9000000000233,
+            "signup_ms": 37.90000000002328,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 760.2000000000698,
+            "signup_ms": 34.89999999990687,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 755.0999999999767,
+            "signup_ms": 36.70000000006985,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 750.3000000000466,
+            "signup_ms": 35.5,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 756.8999999999069,
+            "signup_ms": 34.29999999993015,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 754.9000000000233,
+            "signup_ms": 38.40000000002328,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 768.1999999999534,
+            "signup_ms": 33.5,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "emulated-mobile",
+          "latency": 40,
+          "downloadThroughput": 200000,
+          "uploadThroughput": 93750,
+          "cpu": 4
+        },
+        "path": "/login",
+        "label": "auth-lazy",
+        "initial_median_ms": 545.1999999999534,
+        "signup_median_ms": 35.699999999953434,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-BV6JYCRe.js",
+            "encoded_bytes": 53377,
+            "decoded_bytes": 161093
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 551.2999999999302,
+            "signup_ms": 35.300000000046566,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 552.0999999999767,
+            "signup_ms": 33.300000000046566,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 546.3000000000466,
+            "signup_ms": 42.09999999997672,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 532.8000000000466,
+            "signup_ms": 36.10000000009313,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 543,
+            "signup_ms": 35.699999999953434,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 545.1999999999534,
+            "signup_ms": 35.79999999993015,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 535.2000000000698,
+            "signup_ms": 34.800000000046566,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "emulated-mobile",
+          "latency": 40,
+          "downloadThroughput": 200000,
+          "uploadThroughput": 93750,
+          "cpu": 4
+        },
+        "path": "/home",
+        "label": "auth-eager",
+        "initial_median_ms": 827.8999999999069,
+        "signup_median_ms": null,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-C970d2Z1.js",
+            "encoded_bytes": 94870,
+            "decoded_bytes": 300700
+          },
+          {
+            "file": "/assets/Home-7dZgUs6H.js",
+            "encoded_bytes": 1283,
+            "decoded_bytes": 2353
+          },
+          {
+            "file": "/assets/BottomNavigationTemplate-C579hah8.js",
+            "encoded_bytes": 390,
+            "decoded_bytes": 705
+          },
+          {
+            "file": "/assets/Avatar-DILJP49U.js",
+            "encoded_bytes": 840,
+            "decoded_bytes": 1426
+          },
+          {
+            "file": "/assets/TopSection-BDpO4zvt.js",
+            "encoded_bytes": 1207,
+            "decoded_bytes": 2321
+          },
+          {
+            "file": "/assets/Dialog-Br1onKUy.js",
+            "encoded_bytes": 447,
+            "decoded_bytes": 709
+          },
+          {
+            "file": "/assets/homeLogo-D8uGFtJ3.js",
+            "encoded_bytes": 1697,
+            "decoded_bytes": 4517
+          },
+          {
+            "file": "/assets/IconButton-lzf2mUEh.js",
+            "encoded_bytes": 178,
+            "decoded_bytes": 195
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 815.5,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 817.8000000000466,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 824.1000000000931,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 827.8999999999069,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 841,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 864,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          },
+          {
+            "initial_ms": 847.2999999998137,
+            "signup_ms": null,
+            "js_requests": 8,
+            "js_gzip_bytes": 100912
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "emulated-mobile",
+          "latency": 40,
+          "downloadThroughput": 200000,
+          "uploadThroughput": 93750,
+          "cpu": 4
+        },
+        "path": "/home",
+        "label": "auth-lazy",
+        "initial_median_ms": 853.7000000000698,
+        "signup_median_ms": null,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-BV6JYCRe.js",
+            "encoded_bytes": 53377,
+            "decoded_bytes": 161093
+          },
+          {
+            "file": "/assets/Home-BOdjudIE.js",
+            "encoded_bytes": 1329,
+            "decoded_bytes": 2442
+          },
+          {
+            "file": "/assets/BottomNavigationTemplate-BvPlf7Q2.js",
+            "encoded_bytes": 388,
+            "decoded_bytes": 705
+          },
+          {
+            "file": "/assets/Avatar-h2kvaNd_.js",
+            "encoded_bytes": 845,
+            "decoded_bytes": 1426
+          },
+          {
+            "file": "/assets/TopSection-CsIni_Fk.js",
+            "encoded_bytes": 1226,
+            "decoded_bytes": 2365
+          },
+          {
+            "file": "/assets/Dialog-CnJAXcSV.js",
+            "encoded_bytes": 447,
+            "decoded_bytes": 709
+          },
+          {
+            "file": "/assets/features-C5wauhtN.js",
+            "encoded_bytes": 531,
+            "decoded_bytes": 1081
+          },
+          {
+            "file": "/assets/request-BslnW51p.js",
+            "encoded_bytes": 40822,
+            "decoded_bytes": 138183
+          },
+          {
+            "file": "/assets/homeLogo-D-Qw7mNd.js",
+            "encoded_bytes": 1700,
+            "decoded_bytes": 4517
+          },
+          {
+            "file": "/assets/IconButton-DEUdQBfI.js",
+            "encoded_bytes": 179,
+            "decoded_bytes": 195
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 862.5,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 838.3999999999069,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 856.5,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 853.7000000000698,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 841.8000000000466,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 830.1000000000931,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          },
+          {
+            "initial_ms": 861.6000000000931,
+            "signup_ms": null,
+            "js_requests": 10,
+            "js_gzip_bytes": 100844
+          }
+        ]
+      }
+    ],
+    "scope": "Production builds over gzip HTTP/1.1 on loopback; fresh browser contexts and disabled cache; one warm-up and seven measured rounds with alternating client order per route/profile. Headings plus two animation frames; no backend or real mobile device.",
+    "scenario": "Initial login/home, then first signup navigation from login. Home events use an empty HTTP fixture."
+  },
+  "authentication": {
+    "measured_at": "2026-09-22T18:27:23.415Z",
+    "node": "v24.13.0",
+    "chromium": "153.0.8010.12",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255H",
+    "clients": [
+      {
+        "label": "auth-eager",
+        "commit": "7bf6ffc25bdb67152b4c87d1591eeb44fb386b48",
+        "dirty": false,
+        "assets": [
+          {
+            "file": "Avatar-DILJP49U.js",
+            "bytes": 1426,
+            "gzip_bytes": 840
+          },
+          {
+            "file": "BottomNavigationTemplate-C579hah8.js",
+            "bytes": 705,
+            "gzip_bytes": 390
+          },
+          {
+            "file": "ChoiceGroup-C6tpevha.js",
+            "bytes": 415,
+            "gzip_bytes": 280
+          },
+          {
+            "file": "ConversationHistory-BXcpqc9W.js",
+            "bytes": 1346,
+            "gzip_bytes": 827
+          },
+          {
+            "file": "Dialog-Br1onKUy.js",
+            "bytes": 709,
+            "gzip_bytes": 447
+          },
+          {
+            "file": "Events-CXSejYTV.js",
+            "bytes": 4002,
+            "gzip_bytes": 1782
+          },
+          {
+            "file": "FriendList-CWj6LylW.js",
+            "bytes": 1015,
+            "gzip_bytes": 626
+          },
+          {
+            "file": "FriendRequest-P9m0LifK.js",
+            "bytes": 3526,
+            "gzip_bytes": 1514
+          },
+          {
+            "file": "Home-7dZgUs6H.js",
+            "bytes": 2353,
+            "gzip_bytes": 1283
+          },
+          {
+            "file": "Home-DAO-8Xlm.css",
+            "bytes": 113,
+            "gzip_bytes": 112
+          },
+          {
+            "file": "IconButton-lzf2mUEh.js",
+            "bytes": 195,
+            "gzip_bytes": 178
+          },
+          {
+            "file": "Memo-CGFYdu5T.js",
+            "bytes": 1789,
+            "gzip_bytes": 938
+          },
+          {
+            "file": "Message-D_lvWwDQ.js",
+            "bytes": 3000,
+            "gzip_bytes": 1550
+          },
+          {
+            "file": "MicCheck-egFiG8xj.js",
+            "bytes": 2525,
+            "gzip_bytes": 1361
+          },
+          {
+            "file": "Record-DkYkoQmj.js",
+            "bytes": 828,
+            "gzip_bytes": 471
+          },
+          {
+            "file": "Session-ByAj17kq.js",
+            "bytes": 11961,
+            "gzip_bytes": 4945
+          },
+          {
+            "file": "SessionFeedback-DEH12Bi7.js",
+            "bytes": 2577,
+            "gzip_bytes": 1328
+          },
+          {
+            "file": "SessionHistoryFriendlist-Uy6DHDgo.js",
+            "bytes": 1566,
+            "gzip_bytes": 950
+          },
+          {
+            "file": "SessionList-DQXI4-qg.js",
+            "bytes": 3259,
+            "gzip_bytes": 1535
+          },
+          {
+            "file": "SessionRecordForm-DS_2om6R.js",
+            "bytes": 4262,
+            "gzip_bytes": 1977
+          },
+          {
+            "file": "Settings-DnHmKfpb.js",
+            "bytes": 2588,
+            "gzip_bytes": 1234
+          },
+          {
+            "file": "Stats-BHoPawXZ.js",
+            "bytes": 1476,
+            "gzip_bytes": 862
+          },
+          {
+            "file": "TopSection-BDpO4zvt.js",
+            "bytes": 2321,
+            "gzip_bytes": 1207
+          },
+          {
+            "file": "adminPage-C5NbU_6m.js",
+            "bytes": 4293,
+            "gzip_bytes": 1787
+          },
+          {
+            "file": "conversationService-zYqeddWh.js",
+            "bytes": 520,
+            "gzip_bytes": 278
+          },
+          {
+            "file": "homeLogo-D8uGFtJ3.js",
+            "bytes": 4517,
+            "gzip_bytes": 1697
+          },
+          {
+            "file": "index-C970d2Z1.js",
+            "bytes": 300700,
+            "gzip_bytes": 94870
+          },
+          {
+            "file": "index-D8YwgkM9.css",
+            "bytes": 6854,
+            "gzip_bytes": 2243
+          },
+          {
+            "file": "memoService-biu8AsR7.js",
+            "bytes": 140,
+            "gzip_bytes": 133
+          },
+          {
+            "file": "userService-ksy_sL2h.js",
+            "bytes": 315,
+            "gzip_bytes": 241
+          }
+        ],
+        "packages": 228,
+        "runtime_packages": 5,
+        "direct_runtime_dependencies": [
+          "react",
+          "react-dom"
+        ]
+      },
+      {
+        "label": "auth-lazy",
+        "commit": "7bf6ffc25bdb67152b4c87d1591eeb44fb386b48",
+        "dirty": true,
+        "assets": [
+          {
+            "file": "Avatar-h2kvaNd_.js",
+            "bytes": 1426,
+            "gzip_bytes": 845
+          },
+          {
+            "file": "BottomNavigationTemplate-BvPlf7Q2.js",
+            "bytes": 705,
+            "gzip_bytes": 388
+          },
+          {
+            "file": "ChoiceGroup-NujipkPO.js",
+            "bytes": 415,
+            "gzip_bytes": 281
+          },
+          {
+            "file": "ConversationHistory-D935cRtE.js",
+            "bytes": 1407,
+            "gzip_bytes": 852
+          },
+          {
+            "file": "Dialog-CnJAXcSV.js",
+            "bytes": 709,
+            "gzip_bytes": 447
+          },
+          {
+            "file": "Events-zfelF1Zg.js",
+            "bytes": 4117,
+            "gzip_bytes": 1836
+          },
+          {
+            "file": "FriendList-fgRlE37n.js",
+            "bytes": 1096,
+            "gzip_bytes": 661
+          },
+          {
+            "file": "FriendRequest-w6SRq6UK.js",
+            "bytes": 3613,
+            "gzip_bytes": 1560
+          },
+          {
+            "file": "Home-BOdjudIE.js",
+            "bytes": 2442,
+            "gzip_bytes": 1329
+          },
+          {
+            "file": "Home-DAO-8Xlm.css",
+            "bytes": 113,
+            "gzip_bytes": 112
+          },
+          {
+            "file": "IconButton-DEUdQBfI.js",
+            "bytes": 195,
+            "gzip_bytes": 179
+          },
+          {
+            "file": "Memo-B9aWwyPc.js",
+            "bytes": 1850,
+            "gzip_bytes": 967
+          },
+          {
+            "file": "Message-Dk7E5_W9.js",
+            "bytes": 3095,
+            "gzip_bytes": 1588
+          },
+          {
+            "file": "MicCheck-DvnAYzaj.js",
+            "bytes": 2586,
+            "gzip_bytes": 1386
+          },
+          {
+            "file": "Record-Cb_DKC6X.js",
+            "bytes": 889,
+            "gzip_bytes": 502
+          },
+          {
+            "file": "Session-BgLectXl.js",
+            "bytes": 11996,
+            "gzip_bytes": 4956
+          },
+          {
+            "file": "SessionFeedback-C1YLsDdn.js",
+            "bytes": 2664,
+            "gzip_bytes": 1372
+          },
+          {
+            "file": "SessionHistoryFriendlist-BaOxaC6Y.js",
+            "bytes": 1632,
+            "gzip_bytes": 978
+          },
+          {
+            "file": "SessionList-Dqwo44cx.js",
+            "bytes": 3325,
+            "gzip_bytes": 1571
+          },
+          {
+            "file": "SessionRecordForm-9XL9Q3nD.js",
+            "bytes": 4365,
+            "gzip_bytes": 2022
+          },
+          {
+            "file": "Settings-C5iW3A6g.js",
+            "bytes": 2649,
+            "gzip_bytes": 1263
+          },
+          {
+            "file": "Stats-bZI5YCjS.js",
+            "bytes": 1551,
+            "gzip_bytes": 895
+          },
+          {
+            "file": "TopSection-CsIni_Fk.js",
+            "bytes": 2365,
+            "gzip_bytes": 1226
+          },
+          {
+            "file": "adminPage-B_SwT4f-.js",
+            "bytes": 4359,
+            "gzip_bytes": 1816
+          },
+          {
+            "file": "authService-CPjDS-2Y.js",
+            "bytes": 303,
+            "gzip_bytes": 224
+          },
+          {
+            "file": "conversationService-CneyS2gn.js",
+            "bytes": 522,
+            "gzip_bytes": 271
+          },
+          {
+            "file": "features-C5wauhtN.js",
+            "bytes": 1081,
+            "gzip_bytes": 531
+          },
+          {
+            "file": "homeLogo-D-Qw7mNd.js",
+            "bytes": 4517,
+            "gzip_bytes": 1700
+          },
+          {
+            "file": "index-BV6JYCRe.js",
+            "bytes": 161093,
+            "gzip_bytes": 53377
+          },
+          {
+            "file": "index-D8YwgkM9.css",
+            "bytes": 6854,
+            "gzip_bytes": 2243
+          },
+          {
+            "file": "memoService-DQGftQ2O.js",
+            "bytes": 147,
+            "gzip_bytes": 135
+          },
+          {
+            "file": "request-BslnW51p.js",
+            "bytes": 138183,
+            "gzip_bytes": 40822
+          },
+          {
+            "file": "userService-C6yZ1wl8.js",
+            "bytes": 312,
+            "gzip_bytes": 237
+          }
+        ],
+        "packages": 228,
+        "runtime_packages": 5,
+        "direct_runtime_dependencies": [
+          "react",
+          "react-dom"
+        ]
+      }
+    ],
+    "results": [
+      {
+        "profile": {
+          "name": "loopback",
+          "latency": 0,
+          "downloadThroughput": -1,
+          "uploadThroughput": -1,
+          "cpu": 1
+        },
+        "path": "/login",
+        "label": "auth-eager",
+        "initial_median_ms": 58,
+        "signup_median_ms": null,
+        "input": "immediate-fill",
+        "submit_to_home_median_ms": 44.199999999953434,
+        "input_to_home_median_ms": 118.4000000001397,
+        "total_to_home_median_ms": 182,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-C970d2Z1.js",
+            "encoded_bytes": 94870,
+            "decoded_bytes": 300700
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 55.800000000046566,
+            "signup_ms": null,
+            "submit_to_home_ms": 44.0999999998603,
+            "input_to_home_ms": 102.5999999998603,
+            "total_to_home_ms": 162.39999999990687,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 67.60000000009313,
+            "signup_ms": null,
+            "submit_to_home_ms": 45.199999999953434,
+            "input_to_home_ms": 121.80000000004657,
+            "total_to_home_ms": 196.60000000009313,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 61.700000000186265,
+            "signup_ms": null,
+            "submit_to_home_ms": 44.199999999953434,
+            "input_to_home_ms": 118.4000000001397,
+            "total_to_home_ms": 183.9000000001397,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 55.799999999813735,
+            "signup_ms": null,
+            "submit_to_home_ms": 45,
+            "input_to_home_ms": 106.0999999998603,
+            "total_to_home_ms": 166.0999999998603,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 57.0999999998603,
+            "signup_ms": null,
+            "submit_to_home_ms": 45.199999999953434,
+            "input_to_home_ms": 123.19999999995343,
+            "total_to_home_ms": 184.5999999998603,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 58,
+            "signup_ms": null,
+            "submit_to_home_ms": 42.39999999990687,
+            "input_to_home_ms": 119.5999999998603,
+            "total_to_home_ms": 182,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 59.699999999953434,
+            "signup_ms": null,
+            "submit_to_home_ms": 42.700000000186265,
+            "input_to_home_ms": 115.60000000009313,
+            "total_to_home_ms": 180.10000000009313,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "loopback",
+          "latency": 0,
+          "downloadThroughput": -1,
+          "uploadThroughput": -1,
+          "cpu": 1
+        },
+        "path": "/login",
+        "label": "auth-lazy",
+        "initial_median_ms": 57.300000000046566,
+        "signup_median_ms": null,
+        "input": "immediate-fill",
+        "submit_to_home_median_ms": 57.200000000186265,
+        "input_to_home_median_ms": 131.4000000001397,
+        "total_to_home_median_ms": 195.5,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-BV6JYCRe.js",
+            "encoded_bytes": 53377,
+            "decoded_bytes": 161093
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 74.60000000009313,
+            "signup_ms": null,
+            "submit_to_home_ms": 47,
+            "input_to_home_ms": 120.5,
+            "total_to_home_ms": 199.30000000004657,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 58.699999999953434,
+            "signup_ms": null,
+            "submit_to_home_ms": 61.0999999998603,
+            "input_to_home_ms": 138.89999999990687,
+            "total_to_home_ms": 201.69999999995343,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 56,
+            "signup_ms": null,
+            "submit_to_home_ms": 57.200000000186265,
+            "input_to_home_ms": 133.5,
+            "total_to_home_ms": 195.5,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 57.199999999953434,
+            "signup_ms": null,
+            "submit_to_home_ms": 44,
+            "input_to_home_ms": 115.89999999990687,
+            "total_to_home_ms": 178.69999999995343,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 57.800000000046566,
+            "signup_ms": null,
+            "submit_to_home_ms": 62.4000000001397,
+            "input_to_home_ms": 131.4000000001397,
+            "total_to_home_ms": 195.20000000018626,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 57.300000000046566,
+            "signup_ms": null,
+            "submit_to_home_ms": 44.10000000009313,
+            "input_to_home_ms": 119.30000000004657,
+            "total_to_home_ms": 182.4000000001397,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 55.800000000046566,
+            "signup_ms": null,
+            "submit_to_home_ms": 59.39999999990687,
+            "input_to_home_ms": 139.5999999998603,
+            "total_to_home_ms": 198.5999999998603,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "loopback",
+          "latency": 0,
+          "downloadThroughput": -1,
+          "uploadThroughput": -1,
+          "cpu": 1
+        },
+        "path": "/login",
+        "label": "auth-eager",
+        "initial_median_ms": 58.800000000046566,
+        "signup_median_ms": null,
+        "input": "typing-30ms",
+        "submit_to_home_median_ms": 44.39999999990687,
+        "input_to_home_median_ms": 1258.3000000000466,
+        "total_to_home_median_ms": 1318.8000000000466,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-C970d2Z1.js",
+            "encoded_bytes": 94870,
+            "decoded_bytes": 300700
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 58.800000000046566,
+            "signup_ms": null,
+            "submit_to_home_ms": 42.800000000046566,
+            "input_to_home_ms": 1254.6000000000931,
+            "total_to_home_ms": 1317.5,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 58.800000000046566,
+            "signup_ms": null,
+            "submit_to_home_ms": 63.4000000001397,
+            "input_to_home_ms": 1254.9000000001397,
+            "total_to_home_ms": 1318.8000000000466,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 62,
+            "signup_ms": null,
+            "submit_to_home_ms": 40.700000000186265,
+            "input_to_home_ms": 1261,
+            "total_to_home_ms": 1329.1000000000931,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 56.89999999990687,
+            "signup_ms": null,
+            "submit_to_home_ms": 46.699999999953434,
+            "input_to_home_ms": 1222.3000000000466,
+            "total_to_home_ms": 1283.5999999998603,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 56.300000000046566,
+            "signup_ms": null,
+            "submit_to_home_ms": 46.4000000001397,
+            "input_to_home_ms": 1258.3000000000466,
+            "total_to_home_ms": 1318.7000000001863,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 60,
+            "signup_ms": null,
+            "submit_to_home_ms": 43.300000000046566,
+            "input_to_home_ms": 1267.4000000001397,
+            "total_to_home_ms": 1333.4000000001397,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 61.5,
+            "signup_ms": null,
+            "submit_to_home_ms": 44.39999999990687,
+            "input_to_home_ms": 1261.3999999999069,
+            "total_to_home_ms": 1330.5,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "loopback",
+          "latency": 0,
+          "downloadThroughput": -1,
+          "uploadThroughput": -1,
+          "cpu": 1
+        },
+        "path": "/login",
+        "label": "auth-lazy",
+        "initial_median_ms": 56,
+        "signup_median_ms": null,
+        "input": "typing-30ms",
+        "submit_to_home_median_ms": 44.800000000046566,
+        "input_to_home_median_ms": 1266.5,
+        "total_to_home_median_ms": 1330.6999999999534,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-BV6JYCRe.js",
+            "encoded_bytes": 53377,
+            "decoded_bytes": 161093
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 51,
+            "signup_ms": null,
+            "submit_to_home_ms": 44.9000000001397,
+            "input_to_home_ms": 1255.4000000001397,
+            "total_to_home_ms": 1311.9000000001397,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 56,
+            "signup_ms": null,
+            "submit_to_home_ms": 44.800000000046566,
+            "input_to_home_ms": 1253.5,
+            "total_to_home_ms": 1314.6999999999534,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 53.5,
+            "signup_ms": null,
+            "submit_to_home_ms": 42.89999999990687,
+            "input_to_home_ms": 1276.6999999999534,
+            "total_to_home_ms": 1333.5,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 60.5,
+            "signup_ms": null,
+            "submit_to_home_ms": 59.10000000009313,
+            "input_to_home_ms": 1281.6999999999534,
+            "total_to_home_ms": 1347.1000000000931,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 55.89999999990687,
+            "signup_ms": null,
+            "submit_to_home_ms": 43.0999999998603,
+            "input_to_home_ms": 1280.1999999999534,
+            "total_to_home_ms": 1343.8999999999069,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 56.700000000186265,
+            "signup_ms": null,
+            "submit_to_home_ms": 42.89999999990687,
+            "input_to_home_ms": 1266.5,
+            "total_to_home_ms": 1328.8000000000466,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 61,
+            "signup_ms": null,
+            "submit_to_home_ms": 46.5,
+            "input_to_home_ms": 1264.0999999998603,
+            "total_to_home_ms": 1330.6999999999534,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "emulated-mobile",
+          "latency": 40,
+          "downloadThroughput": 200000,
+          "uploadThroughput": 93750,
+          "cpu": 4
+        },
+        "path": "/login",
+        "label": "auth-eager",
+        "initial_median_ms": 770,
+        "signup_median_ms": null,
+        "input": "immediate-fill",
+        "submit_to_home_median_ms": 222,
+        "input_to_home_median_ms": 378.69999999995343,
+        "total_to_home_median_ms": 1165.6999999999534,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-C970d2Z1.js",
+            "encoded_bytes": 94870,
+            "decoded_bytes": 300700
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 762.8999999999069,
+            "signup_ms": null,
+            "submit_to_home_ms": 251.89999999990687,
+            "input_to_home_ms": 428.5,
+            "total_to_home_ms": 1202,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 771.1999999999534,
+            "signup_ms": null,
+            "submit_to_home_ms": 222,
+            "input_to_home_ms": 378.69999999995343,
+            "total_to_home_ms": 1161.3999999999069,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 792.6000000000931,
+            "signup_ms": null,
+            "submit_to_home_ms": 220.5,
+            "input_to_home_ms": 378,
+            "total_to_home_ms": 1181,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 770,
+            "signup_ms": null,
+            "submit_to_home_ms": 219.79999999981374,
+            "input_to_home_ms": 371.89999999990687,
+            "total_to_home_ms": 1165.6999999999534,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 780.5999999998603,
+            "signup_ms": null,
+            "submit_to_home_ms": 237.30000000004657,
+            "input_to_home_ms": 407.10000000009313,
+            "total_to_home_ms": 1198,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 764.2999999998137,
+            "signup_ms": null,
+            "submit_to_home_ms": 227.39999999990687,
+            "input_to_home_ms": 385.79999999981374,
+            "total_to_home_ms": 1160.7999999998137,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 762.3000000000466,
+            "signup_ms": null,
+            "submit_to_home_ms": 218.5999999998603,
+            "input_to_home_ms": 374.39999999990687,
+            "total_to_home_ms": 1149.0999999998603,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "emulated-mobile",
+          "latency": 40,
+          "downloadThroughput": 200000,
+          "uploadThroughput": 93750,
+          "cpu": 4
+        },
+        "path": "/login",
+        "label": "auth-lazy",
+        "initial_median_ms": 550.6000000000931,
+        "signup_median_ms": null,
+        "input": "immediate-fill",
+        "submit_to_home_median_ms": 410.69999999995343,
+        "input_to_home_median_ms": 579.8000000000466,
+        "total_to_home_median_ms": 1134.1999999999534,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-BV6JYCRe.js",
+            "encoded_bytes": 53377,
+            "decoded_bytes": 161093
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 562.7000000001863,
+            "signup_ms": null,
+            "submit_to_home_ms": 401.70000000018626,
+            "input_to_home_ms": 584.9000000001397,
+            "total_to_home_ms": 1161.2000000001863,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 535.5999999998603,
+            "signup_ms": null,
+            "submit_to_home_ms": 410.69999999995343,
+            "input_to_home_ms": 579.8000000000466,
+            "total_to_home_ms": 1134.1999999999534,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 550.1999999999534,
+            "signup_ms": null,
+            "submit_to_home_ms": 403.69999999995343,
+            "input_to_home_ms": 567,
+            "total_to_home_ms": 1128.3999999999069,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 569.8000000000466,
+            "signup_ms": null,
+            "submit_to_home_ms": 418.10000000009313,
+            "input_to_home_ms": 577.3000000000466,
+            "total_to_home_ms": 1156.6000000000931,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 534.5,
+            "signup_ms": null,
+            "submit_to_home_ms": 419.5,
+            "input_to_home_ms": 588.8000000000466,
+            "total_to_home_ms": 1133.6999999999534,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 550.6000000000931,
+            "signup_ms": null,
+            "submit_to_home_ms": 402.19999999995343,
+            "input_to_home_ms": 572.3999999999069,
+            "total_to_home_ms": 1133.1999999999534,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 558.5,
+            "signup_ms": null,
+            "submit_to_home_ms": 410.9000000001397,
+            "input_to_home_ms": 581.9000000001397,
+            "total_to_home_ms": 1152.5,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "emulated-mobile",
+          "latency": 40,
+          "downloadThroughput": 200000,
+          "uploadThroughput": 93750,
+          "cpu": 4
+        },
+        "path": "/login",
+        "label": "auth-eager",
+        "initial_median_ms": 756.8000000000466,
+        "signup_median_ms": null,
+        "input": "typing-30ms",
+        "submit_to_home_median_ms": 235.5,
+        "input_to_home_median_ms": 1684.2000000001863,
+        "total_to_home_median_ms": 2455.4000000001397,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-C970d2Z1.js",
+            "encoded_bytes": 94870,
+            "decoded_bytes": 300700
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 784.6000000000931,
+            "signup_ms": null,
+            "submit_to_home_ms": 232.80000000004657,
+            "input_to_home_ms": 1728.4000000001397,
+            "total_to_home_ms": 2524.4000000001397,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 756.8000000000466,
+            "signup_ms": null,
+            "submit_to_home_ms": 217.5,
+            "input_to_home_ms": 1681.1000000000931,
+            "total_to_home_ms": 2454.9000000001397,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 756,
+            "signup_ms": null,
+            "submit_to_home_ms": 234.60000000009313,
+            "input_to_home_ms": 1683,
+            "total_to_home_ms": 2450.8000000000466,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 737.6000000000931,
+            "signup_ms": null,
+            "submit_to_home_ms": 258.39999999990687,
+            "input_to_home_ms": 1667.8999999999069,
+            "total_to_home_ms": 2418.1999999999534,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 784.3999999999069,
+            "signup_ms": null,
+            "submit_to_home_ms": 235.5,
+            "input_to_home_ms": 1694.3999999999069,
+            "total_to_home_ms": 2491,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 756.7999999998137,
+            "signup_ms": null,
+            "submit_to_home_ms": 246.5,
+            "input_to_home_ms": 1686.9000000001397,
+            "total_to_home_ms": 2457.6999999999534,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          },
+          {
+            "initial_ms": 756.8000000000466,
+            "signup_ms": null,
+            "submit_to_home_ms": 247.20000000018626,
+            "input_to_home_ms": 1684.2000000001863,
+            "total_to_home_ms": 2455.4000000001397,
+            "total_js_requests": 8,
+            "total_js_gzip_bytes": 100912,
+            "js_requests": 1,
+            "js_gzip_bytes": 94870
+          }
+        ]
+      },
+      {
+        "profile": {
+          "name": "emulated-mobile",
+          "latency": 40,
+          "downloadThroughput": 200000,
+          "uploadThroughput": 93750,
+          "cpu": 4
+        },
+        "path": "/login",
+        "label": "auth-lazy",
+        "initial_median_ms": 546.3000000000466,
+        "signup_median_ms": null,
+        "input": "typing-30ms",
+        "submit_to_home_median_ms": 253.39999999990687,
+        "input_to_home_median_ms": 1693.1999999999534,
+        "total_to_home_median_ms": 2254.2999999998137,
+        "initial_scripts": [
+          {
+            "file": "/assets/index-BV6JYCRe.js",
+            "encoded_bytes": 53377,
+            "decoded_bytes": 161093
+          }
+        ],
+        "runs": [
+          {
+            "initial_ms": 571.2000000001863,
+            "signup_ms": null,
+            "submit_to_home_ms": 254.39999999990687,
+            "input_to_home_ms": 1716.2999999998137,
+            "total_to_home_ms": 2300.5,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 543.6999999999534,
+            "signup_ms": null,
+            "submit_to_home_ms": 253.39999999990687,
+            "input_to_home_ms": 1695.6999999999534,
+            "total_to_home_ms": 2251,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 548.6999999999534,
+            "signup_ms": null,
+            "submit_to_home_ms": 237.60000000009313,
+            "input_to_home_ms": 1687.6999999999534,
+            "total_to_home_ms": 2246.6999999999534,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 562.3999999999069,
+            "signup_ms": null,
+            "submit_to_home_ms": 253.29999999981374,
+            "input_to_home_ms": 1693.1999999999534,
+            "total_to_home_ms": 2268.2999999998137,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 546.3000000000466,
+            "signup_ms": null,
+            "submit_to_home_ms": 267.5,
+            "input_to_home_ms": 1738.8000000000466,
+            "total_to_home_ms": 2295.600000000093,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 541.7999999998137,
+            "signup_ms": null,
+            "submit_to_home_ms": 254.69999999995343,
+            "input_to_home_ms": 1691,
+            "total_to_home_ms": 2254.2999999998137,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          },
+          {
+            "initial_ms": 532.6999999999534,
+            "signup_ms": null,
+            "submit_to_home_ms": 244.79999999981374,
+            "input_to_home_ms": 1598,
+            "total_to_home_ms": 2139.1999999999534,
+            "total_js_requests": 11,
+            "total_js_gzip_bytes": 101068,
+            "js_requests": 1,
+            "js_gzip_bytes": 53377
+          }
+        ]
+      }
+    ],
+    "scope": "Production builds over gzip HTTP/1.1 on loopback; fresh browser contexts and disabled cache; one warm-up and seven measured rounds with alternating client order per route/profile. Headings plus two animation frames; no backend or real mobile device.",
+    "scenario": "Login to home with an immediate fill and with 30 ms between keystrokes (34 characters total); same successful signin, empty events/inbox fixtures. Includes first-use code download before sending signin. Input and submit times are in-page marks; no websocket transport."
+  }
+}

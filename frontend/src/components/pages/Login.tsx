@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "../../navigation/links";
 import { navigate } from "../../navigation/location";
 import { Input } from "../ui/Field";
-import { signIn } from "../../services/authService";
+import { loadAuth, preloadAuth } from "../../services/authLoader";
 import Logo from "../../assets/logo";
 
 export default function Login() {
@@ -11,10 +11,16 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const login = async (email: string, password: string) => {
+  const login = async (
+    email: string,
+    password: string,
+    form: HTMLFormElement,
+  ) => {
     setBusy(true);
     setError("");
     try {
+      const { signIn } = await loadAuth();
+      if (!form.isConnected) return;
       await signIn(email, password);
       navigate("/home");
     } catch (error) {
@@ -31,7 +37,7 @@ export default function Login() {
         className="auth-form stack"
         onSubmit={(event) => {
           event.preventDefault();
-          void login(email, password);
+          void login(email, password, event.currentTarget);
         }}
       >
         <div className="brand-mark">
@@ -42,6 +48,7 @@ export default function Login() {
           label="Email"
           type="email"
           autoComplete="username"
+          onFocus={preloadAuth}
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -50,6 +57,7 @@ export default function Login() {
           label="パスワード"
           type={showPassword ? "text" : "password"}
           autoComplete="current-password"
+          onFocus={preloadAuth}
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}

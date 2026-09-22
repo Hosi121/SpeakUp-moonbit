@@ -31,7 +31,7 @@ if (mode === 'capture') {
     direct_runtime_dependencies: Object.keys(lock.packages[''].dependencies) };
   writeFileSync(join(dir, 'metadata.json'), JSON.stringify(metadata, null, 2) + '\n');
   console.log(JSON.stringify(metadata, null, 2));
-} else if (mode === 'compare') {
+} else if (mode === 'compare' || mode === 'compare-auth') {
   if (args.length !== 2 || !args.every(valid)) throw new Error('Expected compare <before label> <after label>');
   const clients = [], results = [];
   let browser;
@@ -54,8 +54,16 @@ if (mode === 'capture') {
           res.setHeader('Content-Type', 'text/html'); res.end(html);
         } else if (req.url === '/api/events/overview') {
           res.setHeader('Content-Type', 'application/json'); res.end('[]');
+        } else if (mode === 'compare-auth' && req.url === '/api/signin' && req.method === 'POST') {
+          req.resume();
+          res.setHeader('Content-Type', 'application/json'); res.end('{"token":"benchmark-fixture"}');
+        } else if (mode === 'compare-auth' && req.url === '/api/notifications') {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ items: [], unread: 0, now: Date.now() }));
         } else res.writeHead(404).end();
       });
+      // This fixture measures frontend loading, not notification transport.
+      server.on('upgrade', (_request, socket) => socket.destroy());
       server.listen(0, '127.0.0.1'); await once(server, 'listening');
       clients.push({ label, server, url: `http://127.0.0.1:${server.address().port}`,
         metadata: JSON.parse(readFileSync(join(dir, 'metadata.json'), 'utf8')) });
@@ -65,8 +73,11 @@ if (mode === 'capture') {
       { name: 'loopback', latency: 0, downloadThroughput: -1, uploadThroughput: -1, cpu: 1 },
       { name: 'emulated-mobile', latency: 40, downloadThroughput: 200000, uploadThroughput: 93750, cpu: 4 },
     ];
+    const scenarios = mode === 'compare-auth'
+      ? [{ path: '/login', input: 'immediate-fill' }, { path: '/login', input: 'typing-30ms' }]
+      : [{ path: '/login' }, { path: '/home' }];
     for (const profile of profiles) {
-      for (const path of ['/login', '/home']) {
+      for (const { path, input } of scenarios) {
         const samples = new Map(args.map(label => [label, []]));
         for (let round = -1; round < 7; round++) {
           for (const client of round % 2 === 0 ? clients : [...clients].reverse()) {
@@ -88,12 +99,15 @@ if (mode === 'capture') {
                     requestAnimationFrame(() => requestAnimationFrame(() => performance.mark('initial-visible')));
                   if (text === 'サインアップ' && !performance.getEntriesByName('signup-visible').length)
                     requestAnimationFrame(() => requestAnimationFrame(() => performance.mark('signup-visible')));
+                  if (text === '直近の参加予定' && !performance.getEntriesByName('home-visible').length)
+                    requestAnimationFrame(() => requestAnimationFrame(() => performance.mark('home-visible')));
                 };
                 new MutationObserver(measureHeading).observe(document, { childList: true, subtree: true });
                 document.addEventListener('click', event => {
                   if (event.target instanceof Element && event.target.closest('a')?.getAttribute('href') === '/signup')
                     performance.mark('signup-click');
                 }, true);
+                document.addEventListener('submit', () => performance.mark('auth-submit'), true);
               }, { heading: path === '/login' ? 'サインイン' : '直近の参加予定' });
               await page.goto(`${client.url}${path}`);
               await page.waitForFunction(() => performance.getEntriesByName('initial-visible').length > 0);
@@ -102,30 +116,55 @@ if (mode === 'capture') {
                 scripts: performance.getEntriesByType('resource').filter(entry => new URL(entry.name).pathname.endsWith('.js'))
                   .map(entry => ({ file: new URL(entry.name).pathname, encoded_bytes: entry.encodedBodySize, decoded_bytes: entry.decodedBodySize })),
               }));
-              let signup_ms = null;
-              if (path === '/login') {
+              let signup_ms = null, auth = {};
+              if (input) {
+                await page.evaluate(() => performance.mark('input-start'));
+                const email = page.getByLabel('Email', { exact: true });
+                const password = page.getByLabel('パスワード', { exact: true });
+                if (input === 'typing-30ms') {
+                  // Controlled keystroke pacing, not a wait for page readiness.
+                  await email.pressSequentially('alice@example.test', { delay: 30 });
+                  await password.pressSequentially('fixture-password', { delay: 30 });
+                } else {
+                  await email.fill('alice@example.test'); await password.fill('fixture-password');
+                }
+                await page.getByRole('button', { name: 'サインイン', exact: true }).click();
+                await page.waitForFunction(() => performance.getEntriesByName('home-visible').length > 0);
+                auth = await page.evaluate(() => {
+                  const at = name => performance.getEntriesByName(name)[0].startTime;
+                  const scripts = performance.getEntriesByType('resource').filter(entry => new URL(entry.name).pathname.endsWith('.js'));
+                  return { submit_to_home_ms: at('home-visible') - at('auth-submit'),
+                    input_to_home_ms: at('home-visible') - at('input-start'), total_to_home_ms: at('home-visible'),
+                    total_js_requests: scripts.length, total_js_gzip_bytes: scripts.reduce((n, entry) => n + entry.encodedBodySize, 0) };
+                });
+              } else if (path === '/login') {
                 await page.getByRole('link', { name: 'サインアップ', exact: true }).click();
                 await page.waitForFunction(() => performance.getEntriesByName('signup-visible').length > 0);
                 signup_ms = await page.evaluate(() => performance.getEntriesByName('signup-visible')[0].startTime - performance.getEntriesByName('signup-click')[0].startTime);
               }
               if (errors.length) throw new Error(errors.join('\n'));
-              if (round >= 0) samples.get(client.label).push({ ...initial, signup_ms });
+              if (round >= 0) samples.get(client.label).push({ ...initial, signup_ms, ...auth });
             } finally { await context.close(); }
           }
         }
         for (const [label, runs] of samples) {
           const median = key => [...runs].map(run => run[key]).sort((a, b) => a - b)[Math.floor(runs.length / 2)];
           results.push({ profile, path, label, initial_median_ms: median('initial_ms'), signup_median_ms: median('signup_ms'),
+            ...(input ? { input, submit_to_home_median_ms: median('submit_to_home_ms'),
+              input_to_home_median_ms: median('input_to_home_ms'), total_to_home_median_ms: median('total_to_home_ms') } : {}),
             initial_scripts: runs[0].scripts,
-            runs: runs.map(run => ({ initial_ms: run.initial_ms, signup_ms: run.signup_ms,
-              js_requests: run.scripts.length, js_gzip_bytes: run.scripts.reduce((n, script) => n + script.encoded_bytes, 0) })) });
+            runs: runs.map(({ scripts, ...run }) => ({ ...run,
+              js_requests: scripts.length, js_gzip_bytes: scripts.reduce((n, script) => n + script.encoded_bytes, 0) })) });
         }
       }
     }
     const report = { measured_at: new Date().toISOString(), node: process.version, chromium: browser.version(), cpu: cpus()[0].model,
       clients: clients.map(client => client.metadata), results,
-      scope: 'Production builds over gzip HTTP/1.1 on loopback; fresh browser contexts and disabled cache; one warm-up and seven measured rounds with alternating client order per route/profile. Initial heading plus two frames on login/home, then first signup navigation from login. Home events use an empty HTTP fixture; no backend or real mobile device.' };
-    const file = join(artifacts, `${args.join('-vs-')}.json`);
+      scope: 'Production builds over gzip HTTP/1.1 on loopback; fresh browser contexts and disabled cache; one warm-up and seven measured rounds with alternating client order per route/profile. Headings plus two animation frames; no backend or real mobile device.',
+      scenario: mode === 'compare-auth'
+        ? 'Login to home with an immediate fill and with 30 ms between keystrokes (34 characters total); same successful signin, empty events/inbox fixtures. Includes first-use code download before sending signin. Input and submit times are in-page marks; no websocket transport.'
+        : 'Initial login/home, then first signup navigation from login. Home events use an empty HTTP fixture.' };
+    const file = join(artifacts, `${args.join('-vs-')}${mode === 'compare-auth' ? '-auth' : ''}.json`);
     writeFileSync(file, JSON.stringify(report, null, 2) + '\n');
     console.log(JSON.stringify(results.map(({ runs, ...result }) => ({ ...result, runs: runs.length })), null, 2));
     console.log(`Saved ${file}`);
@@ -133,4 +172,4 @@ if (mode === 'capture') {
     await browser?.close();
     for (const client of clients) { client.server.closeAllConnections(); await new Promise(resolve => client.server.close(resolve)); }
   }
-} else throw new Error('Expected capture or compare');
+} else throw new Error('Expected capture, compare or compare-auth');

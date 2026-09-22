@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "../navigation/location";
 import type { InboxDto } from "../../../dist/shared.js";
 import { Activity } from "./activity";
-import { fetchInbox } from "./features";
 
 export function ActivityLayout({ children }: { children: ReactNode }) {
   useLocation(); // Login/logout navigation re-evaluates the local credential.
@@ -33,27 +32,29 @@ export function ActivityLayout({ children }: { children: ReactNode }) {
       clearTimeout(debounce);
       debounce = setTimeout(() => {
         const current = ++sequence;
-        const started = Date.now();
-        void fetchInbox()
-          .then((inbox) => {
-            if (!disposed && sequence === current)
-              setState((s) => ({
-                ...s,
-                inbox,
-                error: "",
-                revision: s.revision + 1,
-                // The shared clock accepts integer epoch milliseconds.
-                clockOffset: Math.round(inbox.now - (started + Date.now()) / 2),
-              }));
-          })
-          .catch(() => {
-            if (!disposed && sequence === current)
-              setState((s) => ({
-                ...s,
-                error: "通知を取得できませんでした。",
-                revision: s.revision + 1,
-              }));
-          });
+        void (async () => {
+          const { fetchInbox } = await import("./features");
+          // Loading code can outlive logout or a newer refresh.
+          if (disposed || sequence !== current) return;
+          const started = Date.now();
+          const inbox = await fetchInbox();
+          if (!disposed && sequence === current)
+            setState((s) => ({
+              ...s,
+              inbox,
+              error: "",
+              revision: s.revision + 1,
+              // The shared clock accepts integer epoch milliseconds.
+              clockOffset: Math.round(inbox.now - (started + Date.now()) / 2),
+            }));
+        })().catch(() => {
+          if (!disposed && sequence === current)
+            setState((s) => ({
+              ...s,
+              error: "通知を取得できませんでした。",
+              revision: s.revision + 1,
+            }));
+        });
       }, 100);
     };
     const connect = () => {
@@ -110,9 +111,5 @@ export function ActivityLayout({ children }: { children: ReactNode }) {
       }
     };
   }, [token]);
-  return (
-    <Activity.Provider value={state}>
-      {children}
-    </Activity.Provider>
-  );
+  return <Activity.Provider value={state}>{children}</Activity.Provider>;
 }

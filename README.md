@@ -64,7 +64,7 @@ frontend          React + 標準 HTML/CSS、型付きブラウザアダプター
 
 TS2Mbt と Mbt2TS は `@mizchi/ts@0.6.0` を固定して使います。共通型を TS に手で二重定義せず、MoonBit interface から生成します。手書きコード、生成 bridge、公開型の `any` / `Any` / `JSValue` を CI で禁止しています。
 
-frontend の直接 runtime 依存は React / React DOM の 2 つです。HTTP は標準 `fetch` と共通 MoonBit decoder、画面遷移は History API を使います。画面を分割し、ログイン時に読む JS は gzip 約 95 kB になりました。[画面遷移と初回表示の比較](docs/navigation.md)、[通信の契約と速度比較](docs/http-client.md)を記録しています。
+frontend の直接 runtime 依存は React / React DOM の 2 つです。HTTP は標準 `fetch` と共通 MoonBit decoder、画面遷移は History API を使います。未ログインの認証フォームが最初に読む JS は gzip 約 53 kB。入力時に認証処理を先読みします。[初回表示と送信後の待ち時間の比較](docs/auth-loading.md)、[画面遷移](docs/navigation.md)、[通信の契約](docs/http-client.md)を記録しています。
 
 ```bash
 npm run generate       # bindings/host.d.ts → MoonBit、strict mode

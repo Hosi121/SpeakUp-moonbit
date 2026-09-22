@@ -6,7 +6,8 @@ import { PageBoundary } from "./navigation/PageBoundary";
 import Login from "./components/pages/Login";
 import SignUp from "./components/pages/SignUp";
 
-// Keep authentication available without a second JS request; load other screens on entry.
+// Show authentication forms immediately; load their service on input or submit.
+// Other screens load on entry.
 const pages = new Map<string, ComponentType>([
   ["/login", Login],
   ["/signup", SignUp],
