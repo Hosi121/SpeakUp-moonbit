@@ -153,7 +153,11 @@ async fn inbox(uid : Int) -> @shared.InboxDto {
   })
   {
     items,
-    unread: if result.is_empty() { 0 } else { number(result[0], "unread") },
+    unread: if result.is_empty() {
+      0
+    } else {
+      @json.from_json(field(result[0], "unread"))
+    },
     now: (host().now_millis)(),
   }
 }
