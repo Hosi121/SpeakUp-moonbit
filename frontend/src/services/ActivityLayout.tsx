@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
+import { useLocation } from "../navigation/location";
 import type { InboxDto } from "../../../dist/shared.js";
 import { Activity } from "./activity";
 import { fetchInbox } from "./features";
 
-export function ActivityLayout() {
+export function ActivityLayout({ children }: { children: ReactNode }) {
   useLocation(); // Login/logout navigation re-evaluates the local credential.
   const token = localStorage.getItem("token");
   const [state, setState] = useState({
@@ -112,7 +112,7 @@ export function ActivityLayout() {
   }, [token]);
   return (
     <Activity.Provider value={state}>
-      <Outlet />
+      {children}
     </Activity.Provider>
   );
 }

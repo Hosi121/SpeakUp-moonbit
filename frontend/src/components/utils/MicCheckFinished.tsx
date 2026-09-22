@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "../../navigation/links";
 import { MicIcon } from "./MicIcon";
 
 export function MicCheckFinished() {

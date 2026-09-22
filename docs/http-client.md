@@ -1,6 +1,6 @@
 # HTTP adapter と Axios 削除の比較
 
-2026-09-23、frontend の Axios を標準 `fetch` に置き換えた。HTTP ライブラリの追加はなく、React / React DOM / React Router が直接 runtime 依存として残る。
+2026-09-23、frontend の Axios を標準 `fetch` に置き換えた。この比較時点の直接 runtime 依存は React / React DOM / React Router。続く [画面遷移の整理](navigation.md)で React Router も削除した。以下は Axios 削除時点の測定記録。
 
 ## 通信と型の境界
 

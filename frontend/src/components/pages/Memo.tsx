@@ -11,13 +11,20 @@ export function Memo() {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    void fetchMemo()
+    const controller = new AbortController();
+    void fetchMemo({ signal: controller.signal })
       .then((data) => {
+        if (controller.signal.aborted) return;
         setCarryInMemo(data.carryInMemo);
         setWordList(data.wordList);
       })
-      .catch(() => setError("メモを取得できませんでした。"))
-      .finally(() => setBusy(false));
+      .catch(() => {
+        if (!controller.signal.aborted) setError("メモを取得できませんでした。");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setBusy(false);
+      });
+    return () => controller.abort();
   }, []);
   const save = async () => {
     setBusy(true);

@@ -97,6 +97,8 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 | chat | 認証必須、20 秒 timeout。model は環境変数で変更可能 |
 | UI dependencies | MUI / Emotion を削除。標準 form / dialog / radio / nav と CSS、少数の型付き React 部品へ。詳細は [frontend](frontend.md) |
 | frontend HTTP | Axios を削除し標準 fetch へ。Bearer 認証・HTTP エラー・multipart を維持。成功応答を共通 MoonBit decoder で検査し、不正な token は保存しない。通話準備中の退出で HTTP を abort。自動再送は追加しない。[契約と比較](http-client.md) |
+| 画面遷移 | React Router を History API adapter と平坦な画面表へ。既存の URL・query・戻る/進むを維持し、未知のパスには戻り先を表示。画面を必要時に読み、遷移待ち中も前画面の media を解放する。[契約と比較](navigation.md) |
+| メモの初回取得 | 画面の破棄・StrictMode の effect 再実行で古い取得を中止し、遅れて完了した応答が編集中の内容を上書きしないようにする |
 | UI 操作 | `/` はサインインへ。フォームは Enter 送信可能、設定の画像選択とログアウト遷移を修正。マイクチェック終了時は取得した全 track を停止 |
 
 これらはバグを含む既存動作の逐語的な互換再現ではなく、独立 repo としての意図的変更。既存サービスへの無停止切替を実施したものではない。

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../../navigation/links";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import TopSection from "../utils/TopSection";
 import TopWaves from "../utils/TopWaves";

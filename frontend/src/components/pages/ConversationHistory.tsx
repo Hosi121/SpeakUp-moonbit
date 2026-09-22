@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { navigate } from "../../navigation/location";
 import { type ConversationDto } from "../../../../dist/shared.js";
 import { fetchConversations } from "../../services/conversationService";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import TopSection from "../utils/TopSection";
 
 export const ConversationHistory = () => {
-  const navigate = useNavigate();
   const [calls, setCalls] = useState<ConversationDto[]>([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);

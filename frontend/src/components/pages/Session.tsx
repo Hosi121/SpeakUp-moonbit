@@ -10,7 +10,8 @@ import { ChoiceGroup } from "../ui/ChoiceGroup";
 import { SessionBottomNavigationTemplate } from "../templates/SessionBottomNavigationTemplate";
 import SessionContainer from "../utils/SessionContainer";
 import { fetchMemo } from "../../services/memoService"; // Import the fetchMemo function
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Redirect } from "../../navigation/links";
+import { navigate, useLocation } from "../../navigation/location";
 import { TopicPopup } from "../utils/TopicPopup";
 import { AudioVolumeAnalyzer } from "../utils/AudioVolumeAnalyzer";
 import { fetchUserProfile } from "../../services/userService";
@@ -28,12 +29,12 @@ import { useActivity } from "../../services/activity";
 import type { UserProfile } from "../../types/types";
 
 export const Session = () => {
-  const [query] = useSearchParams();
+  const query = useLocation().searchParams;
   const id = Number(query.get("conversation"));
   return Number.isInteger(id) && id > 0 && id <= 2147483647 ? (
     <ConversationSession key={id} id={id} />
   ) : (
-    <Navigate to="/sessionlist" replace />
+    <Redirect to="/sessionlist" />
   );
 };
 
@@ -49,7 +50,6 @@ const ConversationSession = ({ id }: { id: number }) => {
   const [value, setValue] = useState("1");
   const [isMuted, setIsMuted] = useState(false);
   const mutedRef = useRef(false);
-  const navigate = useNavigate();
   const [conversation, setConversation] = useState<ConversationDto | null>(
     null,
   );
@@ -220,14 +220,7 @@ const ConversationSession = ({ id }: { id: number }) => {
   useEffect(() => {
     if (clock?.phase === "completed")
       navigate(`/sessionrecord?conversation=${id}`, { replace: true });
-  }, [
-    clock?.phase,
-    clock?.has_deadline,
-    clock?.remaining_seconds,
-    finish,
-    id,
-    navigate,
-  ]);
+  }, [clock?.phase, id]);
   const cancel = async () => {
     setSaving(true);
     try {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { navigate } from "../../navigation/location";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import TopSection from "../utils/TopSection";
 import { Avatar } from "../ui/Avatar";
@@ -17,7 +17,6 @@ export function Settings() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
   useEffect(() => {
     void fetchUserProfile()
       .then(setUser)

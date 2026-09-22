@@ -6,7 +6,7 @@
 
 Axios 1.13.2 → 1.20.0、Vite 7.3.1 → 7.3.6、React Router 6.30.3 → 6.30.6 と推移的依存を更新した。ESLint 9.39.5 / typescript-eslint 8.70.1 に揃え、元の plugin が起動時に落ちる組み合わせも解消した。React の major update は含めない。その後 MUI・Emotion を削除し、標準 HTML/CSS へ置換した。[依存削減と build 比較](frontend.md)。
 
-残る監査項目は react-router / react-router-dom に対する以下の advisory。修正版は 7.18.0 以降であり、v7 への移行は別作業にする。
+この時点で残った監査項目は react-router / react-router-dom に対する以下の advisory。更新時には v7 への移行を見送ったが、翌日の依存削減で Router 自体を削除した。
 
 - [外部への意図しない navigation](https://github.com/remix-run/react-router/security/advisories/GHSA-wrjc-x8rr-h8h6): この UI の遷移先は固定のアプリ内パス。可変の friendName は `/message/` 以下の一つの segment として `encodeURIComponent` する。任意の redirect URL を受け取る機能を追加するときは再評価する。
 - [SSR hydration の constructor injection](https://github.com/remix-run/react-router/security/advisories/GHSA-337j-9hxr-rhxg): この UI は `createRoot` で描画する SPA で、SSR/hydration を実装していない。現構成には該当する入力経路がないと判断した。
@@ -25,6 +25,16 @@ lockfile から削除した 11 package は `axios`、`agent-base`、`asynckit`�
 frontend の直接 runtime 依存は React / React DOM / React Router の 3 つ。backend / 開発ツールの npm 依存と Mooncakes の依存は変更していない。上記のセキュリティ監査は 2026-09-22 時点の記録であり、今回の削除で Router の advisory が解消されたとは扱わない。
 
 認証、HTTP エラー、multipart、キャンセルと、JS/native 両 backend に対する通話を検証する。JS gzip は 147,802 → 130,618 bytes。[測定条件と速度比較](http-client.md)、[UI 全体の依存削減](frontend.md)。
+
+## React Router と未使用の開発用依存の削除（2026-09-23）
+
+`react-router-dom`、`react-router`、`@remix-run/router` の 3 package を削除した。ルーティングは既存の平坦な画面一覧とブラウザの History API に絞り、画面コードを遅延読み込みする。[構成と表示速度の比較](navigation.md)。
+
+ESLint の flat config は `eslint-plugin-react-hooks` と `eslint-plugin-react-refresh` を使うが、manifest に残っていた `eslint-plugin-react` と `eslint-config-prettier` を import / extends していなかった。この 2 つと不要になった推移的依存、計 103 package を削除した。実行されるルールを減らす変更はなく、lint を再実行して確認した。Prettier、TypeScript、Vite、使用中の ESLint plugin は維持する。
+
+合計 106 package を削除し、lockfile は 334 → 228（root 除外）。non-dev は 8 → 5、直接 runtime 依存は React / React DOM の 2 つ。残存 package の version 変更・新規 package の追加はない。103 個の開発用依存の削除をブラウザ bundle の削減量としては数えない。
+
+削除後の `npm --prefix frontend audit --json` は total / critical / high / moderate / low がすべて 0（2026-09-23）。以前残っていた Router の advisory は対象 package ごと依存から外れた。これは当日の frontend lockfile の監査結果。
 
 ## SQL 抽象化で追加した MoonBit 依存
 

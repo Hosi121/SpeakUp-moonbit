@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Input, Textarea } from "../ui/Field";
-import { Navigate, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Redirect, Link } from "../../navigation/links";
+import { navigate, useLocation } from "../../navigation/location";
 import {
   conversationClock,
   type ConversationDto,
@@ -14,16 +15,15 @@ import { LearningFeedback } from "../utils/LearningFeedback";
 import TopSection from "../utils/TopSection";
 
 export default function SessionRecordForm() {
-  const [query] = useSearchParams();
+  const query = useLocation().searchParams;
   const id = Number(query.get("conversation"));
   return Number.isInteger(id) && id > 0 && id <= 2147483647 ? (
     <RecordForm key={id} id={id} />
   ) : (
-    <Navigate to="/conversation_history" replace />
+    <Redirect to="/conversation_history" />
   );
 }
 function RecordForm({ id }: { id: number }) {
-  const navigate = useNavigate();
   const [conversation, setConversation] = useState<ConversationDto | null>(
     null,
   );

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "../ui/Field";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "../../navigation/links";
+import { navigate } from "../../navigation/location";
 import {
   conversationClock,
   conversationPartner,
@@ -17,7 +18,6 @@ import { useActivity } from "../../services/activity";
 import TopSection from "../utils/TopSection";
 
 export const SessionList = () => {
-  const navigate = useNavigate();
   const { revision, clockOffset } = useActivity();
   const [calls, setCalls] = useState<ConversationDto[]>([]);
   const [me, setMe] = useState<UserProfile | null>(null);

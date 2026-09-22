@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../../navigation/links";
 import TopSection from "../utils/TopSection";
 import { Avatar } from "../ui/Avatar";
 import { Input } from "../ui/Field";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../../navigation/links";
 import { Avatar } from "../ui/Avatar";
 import { fetchSocial } from "../../services/features";
 import { useActivity } from "../../services/activity";

@@ -30,6 +30,7 @@
     "start:native": "node scripts/start-native.mjs",
     "test:integration:native": "SERVER_RUNTIME=native node --test tests/integration.test.mjs tests/features.test.mjs",
     "test:browser:native": "SERVER_RUNTIME=native playwright test --global-timeout=120000",
+    "test:navigation": "npm --prefix frontend run build && playwright test --config playwright.navigation.config.mjs --global-timeout=120000",
     "start:node": "node --env-file-if-exists=.env server/main.ts",
     "test:boundaries": "node scripts/test-boundaries.mjs"
   },

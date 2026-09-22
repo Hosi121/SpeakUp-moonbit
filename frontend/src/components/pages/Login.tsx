@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "../../navigation/links";
+import { navigate } from "../../navigation/location";
 import { Input } from "../ui/Field";
 import { signIn } from "../../services/authService";
 import Logo from "../../assets/logo";
@@ -10,7 +11,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const navigate = useNavigate();
   const login = async (email: string, password: string) => {
     setBusy(true);
     setError("");

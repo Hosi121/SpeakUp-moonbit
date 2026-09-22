@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../../navigation/links";
 import type { ConversationDto } from "../../../../dist/shared.js";
 import { fetchConversations } from "../../services/conversationService";
 import TopSection from "../utils/TopSection";

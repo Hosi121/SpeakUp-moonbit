@@ -48,3 +48,4 @@ jobs:
         id: browser-node
       - run: npm run test:browser:native
         if: success() || (failure() && steps.browser-node.conclusion == 'failure')
+      - run: npm run test:navigation

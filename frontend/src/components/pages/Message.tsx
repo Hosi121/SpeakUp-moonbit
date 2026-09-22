@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Redirect } from "../../navigation/links";
 import TopSection from "../utils/TopSection";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import { Avatar } from "../ui/Avatar";
@@ -7,13 +7,12 @@ import { Input } from "../ui/Field";
 import { fetchThread, readThread, sendMessage } from "../../services/features";
 import { useActivity } from "../../services/activity";
 import type { ThreadDto } from "../../../../dist/shared.js";
-export function Message() {
-  const { friendId } = useParams();
+export function Message({ friendId }: { friendId: string }) {
   const id = Number(friendId);
   return Number.isInteger(id) && id > 0 && id <= 2147483647 ? (
     <Thread key={id} id={id} />
   ) : (
-    <Navigate to="/friendrequest" replace />
+    <Redirect to="/friendrequest" />
   );
 }
 function Thread({ id }: { id: number }) {

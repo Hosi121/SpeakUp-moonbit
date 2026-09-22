@@ -1,5 +1,38 @@
 import { test, expect } from '@playwright/test';
 
+test('a stale initial memo response cannot overwrite an editable draft', async ({ page }) => {
+  await page.route('**/api/memo', route => route.fulfill({ json: { memo1: '最新のメモ', memo2: '' } }));
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch;
+    let first = true;
+    const stale = Promise.withResolvers(), read = Promise.withResolvers();
+    // StrictMode disposes its first effect. Model a response whose completion
+    // was already queued at cleanup, so abort alone cannot discard the value.
+    window.fetch = (input, options) => {
+      if (first && typeof input === 'string' && input.endsWith('/api/memo') && options?.method === 'GET') {
+        first = false;
+        return stale.promise;
+      }
+      return originalFetch(input, options);
+    };
+    window.finishStaleMemo = async () => {
+      const response = new Response('{"memo1":"古いメモ","memo2":""}');
+      const readText = response.text.bind(response);
+      response.text = async () => { const text = await readText(); read.resolve(); return text; };
+      stale.resolve(response);
+      await read.promise;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    };
+  });
+  await page.goto('/memo');
+  const input = page.getByRole('textbox', { name: '持ち込みメモ', exact: true });
+  await expect(input).toHaveValue('最新のメモ');
+  await expect(input).toBeEnabled();
+  await input.fill('編集中のメモ');
+  await page.evaluate(() => window.finishStaleMemo());
+  await expect(input).toHaveValue('編集中のメモ');
+});
+
 test('public login reports HTTP errors and refuses an invalid token without replacing stored auth', async ({ page }) => {
   let calls = 0;
   await page.route('**/api/signin', async route => {

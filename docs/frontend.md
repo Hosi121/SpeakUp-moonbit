@@ -49,6 +49,23 @@ HTTP adapter を標準 `fetch` へ置換し、Axios と推移的依存の計 11 
 
 JS gzip は 11.6% 減。ローカルの Chromium で実アプリの通知取得と MoonBit decoder を比較したところ、4 条件の中央値は約 6–17% 短縮した。一方、100 件の逐次取得の p95 は 3.3 → 3.6 ms と増えた。実回線や backend の高速化を示す値ではない。[HTTP の契約・測定条件・全結果と再現手順](http-client.md)を参照。
 
+## React Router の削除と画面分割（2026-09-23）
+
+平坦な画面切り替えに使っていた React Router を、History API と React の `useSyncExternalStore` を使う browser adapter へ置換した。React Router の loader / action / nested routing は使っていなかった。既存の URL、戻る・進む、query の変更、新しいタブ、ダウンロード、同じページ内の anchor を維持する。
+
+ログイン／登録は初期 bundle に残し、ほかの画面は `React.lazy` で必要時に読む。遷移先の読み込みを待つ間も、前の画面のマイクや通話接続を解放する。chunk の取得失敗では再読み込みできる画面を表示する。新しい Router ライブラリや polyfill は追加していない。
+
+| 指標 | 変更前 (`4d4dd61`) | 変更後 |
+| --- | ---: | ---: |
+| ログイン時の JS bytes | 416,975 | 300,700 |
+| ログイン時の JS gzip bytes | 130,618 | 94,870 |
+| 全画面の JS gzip bytes 合計 | 130,618 | 125,531 |
+| frontend の直接 runtime 依存 | 3 | 2 |
+| lockfile の全 package（root 除外） | 334 | 228 |
+| lockfile の non-dev package | 8 | 5 |
+
+初期 JS gzip は 27.4% 減、全画面を足すと 3.9% 減。後者には chunk 分割による圧縮効率の変化も含む。削除した 106 package のうち 103 は未使用の ESLint plugin / config に由来する開発用依存で、ブラウザの軽量化とは分けて数える。[全測定結果・構成・回帰試験](navigation.md)を参照。
+
 ## 残っている TypeScript と依存
 
 | 場所 | 役割 | 判断 |
@@ -56,10 +73,11 @@ JS gzip は 11.6% 減。ローカルの Chromium で実アプリの通知取得�
 | `frontend/src/components` | React の画面・フォーム・UI 状態 | TS に残す。MUI は不要になった |
 | `frontend/src/services/voiceCall.ts`、音量計 | WebRTC / WebSocket / マイク / AudioContext の所有と後始末 | ブラウザ I/O adapter。MoonBit へ移しても Web API 境界は必要 |
 | `frontend/src/services/*` | fetch、認証情報、共通 MoonBit decoder の呼び出し | 通信とブラウザ側の状態を TS に残し、応答の型検査と DTO 変換を MoonBit へ |
+| `frontend/src/navigation`、`App.tsx` | History API、リンク、画面の読み込みと復帰 | ブラウザ UI adapter。ドメインの DTO は引き続き MoonBit から生成 |
 | `server/main.ts`、`server/host.ts` | 比較・互換検証用の Node backend | default の native backend では実行しない |
 | `server/migrate.ts`、`server/seed.ts`、scripts/tests | DB 準備、生成、ビルド、検証 | 開発用ツール。常駐サーバーの依存と分ける |
 
-frontend の直接 runtime 依存は React / React DOM / React Router の 3 つ。React 自体を外す場合は描画、状態の更新、DOM / Web API bindings の設計が必要であり、サーバーの MoonBit 化とは独立した判断。
+frontend の直接 runtime 依存は React / React DOM の 2 つ。React 自体を外す場合は描画、状態の更新、DOM / Web API bindings の設計が必要であり、サーバーの MoonBit 化とは独立した判断。
 
 通知、フレンド申請の承認・見送り・取消、メッセージ、実績、AI アドバイス、選択式の振り返り、イベント参加・管理を共通 MoonBit API に接続した。固定候補や架空の実績を廃止し、会話履歴と保存済みデータを使う。[各機能のモデル・API・検証](features.md)を参照。
 
@@ -70,3 +88,5 @@ frontend の直接 runtime 依存は React / React DOM / React Router の 3 つ�
 `npm run check`（動的型の監査を含む）、frontend lint、JS/MoonBit/native の既存テスト、JS/native API 結合テストを実行。ブラウザでは実 RTP 音声・再接続・終了・振り返りに加え、ミュート、通話中のメモ・トピック、ダイアログの Tab/Escape/フォーカス復帰、radio の矢印キー、イベント作成、プロフィール保存、ログアウト、マイク解放を確認する。HTTP 置換ではエラー応答、不正なログイン token の拒否、multipart と通話準備中の通信キャンセルも検証する。
 
 320 px / 1024 px で主要画面の横はみ出しを検査し、ログイン・ホーム・通話一覧のスクリーンショットを出力する。自動ブラウザ検証は Chromium。Safari / Firefox 実機、スクリーンリーダーでの評価は未実施。
+
+`npm run test:navigation` は production build を使い、履歴・直開き・query / hash・通常リンクの操作・遅い chunk と戻る操作の競合・chunk 取得失敗からの復帰を検証する。既存ブラウザ試験で検出したメモの初回読み込み競合も修正し、古い応答が編集中の内容を上書きしないことを再現試験で確認する。

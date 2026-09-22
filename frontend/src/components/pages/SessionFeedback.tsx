@@ -1,4 +1,5 @@
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Link, Redirect } from "../../navigation/links";
+import { useLocation } from "../../navigation/location";
 import { useEffect, useState } from "react";
 import { fetchLearning, saveSurvey } from "../../services/features";
 import TopSection from "../utils/TopSection";
@@ -31,12 +32,12 @@ const questions = [
 ];
 
 export default function SessionFeedback() {
-  const [query] = useSearchParams();
+  const query = useLocation().searchParams;
   const id = Number(query.get("conversation"));
   return Number.isInteger(id) && id > 0 && id <= 2147483647 ? (
     <Survey key={id} id={id} />
   ) : (
-    <Navigate to="/conversation_history" replace />
+    <Redirect to="/conversation_history" />
   );
 }
 function Survey({ id }: { id: number }) {

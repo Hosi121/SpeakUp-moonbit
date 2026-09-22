@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "../../navigation/links";
 import { Icon } from "../ui/Icon";
 import NotificationModal from "./NotificationModal";
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../../navigation/links";
 import { Dialog } from "../ui/Dialog";
 import { Icon } from "../ui/Icon";
 import { Avatar } from "../ui/Avatar";
