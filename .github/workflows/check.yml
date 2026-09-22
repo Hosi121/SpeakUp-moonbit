@@ -79,7 +79,7 @@ jobs:
         with:
           path: dist/native/speakup
           # No restore prefix: source, pinned compiler/dependencies, flags and ABI must match.
-          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.native-abi.outputs.hash }}-${{ hashFiles('core/**', 'moon.mod', 'moon.work', 'scripts/**', 'bindings/**', '.github/workflows/check.yml', '.github/actions/setup/action.yml') }}
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.native-abi.outputs.hash }}-${{ hashFiles('core/**', 'moon.mod', 'moon.work', 'package.json', 'scripts/**', 'bindings/**', '.github/workflows/check.yml', '.github/actions/setup/action.yml') }}
       - name: Build native release server
         if: steps.native-cache.outputs.cache-hit != 'true'
         run: npm run build:native
