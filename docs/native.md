@@ -28,6 +28,8 @@ npm run build:native
 npm start
 ```
 
+通常は最適化した release ビルドを使う。panic の原因を追えるよう `--no-strip` でスタック情報を残す。最適化なしで調べる場合は `NATIVE_DEBUG=1 npm run build:native` を使い、調査後に通常の `npm run build:native` で戻す。
+
 sudo を使えない Ubuntu 24.04 x86_64 環境では `bash scripts/install-native-deps.sh` が apt から取得したライブラリを `.tools/native` に展開する。システムのライブラリは変更しない。実行時ライブラリも同時に取得し、OpenSSL の意図しない static link を避ける。配布物のハッシュはローカルの `SHA256SUMS` に残す。
 
 `npm start` は `.env` 読み込み後に `process.execve` で `dist/native/speakup` へ置き換わる。稼働中の backend に Node event loop は存在しない。環境変数と共有ライブラリをシステム側で用意すれば、`./dist/native/speakup` を直接起動でき、Node は不要。Node は frontend の開発・ビルドと既存 DB migration/seed ツールに使う。

@@ -41,7 +41,7 @@ jobs:
       - run: npm --prefix frontend run lint
       - run: npm run fixtures && git diff --exit-code -- contract core/platform examples/js-boundary/src/platform examples/js-boundary/generated
       - run: npm run db:migrate && npm run db:seed
-      - run: NATIVE_DEBUG=1 npm run build:native && node scripts/build-bench.mjs
+      - run: npm run build:native && node scripts/build-bench.mjs
       - run: npm test && npm run test:native
       - run: npm run test:boundaries && npm run test:infrastructure && npm run test:infrastructure:mysql
       - run: npm run test:integration:native
