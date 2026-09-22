@@ -36,6 +36,21 @@ ESLint の flat config は `eslint-plugin-react-hooks` と `eslint-plugin-react-
 
 削除後の `npm --prefix frontend audit --json` は total / critical / high / moderate / low がすべて 0（2026-09-23）。以前残っていた Router の advisory は対象 package ごと依存から外れた。これは当日の frontend lockfile の監査結果。
 
+## React / React DOM の削除（2026-09-23）
+
+全画面の DOM renderer を実装し、直接 runtime 依存は 2 → 0、lockfile の non-dev
+package は 5 → 0、全 package は 228 → 172（root 除外）になった。
+React / React DOM / scheduler と、React 型、Vite React plugin、React Hooks / Refresh
+の ESLint plugin、不要になった Babel 系など計56 package を削除。
+新規 package の追加・残存 package の version 変更はない。TypeScript、Vite、
+Prettier、ESLint / typescript-eslint は開発用に残す。Node backend の比較・DB 準備用
+依存、Mooncakes、TS2Mbt のバージョンは変更していない。
+
+uninstall 時の npm audit は脆弱性 0（当日の frontend lockfile）。
+削除した React 専用 lint rule は DOM コードには適用しない。TypeScript の lint と
+動的型の監査、renderer への通信・JSON・アプリ状態の持ち込みを防ぐ検査は維持する。
+[配信量と表示時間の比較](react-removal.md)。
+
 ## SQL 抽象化で追加した MoonBit 依存
 
 アプリの native module に `Hosi121/sql_session@0.1.0` を追加し、`Hosi121/mysql` を 0.3.0 に更新した。`Hosi121/ws_session@0.1.0` とともに Mooncakes の公開版から解決する。`moonbitlang/async` は 0.22.1 のまま。npm / frontend / `@mizchi/ts` のバージョン変更はない。

@@ -4,7 +4,7 @@ const peer = { id: 2, username: 'Bob', avatar_url: '' };
 const message = (id, body, sender_id = 1, read_at = '') => ({ id, body, sender_id,
   recipient_id: sender_id === 1 ? 2 : 1, created_at: '2026-09-22T10:00:00Z', read_at });
 const thread = (messages = [], has_older = false) => ({ peer, messages, has_older });
-const modes = process.env.MESSAGE_VIEW === 'legacy' ? ['app'] : ['app', 'react', 'dom'];
+const modes = process.env.MESSAGE_VIEW === 'legacy' ? ['app'] : ['app', 'dom'];
 
 for (const mode of modes) {
   test.describe(`message ${mode}`, () => {

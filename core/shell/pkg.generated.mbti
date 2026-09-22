@@ -8,6 +8,8 @@ import {
 // Values
 pub fn create_activity_loader(ActivityLoaderPorts) -> @presenter.ActivityController
 
+pub fn create_app(AppHost) -> AppController
+
 pub fn create_auth(Bool, AuthPorts) -> AuthController
 
 pub fn route(String) -> RouteView
@@ -18,6 +20,22 @@ pub fn route(String) -> RouteView
 pub(all) struct ActivityLoaderPorts {
   load : ((@presenter.ActivityController) -> Unit, (String) -> Unit) -> Unit
   enabled : Bool
+}
+
+pub(all) struct AppController {
+  start : () -> Unit
+  stop : () -> Unit
+}
+
+pub(all) struct AppHost {
+  location : () -> LocationInput
+  on_location : (() -> Unit) -> () -> Unit
+  navigate : (String, Bool) -> Unit
+  load : (String, (PageRenderer) -> Unit, () -> Unit) -> Unit
+  load_activity : ((@presenter.ActivityController) -> Unit, (String) -> Unit) -> Unit
+  loading : () -> Unit
+  not_found : () -> Unit
+  failed : () -> Unit
 }
 
 pub(all) struct AuthController {
@@ -44,6 +62,23 @@ pub(all) struct AuthView {
   showPassword : Bool
   error : String
   busy : Bool
+}
+
+pub(all) struct LocationInput {
+  pathname : String
+  conversation : String
+  token : String
+}
+
+pub(all) struct PageInput {
+  conversation : String
+  peer : String
+  activity : @presenter.ActivityController
+  failed : () -> Unit
+}
+
+pub(all) struct PageRenderer {
+  mount : (PageInput) -> () -> Unit
 }
 
 pub(all) struct RouteView {

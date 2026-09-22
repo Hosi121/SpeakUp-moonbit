@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { cpus } from 'node:os';
@@ -19,7 +19,7 @@ try {
   for (const [index, label] of labels.entries()) {
     const dir = join(root, label, 'dist');
     const views = join(root, label, 'views');
-    const assets = new Map([dir, ...(index ? [views] : [])].flatMap(base =>
+    const assets = new Map([dir, ...(existsSync(views) ? [views] : [])].flatMap(base =>
       readdirSync(join(base, 'assets')).map(file => [file, readFileSync(join(base, 'assets', file))])));
     const original = Array.from({ length: 50 }, (_, index) => ({ id: index + 1, sender_id: 1, recipient_id: 2,
       body: `日本語のメッセージ ${index + 1}`, created_at: '2026-09-22T10:00:00Z', read_at: '2026-09-22T10:01:00Z' }));
@@ -30,7 +30,7 @@ try {
         const name = url.pathname.slice('/assets/'.length), data = assets.get(name);
         if (!data) return response.writeHead(404).end();
         const body = gzipSync(data);
-        response.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'application/octet-stream');
+        response.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream');
         response.setHeader('Content-Encoding', 'gzip'); response.setHeader('Content-Length', body.length); response.end(body);
       } else if (url.pathname === '/api/messages/2') {
         const messages = [...original];
@@ -49,7 +49,13 @@ try {
     server.listen(0, '127.0.0.1'); await once(server, 'listening'); servers.push(server);
     const base = `http://127.0.0.1:${server.address().port}`;
     cases.push({ name: index ? 'app-moonbit' : 'app-before', label, url: base + '/message/2' });
-    if (index) for (const renderer of ['react', 'dom']) cases.push({ name: `isolated-${renderer}`, label, url: `${base}/message-${renderer}.html?peer=2` });
+    for (const renderer of ['react', 'dom']) {
+      // Current builds keep only the DOM proof. A captured React baseline remains
+      // usable without keeping React installed in the application.
+      const afterHasView = existsSync(join(root, labels[1], `views/message-${renderer}.html`));
+      if ((index === 1) === afterHasView && existsSync(join(views, `message-${renderer}.html`)))
+        cases.push({ name: `isolated-${renderer}`, label, url: `${base}/message-${renderer}.html?peer=2` });
+    }
   }
   browser = await chromium.launch();
   for (const profile of profiles) {
@@ -80,6 +86,8 @@ try {
           await page.goto(item.url);
           await page.waitForFunction(() => performance.getEntriesByName('messages-visible').length > 0);
           const initial = await page.evaluate(() => ({ initial_ms: performance.getEntriesByName('messages-visible')[0].startTime,
+            assets: performance.getEntriesByType('resource').filter(r => new URL(r.name).pathname.startsWith('/assets/'))
+              .map(r => ({ file: new URL(r.name).pathname, gzip_bytes: r.encodedBodySize, raw_bytes: r.decodedBodySize })),
             scripts: performance.getEntriesByType('resource').filter(r => new URL(r.name).pathname.endsWith('.js'))
               .map(r => ({ file: new URL(r.name).pathname, gzip_bytes: r.encodedBodySize, raw_bytes: r.decodedBodySize })) }));
           await page.getByLabel('メッセージを入力').fill('同じ入力で送信を比較 😀');
@@ -95,18 +103,20 @@ try {
     for (const item of cases) {
       const runs = samples.get(item.name), median = key => runs.map(run => run[key]).sort((a, b) => a - b)[3];
       const result = { name: item.name, label: item.label, profile, initial_median_ms: median('initial_ms'), send_median_ms: median('send_ms'),
+        asset_gzip_bytes: runs[0].assets.reduce((sum, file) => sum + file.gzip_bytes, 0), asset_requests: runs[0].assets.length,
         js_gzip_bytes: runs[0].scripts.reduce((sum, file) => sum + file.gzip_bytes, 0), js_requests: runs[0].scripts.length, runs };
       results.push(result); console.log(JSON.stringify({ ...result, runs: runs.length }));
     }
   }
   const report = { measured_at: new Date().toISOString(), node: process.version, chromium: browser.version(), cpu: cpus()[0].model,
     builds: labels.map(label => JSON.parse(readFileSync(join(root, label, 'metadata.json')))),
-    proof_assets: readdirSync(join(root, labels[1], 'views/assets')).filter(file => file.endsWith('.js')).map(file => {
-      const data = readFileSync(join(root, labels[1], 'views/assets', file));
-      return { file, bytes: data.length, gzip_bytes: gzipSync(data).length };
-    }), results,
+    proof_assets: labels.filter(label => existsSync(join(root, label, 'views/assets'))).map(label => ({ label,
+      assets: readdirSync(join(root, label, 'views/assets')).filter(file => file.endsWith('.js')).map(file => {
+        const data = readFileSync(join(root, label, 'views/assets', file));
+        return { file, bytes: data.length, gzip_bytes: gzipSync(data).length };
+      }) })), results,
     scope: 'Gzip HTTP/1.1 loopback, fresh contexts, cache disabled, one warm-up + seven measured rounds with alternating order. Same 50-message fixture and successful send. In-page DOM mutation plus two animation frames; not LCP/INP. No real backend, notification websocket or IME benchmark.',
-    comparison: 'app-before vs app-moonbit preserves the existing app shell. isolated-react vs isolated-dom uses the same minimal HTML host, MoonBit controller and browser ports. Isolated pages are not equivalent to the full app shell.' };
+    comparison: 'app-before vs app-moonbit compares the two captured full app builds. isolated-react vs isolated-dom compares minimal HTML hosts; check labels for the commit supplying each renderer. Isolated pages are not equivalent to the full app shell.' };
   const output = join(root, `${labels.join('-vs-')}-message.json`);
   writeFileSync(output, JSON.stringify(report, null, 2) + '\n'); console.log(`Saved ${output}`);
 } finally {

@@ -11,8 +11,8 @@ test('a stale initial memo response cannot overwrite an editable draft', async (
     let first = true;
     const stale = Promise.withResolvers(),
       read = Promise.withResolvers();
-    // StrictMode disposes its first effect. Model a response whose completion
-    // was already queued at cleanup, so abort alone cannot discard the value.
+    // Model a response whose completion was already queued when leaving the
+    // screen, so abort alone cannot discard the value.
     window.fetch = (input, options) => {
       if (
         first &&
@@ -21,6 +21,7 @@ test('a stale initial memo response cannot overwrite an editable draft', async (
         options?.method === 'GET'
       ) {
         first = false;
+        window.staleMemoStarted = true;
         return stale.promise;
       }
       return originalFetch(input, options);
@@ -41,6 +42,10 @@ test('a stale initial memo response cannot overwrite an editable draft', async (
     };
   });
   await page.goto('/memo');
+  await expect.poll(() => page.evaluate(() => window.staleMemoStarted)).toBe(true);
+  await page.getByRole('link', { name: 'SpeakUp ホーム' }).click();
+  await expect(page.getByRole('heading', { name: '直近の参加予定' })).toBeVisible();
+  await page.goBack();
   const input = page.getByRole('textbox', {
     name: '持ち込みメモ',
     exact: true,

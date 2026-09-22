@@ -1,6 +1,6 @@
 # SpeakUp MoonBit
 
-[SpeakUp](https://github.com/Hosi121/SpeakUp) の独立した実験的移植です。API の処理・通話の状態管理・マッチング・共通 DTO に加え、画面の状態と通信制御も MoonBit が所有します。backend は native、frontend は JS へビルドし、React は snapshot の描画と入力の転送を担当します。
+[SpeakUp](https://github.com/Hosi121/SpeakUp) の独立した実験的移植です。API の処理・通話の状態管理・マッチング・共通 DTO に加え、画面の状態と通信制御も MoonBit が所有します。backend は native、frontend は JS へビルドし、素の DOM renderer が snapshot の描画と入力の転送を担当します。React は削除しました。
 
 イベントのラウンド通話と、相手を選んで随時始める 1 対 1 通話を、同じ会話モデルで扱います。再接続しても会話の開始時刻を保ち、終了後は本人だけの振り返りを保存できます。[モデルと設計判断](docs/domain-model.md)にまとめています。
 
@@ -65,12 +65,12 @@ scripts/boundaries    固定版 TS2Mbt / Mbt2TS の生成・公開型検査
 examples/js-boundary  アプリの JS 境界を実行する契約 fixture
 core/platform     TS2Mbt で生成した JS host binding
 server            比較用 JS backend、DB migration / seed
-frontend          React + 標準 HTML/CSS、型付きブラウザアダプター
+frontend          標準 DOM / HTML / CSS、型付きブラウザアダプター
 ```
 
 TS2Mbt と Mbt2TS は `@mizchi/ts@0.6.0` を固定して使います。共通型を TS に手で二重定義せず、MoonBit interface から生成します。手書きコード、生成 bridge、公開型の `any` / `Any` / `JSValue` を CI で禁止しています。
 
-frontend の直接 runtime 依存は React / React DOM の 2 つです。HTTP は標準 `fetch` と共通 MoonBit decoder、画面遷移は History API を使います。未ログインの認証フォームが最初に読む JS は gzip 約 58 kB。入力時に認証処理を先読みします。状態を MoonBit に集める変更で配信量は増えており、高速化とは扱っていません。[現在の構成・移行前後の測定](docs/frontend-controllers.md)、[画面遷移](docs/navigation.md)、[HTTP 置換時の記録](docs/http-client.md)を参照してください。
+frontend の実行時 npm 依存は **0** です。HTTP は標準 `fetch` と共通 MoonBit decoder、画面遷移は History API と MoonBit の app controller を使います。認証フォームは初期 bundle、ほかの画面と通信処理は必要時に読み込みます。[React 削除後の構成・比較測定](docs/react-removal.md)、[UI の構成](docs/frontend.md)、[HTTP 置換時の記録](docs/http-client.md)を参照してください。
 
 ```bash
 npm run generate       # bindings/host.d.ts → MoonBit、strict mode
@@ -81,7 +81,7 @@ npm run check          # MoonBit / TS / frontend build / 動的型の検査
 
 標準 `.d.ts` の struct→any、Promise ABI、callback の opaque 型、JS prototype、数値範囲、JSON 境界については [移行記録](docs/migration.md#js-境界と-ts2mbt) に記載しています。
 
-フォーム、一覧、通知、WebRTC、マイク確認の状態・操作規則・非同期処理の寿命を MoonBit controller に集約しました。React 側にアプリの `useState` / `useReducer` はありません。TS に残るのは描画、DOM・History・fetch・media の具体的な操作、module 読み込みです。メッセージには同じ controller を使う React 単独版と DOM 単独版もあり、後者は React を読み込みません。アプリ全体の React 削除はまだ行っていません。[全画面の責務と検証](docs/frontend-controllers.md)、[描画を交換する例](docs/message-controller.md)
+フォーム、一覧、通知、WebRTC、マイク確認の状態・操作規則・非同期処理の寿命は MoonBit controller に集約しています。TS に残るのは DOM の生成と差分反映、History・fetch・media の具体的な操作、module 読み込みです。画面遷移時の破棄と遅い module の無効化も MoonBit が判断します。型は TS2Mbt / Mbt2TS で生成し、ブラウザの handle は具体的な操作を持つ port で包みます。[責務の分担と残る TS](docs/react-removal.md)
 
 ## 検証
 
@@ -109,6 +109,6 @@ Playwright はイベント／随時通話の双方で audio RTP 受信、退出�
 
 ## 現在の範囲
 
-Go backend の主要 route と通話を移植し、会話のライフサイクル・随時通話・振り返り・履歴を新モデルで実装しました。画面は React/TypeScript と標準 HTML/CSS。MUI・Emotion は削除し、別の UI framework は追加していません。[UI の構成と残る TypeScript](docs/frontend.md)を参照してください。backend I/O は MoonBit async と Connector/C・OpenSSL binding です。フレンド申請と承認、保存されるメッセージ、アプリ内通知、実績、本人の選択回答・AI アドバイス、イベント参加・管理、サーバーによる期限終了も実装しています。[機能の詳細](docs/features.md)を参照してください。OS Web Push、元の Ent DB の移行、production rollout は未実施です。[機能別の対応表と変更点](docs/migration.md)で区別しています。
+Go backend の主要 route と通話を移植し、会話のライフサイクル・随時通話・振り返り・履歴を新モデルで実装しました。画面は TypeScript の DOM renderer と標準 HTML/CSS。React・MUI・Emotion は削除し、別の UI framework は追加していません。[UI の構成と残る TypeScript](docs/frontend.md)を参照してください。backend I/O は MoonBit async と Connector/C・OpenSSL binding です。フレンド申請と承認、保存されるメッセージ、アプリ内通知、実績、本人の選択回答・AI アドバイス、イベント参加・管理、サーバーによる期限終了も実装しています。[機能の詳細](docs/features.md)を参照してください。OS Web Push、元の Ent DB の移行、production rollout は未実施です。[機能別の対応表と変更点](docs/migration.md)で区別しています。
 
 公開したコードは本番への切替ではありません。元 repo はそのまま残しています。元チームのコード・画像の出典は [NOTICE.md](NOTICE.md) を参照してください。

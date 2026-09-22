@@ -149,7 +149,8 @@ test('pages fit narrow and desktop viewports and notifications close with Escape
     for (const [route, title] of routes) {
       await page.goto(route);
       await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
-      await expect(page.getByText('読み込み中…', { exact: true })).toHaveCount(0);
+      // DOM views retain nodes and hide inactive branches.
+      await expect(page.getByText('読み込み中…', { exact: true })).toBeHidden();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       if (['/login', '/home', '/sessionlist'].includes(route)) {
         await page.screenshot({ path: testInfo.outputPath(`${route.slice(1)}-${width}.png`), fullPage: true });

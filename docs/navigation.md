@@ -1,15 +1,18 @@
 # 画面遷移と初回表示の軽量化
 
+> 移行段階の記録（参照 revision: `e26c994`）。現在は全画面から React を削除済み。
+> [現在の構成と測定](react-removal.md)を参照。以下の React 固有コードと数値は当時のもの。
+
 このページは `7bf6ffc` で行った画面分割の記録。現在の認証フォームの先読みと追加計測は [認証コードの初期読み込み](auth-loading.md)を参照。
 
 2026-09-23、React Router を削除し、ブラウザの History API で既存の平坦な画面一覧を切り替える構成にした。frontend の直接 runtime 依存は React / React DOM。HTTP 応答の検査とドメイン型は引き続き MoonBit と Mbt2TS の生成宣言を使う。
 
 ## 実装の範囲
 
-- [`navigation/location.ts`](../frontend/src/navigation/location.ts): URL を React に購読させ、同一 origin の `pushState` / `replaceState` と戻る・進むを扱う。
-- [`navigation/links.tsx`](../frontend/src/navigation/links.tsx): 実際の `a href` を使う。通常のアプリ内クリックを処理し、修飾キー、新しいタブ、download、外部 URL、同じページの hash はブラウザへ任せる。
-- [`App.tsx`](../frontend/src/App.tsx): 既存のパス、メッセージ相手の ID、旧 URL の転送先を宣言する。query の conversation ID は各画面で従来と同じ範囲を検査する。未知のパスは戻り先のある画面を表示する。
-- [`PageBoundary.tsx`](../frontend/src/navigation/PageBoundary.tsx): 画面取得の失敗時に再読み込みを案内する。URL のパスが変わると前画面を unmount し、遷移先の読み込みが遅くても media を解放する。
+- [`navigation/location.ts`](https://github.com/Hosi121/SpeakUp-moonbit/blob/e26c994/frontend/src/navigation/location.ts): URL を React に購読させ、同一 origin の `pushState` / `replaceState` と戻る・進むを扱う。
+- [`navigation/links.tsx`](https://github.com/Hosi121/SpeakUp-moonbit/blob/e26c994/frontend/src/navigation/links.tsx): 実際の `a href` を使う。通常のアプリ内クリックを処理し、修飾キー、新しいタブ、download、外部 URL、同じページの hash はブラウザへ任せる。
+- [`App.tsx`](https://github.com/Hosi121/SpeakUp-moonbit/blob/e26c994/frontend/src/App.tsx): 既存のパス、メッセージ相手の ID、旧 URL の転送先を宣言する。query の conversation ID は各画面で従来と同じ範囲を検査する。未知のパスは戻り先のある画面を表示する。
+- [`PageBoundary.tsx`](https://github.com/Hosi121/SpeakUp-moonbit/blob/e26c994/frontend/src/navigation/PageBoundary.tsx): 画面取得の失敗時に再読み込みを案内する。URL のパスが変わると前画面を unmount し、遷移先の読み込みが遅くても media を解放する。
 
 通知の `ActivityLayout` は画面切り替えをまたいで維持し、ログイン・ログアウト時は現在の token で接続を更新する。ログイン／登録は初期 bundle に含め、ほかの画面を `React.lazy` で読み込む。初めて開く画面では追加の JS リクエストが発生する。未取得時は読み込み状態を表示し、既に読み込んだ module は再利用する。
 

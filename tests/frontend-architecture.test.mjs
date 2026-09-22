@@ -46,6 +46,27 @@ test('renderers do not regain application state, decoding or network orchestrati
       visit(source);
     }
   };
-  walk('frontend/src/components');
+  walk('frontend/src/dom');
   walk('frontend/src/message');
+});
+
+test('frontend has no runtime npm dependency or React renderer', () => {
+  const pkg = JSON.parse(readFileSync('frontend/package.json', 'utf8'));
+  assert.deepEqual(Object.keys(pkg.dependencies ?? {}), []);
+  const walk = directory => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) { walk(path); continue; }
+      assert.ok(!path.endsWith('.tsx'), `${path}: keep markup in DOM adapters`);
+      if (!path.endsWith('.ts')) continue;
+      const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true);
+      const visit = node => {
+        if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier))
+          assert.ok(!/^react(?:-dom)?(?:\/|$)/.test(node.moduleSpecifier.text), `${path}: retired React import`);
+        ts.forEachChild(node, visit);
+      };
+      visit(source);
+    }
+  };
+  walk('frontend/src');
 });

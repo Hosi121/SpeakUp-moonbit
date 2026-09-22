@@ -19,7 +19,7 @@ if (mode === 'capture') {
   if (existsSync(dir)) throw new Error('Use a new capture label to preserve the previous build');
   mkdirSync(dir);
   cpSync(join(checkout, 'frontend/dist'), join(dir, 'dist'), { recursive: true });
-  const assets = readdirSync(join(dir, 'dist/assets')).filter(file => /\.(js|css)$/.test(file)).map(file => {
+  const assets = readdirSync(join(dir, 'dist/assets')).map(file => {
     const data = readFileSync(join(dir, 'dist/assets', file));
     return { file, bytes: data.length, gzip_bytes: gzipSync(data).length };
   });
@@ -28,7 +28,7 @@ if (mode === 'capture') {
   const metadata = { label, commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: checkout, encoding: 'utf8' }).trim(),
     dirty: !!execFileSync('git', ['status', '--porcelain'], { cwd: checkout, encoding: 'utf8' }).trim(),
     assets, packages: packages.length, runtime_packages: packages.filter(([, pkg]) => !pkg.dev).length,
-    direct_runtime_dependencies: Object.keys(lock.packages[''].dependencies) };
+    direct_runtime_dependencies: Object.keys(lock.packages[''].dependencies ?? {}) };
   writeFileSync(join(dir, 'metadata.json'), JSON.stringify(metadata, null, 2) + '\n');
   console.log(JSON.stringify(metadata, null, 2));
 } else if (mode === 'compare' || mode === 'compare-auth') {
@@ -41,7 +41,7 @@ if (mode === 'capture') {
       const html = readFileSync(join(dir, 'dist/index.html'));
       for (const file of readdirSync(join(dir, 'dist/assets'))) {
         const data = readFileSync(join(dir, 'dist/assets', file));
-        const type = file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'application/octet-stream';
+        const type = file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream';
         files.set(`/assets/${file}`, { body: gzipSync(data), type });
       }
       const server = createServer((req, res) => {
@@ -115,6 +115,8 @@ if (mode === 'capture') {
                 initial_ms: performance.getEntriesByName('initial-visible')[0].startTime,
                 scripts: performance.getEntriesByType('resource').filter(entry => new URL(entry.name).pathname.endsWith('.js'))
                   .map(entry => ({ file: new URL(entry.name).pathname, encoded_bytes: entry.encodedBodySize, decoded_bytes: entry.decodedBodySize })),
+                assets: performance.getEntriesByType('resource').filter(entry => new URL(entry.name).pathname.startsWith('/assets/'))
+                  .map(entry => ({ file: new URL(entry.name).pathname, encoded_bytes: entry.encodedBodySize, decoded_bytes: entry.decodedBodySize })),
               }));
               let signup_ms = null, auth = {};
               if (input) {
@@ -153,7 +155,9 @@ if (mode === 'capture') {
             ...(input ? { input, submit_to_home_median_ms: median('submit_to_home_ms'),
               input_to_home_median_ms: median('input_to_home_ms'), total_to_home_median_ms: median('total_to_home_ms') } : {}),
             initial_scripts: runs[0].scripts,
-            runs: runs.map(({ scripts, ...run }) => ({ ...run,
+            initial_assets: runs[0].assets,
+            runs: runs.map(({ scripts, assets, ...run }) => ({ ...run,
+              asset_requests: assets.length, asset_gzip_bytes: assets.reduce((n, asset) => n + asset.encoded_bytes, 0),
               js_requests: scripts.length, js_gzip_bytes: scripts.reduce((n, script) => n + script.encoded_bytes, 0) })) });
         }
       }

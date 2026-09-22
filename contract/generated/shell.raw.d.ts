@@ -2,6 +2,8 @@ import type * as presenter from "hosi121/speakup/presenter";
 
 export function create_activity_loader(value: ActivityLoaderPorts): presenter.ActivityController;
 
+export function create_app(value: AppHost): AppController;
+
 export function create_auth(flag: boolean, arg1: AuthPorts): AuthController;
 
 export function route(s: string): RouteView;
@@ -9,6 +11,22 @@ export function route(s: string): RouteView;
 export interface ActivityLoaderPorts {
   load: (fn_: (value: presenter.ActivityController) => void, fn_2: (s: string) => void) => void;
   enabled: boolean;
+}
+
+export interface AppController {
+  start: () => void;
+  stop: () => void;
+}
+
+export interface AppHost {
+  location: () => LocationInput;
+  on_location: (fn_: () => void) => () => void;
+  navigate: (s: string, flag: boolean) => void;
+  load: (s: string, fn_: (value: PageRenderer) => void, fn_2: () => void) => void;
+  load_activity: (fn_: (value: presenter.ActivityController) => void, fn_2: (s: string) => void) => void;
+  loading: () => void;
+  not_found: () => void;
+  failed: () => void;
 }
 
 export interface AuthController {
@@ -35,6 +53,23 @@ export interface AuthView {
   showPassword: boolean;
   error: string;
   busy: boolean;
+}
+
+export interface LocationInput {
+  pathname: string;
+  conversation: string;
+  token: string;
+}
+
+export interface PageInput {
+  conversation: string;
+  peer: string;
+  activity: presenter.ActivityController;
+  failed: () => void;
+}
+
+export interface PageRenderer {
+  mount: (value: PageInput) => () => void;
 }
 
 export interface RouteView {

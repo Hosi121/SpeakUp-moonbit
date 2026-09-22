@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart LR
-  UI[React / TypeScript] --> S[MoonBit shared: DTO / 変換 / protocol]
+  UI[DOM renderer / TypeScript] --> S[MoonBit shared: DTO / 変換 / protocol]
   UI --> B[Browser WebRTC adapter]
   B <-->|SDP / ICE| W[MoonBit native WebSocket transport]
   W --> H[MoonBit signaling state machine]
@@ -24,7 +24,7 @@ flowchart LR
   B <-->|音声: direct または TURN| P[相手のブラウザ]
 ```
 
-React の描画とブラウザの WebRTC オブジェクトを TS に残した。UI は標準 HTML/CSS で、MUI・Emotion と独自の `sx` / theme API は削除済み。Go の HTTP controller にあった入力検査、応答構築、ユーザー・メモ・イベント・フレンド処理は `core/api`、一時的な接続状態は `core/signaling`、ペア生成は `core/matching`。永続的な会話の開始・終了・取消は `core/conversation`。SQL も MoonBit 側に置き、アダプターは実行・トランザクション・SDK 呼び出しを担当する。
+DOM の描画とブラウザの WebRTC オブジェクトを TS に残した。UI は標準 HTML/CSS で、MUI・Emotion と独自の `sx` / theme API は削除済み。Go の HTTP controller にあった入力検査、応答構築、ユーザー・メモ・イベント・フレンド処理は `core/api`、一時的な接続状態は `core/signaling`、ペア生成は `core/matching`。永続的な会話の開始・終了・取消は `core/conversation`。SQL も MoonBit 側に置き、アダプターは実行・トランザクション・SDK 呼び出しを担当する。
 
 イベントのラウンドと随時通話を同じ会話で扱うよう、ドメインを再設計した。[会話モデル](domain-model.md)に遷移、参加者の制約、履歴・振り返り、接続との分離を記載している。
 
@@ -95,13 +95,14 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 | メモ | user_id の UNIQUE と upsert で同時更新の重複作成を防止 |
 | avatar | 2 MiB 上限、画像形式確認、暗号学的乱数による保存名、設定された公開 origin |
 | chat | 認証必須、20 秒 timeout。model は環境変数で変更可能 |
-| UI dependencies | MUI / Emotion を削除。標準 form / dialog / radio / nav と CSS、少数の型付き React 部品へ。詳細は [frontend](frontend.md) |
+| UI dependencies | MUI / Emotion を削除。標準 form / dialog / radio / nav と CSS、少数の型付き DOM helper へ。詳細は [frontend](frontend.md) |
 | frontend HTTP | Axios を削除し標準 fetch へ。Bearer 認証・HTTP エラー・multipart を維持。成功応答を共通 MoonBit decoder で検査し、不正な token は保存しない。通話準備中の退出で HTTP を abort。自動再送は追加しない。[契約と比較](http-client.md) |
 | 画面遷移 | React Router を History API adapter と平坦な画面表へ。既存の URL・query・戻る/進むを維持し、未知のパスには戻り先を表示。画面を必要時に読み、遷移待ち中も前画面の media を解放する。[契約と比較](navigation.md) |
 | 認証コードの配信 | ログイン／登録フォームを先に表示し、入力時に service と共有 MoonBit decoder を先読みする。準備完了後に API を送信し、読み込み待ち中に離れたフォームからは送信しない。初回表示と送信後の待ちを分けて比較する。[構成・制約](auth-loading.md) |
 | メモの初回取得 | 画面の破棄・StrictMode の effect 再実行で古い取得を中止し、遅れて完了した応答が編集中の内容を上書きしないようにする |
-| メッセージ画面 | 状態・通信順序・既読・再送・ページングを `core/thread` に移し、React / DOM が同じ controller を使う。破棄・更新時に古い要求を abort して応答を無視する。過去ページの二重取得を防ぎ、表示した過去の未読も既読化する。[契約と比較](message-controller.md) |
-| 全画面の状態と I/O | 認証、フォーム、一覧、通知、WebRTC とマイク確認の状態・非同期処理を `core/presenter` / `core/shell` へ。React は snapshot と操作だけを受け渡す。複数の独立した GET は並列のまま、二重送信と古い応答を抑止する。[構成と比較](frontend-controllers.md) |
+| メッセージ画面 | 状態・通信順序・既読・再送・ページングを `core/thread` に移し、DOM renderer が controller を使う（React との比較は履歴に保存）。破棄・更新時に古い要求を abort して応答を無視する。過去ページの二重取得を防ぎ、表示した過去の未読も既読化する。[契約と比較](message-controller.md) |
+| 全画面の状態と I/O | 認証、フォーム、一覧、通知、WebRTC とマイク確認の状態・非同期処理を `core/presenter` / `core/shell` へ。DOM renderer は snapshot と操作だけを受け渡す。複数の独立した GET は並列のまま、二重送信と古い応答を抑止する。[構成と比較](frontend-controllers.md) |
+| React の削除 | 全画面の描画を標準 DOM に置換。route / module / controller の寿命は `core/shell/app.mbt`。入力・音声・一覧の DOM を保って更新し、CSS・URL・API を維持。React の実行時依存と専用ツールを削除。[構成・比較・制約](react-removal.md) |
 | 通知の競合 | 既読応答を画面へ反映し、途中で新しい通知を取得済みなら古い応答で消さず再取得する。socket error / close の両方で世代を切り替え再接続する |
 | media の寿命 | 終了後のマイク許可・SDP 完了を無視して track を解放。AudioContext の途中生成失敗も後始末する。ICE 待機128件に加え、SDP 処理待ちの signaling queue に256件上限を設ける |
 | UI 操作 | `/` はサインインへ。フォームは Enter 送信可能、設定の画像選択とログアウト遷移を修正。マイクチェック終了時は取得した全 track を停止 |

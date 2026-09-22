@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -9,22 +8,27 @@ export default defineConfig(({ mode }) => ({
         .pathname,
     },
   },
-  plugins: [react()],
   build:
     mode === "message-views"
       ? {
           outDir: "../_build/message-views",
           emptyOutDir: true,
           rollupOptions: {
-            treeshake: { moduleSideEffects: (id) => !/\/dist\/client(?:\/|\.js$)/.test(id) },
+            treeshake: {
+              moduleSideEffects: (id) => !/\/dist\/client(?:\/|\.js$)/.test(id),
+            },
             input: {
               message: new URL("./message-dom.html", import.meta.url).pathname,
-              messageReact: new URL("./message-react.html", import.meta.url)
-                .pathname,
             },
           },
         }
-      : { rollupOptions: { treeshake: { moduleSideEffects: (id) => !/\/dist\/client(?:\/|\.js$)/.test(id) } } },
+      : {
+          rollupOptions: {
+            treeshake: {
+              moduleSideEffects: (id) => !/\/dist\/client(?:\/|\.js$)/.test(id),
+            },
+          },
+        },
   server: {
     host: "127.0.0.1",
     proxy: {

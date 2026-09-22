@@ -1,13 +1,13 @@
 # UI の構成
 
-フロントの状態・更新規則・通信制御を MoonBit に集めた。フォーム、一覧、通知、通話、マイク確認を `core/presenter` / `core/shell`、メッセージを `core/thread` が所有し、React は snapshot の描画と入力の転送を担当する。共通 DTO と公開 controller 型は MoonBit から生成する。native backend には React / MUI / Node のランタイム依存はない。[現在の構成・検証・性能の比較](frontend-controllers.md)。以下の依存削除の表は各変更時点の記録で、現在の bundle サイズではない。
+フロントの状態・更新規則・通信制御を MoonBit に集めた。フォーム、一覧、通知、通話、マイク確認を `core/presenter` / `core/shell`、メッセージを `core/thread` が所有し、DOM renderer は snapshot の描画と入力の転送を担当する。共通 DTO と公開 controller 型は MoonBit から生成する。native backend には React / MUI / Node のランタイム依存はない。[現在の構成・検証・性能の比較](react-removal.md)。以下の依存削除の表は各変更時点の記録で、現在の bundle サイズではない。
 
 ## MUI の削除
 
 `@mui/material`、`@mui/lab`、`@mui/icons-material`、`@emotion/react`、`@emotion/styled` を manifest と lockfile から削除した。代替 UI ライブラリ、CSS framework、アイコンパッケージは追加していない。
 
 - `frontend/src/styles/app.css` に色・余白・レイアウトを集約。`sx`、ThemeProvider、CSS-in-JS、MUI 互換レイヤーはない。黄色とピンクの配色・既存ロゴを維持し、文字用のピンクを暗くした。
-- 画面は `button`、`form`、`input`、`textarea`、`nav`、`article` を直接使う。`components/ui` はラベル付き入力、アバター、必要な SVG アイコン、ダイアログ、選択肢だけを扱い、native DOM の具体的な型で公開する。
+- 画面は `button`、`form`、`input`、`textarea`、`nav`、`article` を直接使う。現在の `dom/elements.ts` / `dom/layout.ts` はラベル付き入力、アバター、必要な SVG アイコン、ダイアログ、選択肢だけを扱い、native DOM の具体的な型で公開する。
 - モーダルは [`dialog.showModal()`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement/showModal) を使う。フォーカス制限・背景の inert 化・閉じた後のフォーカス復帰をブラウザに任せる。閉じるボタンと Escape に対応し、背景クリックでは閉じない。
 - 従来のタブは `fieldset` / `legend` / 同名 radio の選択肢へ。矢印キーの操作はブラウザ標準。ARIA の tab ウィジェットや独自のキーボード操作を再実装しない。
 - 下部ナビゲーションには操作名、現在ページ、ミュート状態を付けた。狭い画面でも折り返し、safe-area 分の余白を確保する。アニメーションする波は静的な SVG へ変更した。
@@ -72,21 +72,26 @@ JS gzip は 11.6% 減。ローカルの Chromium で実アプリの通知取得�
 
 全 JS の gzip 合計は分割により 125,531 → 126,217 bytes。通信・CPU 制限下の初回表示は中央値 756.9 → 545.2 ms だが、即時送信後は decoder 待ちで 222.0 → 410.7 ms。入力を含む合計、ホーム直開き、通常 loopback も比較した。[採用理由・制約・全試行](auth-loading.md)を参照。
 
-## 残っている TypeScript と依存
+## React の削除と残る TypeScript
 
-| 場所 | 役割 | 判断 |
-| --- | --- | --- |
-| `frontend/src/message/react.tsx` / `dom.ts` | 同じ MoonBit snapshot の描画、操作の転送 | 表示層。取得・再送・既読・ページングの判断は持たない |
-| `frontend/src/components` | snapshot に従う HTML / CSS / React の描画、入力の転送 | フォーム・選択・通信状態は MoonBit。locale による時刻表示や DOM の参照は表示層 |
-| `services/media.ts` / `realtime.ts` | WebRTC / WebSocket / AudioContext の個々の操作 | 接続順序・再試行・キュー・解放時期は MoonBit。native handle は closure 内に保持 |
-| `services/browser.ts` / `transport.ts` / `upload.ts` | fetch / UUID / 時刻 / visibility / storage / FormData | 具体型の port。要求の開始・中止と成功・失敗応答の解釈は MoonBit |
-| `services/controller.ts` / `ActivityLayout.tsx` / `activity.ts` | controller の mount/unmount、snapshot の購読、Context への受け渡し | アプリ状態の複製はない。通知の module 待ちと世代判定も `core/shell` |
-| `services/authLoader.ts` / `features.ts` / `voiceCall.ts` | dynamic import と controller 接続、従来 entry の互換ラッパー | 認証・通知・通話の操作規則を持たない |
-| `frontend/src/navigation` / `App.tsx` / `PageBoundary.tsx` | History API、リンク、React.lazy、描画失敗からの復帰 | route 判定は MoonBit。React 固有の描画・購読処理と DOM の履歴操作は残る |
-| `server/main.ts`、`server/host.ts` | 比較・互換検証用の Node backend | default の native backend では実行しない |
-| `server/migrate.ts`、`server/seed.ts`、scripts/tests | DB 準備、生成、ビルド、検証 | 開発用ツール。常駐サーバーの依存と分ける |
+全画面を素の DOM renderer にした。既存の MoonBit controller、URL、CSS、操作、
+API を維持し、React / React DOM と専用ツールを依存から削除した。
+直接 runtime 依存は 2 → 0、lockfile は 228 → 172 package。
+[設計・回帰試験・比較測定](react-removal.md)を参照。
 
-frontend の直接 runtime 依存は React / React DOM の 2 つ。アプリの `useState` / `useReducer` はなく、controller を React の `useSyncExternalStore` から購読する。メッセージは素の DOM renderer でも同じ controller を使用し、DOM 単独ページには React が含まれない。ほかの画面の DOM renderer とアプリ全体からの React 削除は未実装。[全画面の移行](frontend-controllers.md)、[メッセージの描画交換](message-controller.md)。
+| 場所 | 役割 |
+| --- | --- |
+| `frontend/src/dom` / `message/dom.ts` | HTML 要素の生成、snapshot の差分反映、入力の転送、locale 表示 |
+| `dom/elements.ts` / `layout.ts` | 型付き DOM helper、行の要素同一性、購読解除、dialog と focus の操作 |
+| `frontend/src/main.ts` | dynamic import、URL とクリックの読み取り、MoonBit app controller の host |
+| `services/media.ts` / `realtime.ts` | WebRTC / WebSocket / AudioContext の具体的な操作。制御は MoonBit |
+| `services/browser.ts` / `transport.ts` / `upload.ts` | fetch / UUID / 時刻 / storage / FormData。JSON 検査は MoonBit |
+| `services/authLoader.ts` / `features.ts` / `voiceCall.ts` | module と controller の接続、既存 entry の互換 wrapper |
+| `server/main.ts` / `host.ts` | Node backend の比較・互換試験。default の native backend では実行しない |
+| `server/migrate.ts` / `seed.ts` / scripts / tests | DB 準備・生成・ビルド・検証 |
+
+React の hook / Context / JSX は残っていない。TS の DOM node 参照や mounted child の
+handle は描画の寿命を管理するために持つが、フォーム値や通信の状態は複製しない。
 
 通知、フレンド申請の承認・見送り・取消、メッセージ、実績、AI アドバイス、選択式の振り返り、イベント参加・管理を共通 MoonBit API に接続した。固定候補や架空の実績を廃止し、会話履歴と保存済みデータを使う。[各機能のモデル・API・検証](features.md)を参照。
 

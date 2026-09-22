@@ -1,9 +1,0 @@
-.waves,
-.flipped {
-  display: block;
-  width: 100%;
-  height: 2.5rem;
-}
-.flipped {
-  transform: scaleY(-1);
-}

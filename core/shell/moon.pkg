@@ -10,6 +10,7 @@ options(
         "create_auth:createAuth",
         "create_activity_loader:createActivityLoader",
         "route:route",
+        "create_app:createApp",
       ],
     },
   },

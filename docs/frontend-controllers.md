@@ -1,5 +1,8 @@
 # 全画面の状態と通信制御を MoonBit へ
 
+> 移行段階の記録（参照 revision: `e26c994`）。現在は全画面から React を削除済み。
+> [現在の構成と測定](react-removal.md)を参照。以下の React 固有コードと数値は当時のもの。
+
 メッセージに続き、認証フォーム、メモ、一覧、フレンド、イベント管理、設定、
 振り返り、通知、WebRTC、マイク確認を移行した。目的は、React を交換するときに
 状態遷移・通信順序・キャンセルを再実装せずに済む構成にすること。
@@ -169,9 +172,9 @@ React 85,337 bytes → DOM 39,390 bytes、制限下の表示787.4 → 504.2 ms�
 
 ```bash
 node bench/navigation.mjs capture frontend-before /path/to/3561429-checkout
-node bench/navigation.mjs capture frontend-after
-npm --prefix frontend run build:message-views
-cp -r _build/message-views _build/navigation-bench/frontend-after/views
+node bench/navigation.mjs capture frontend-after /path/to/e26c994-checkout
+npm --prefix /path/to/e26c994-checkout/frontend run build:message-views
+cp -r /path/to/e26c994-checkout/_build/message-views _build/navigation-bench/frontend-after/views
 node bench/navigation.mjs compare frontend-before frontend-after
 node bench/navigation.mjs compare-auth frontend-before frontend-after
 node bench/message.mjs frontend-before frontend-after
