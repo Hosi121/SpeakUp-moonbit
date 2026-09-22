@@ -24,26 +24,32 @@ export const SessionList = () => {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<User[]>([]);
   const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const requestIds = useRef(new Map<number, string>());
+  const refreshId = useRef(0);
   const refresh = useCallback(async () => {
-    setBusy(true);
-    setError("");
+    const id = ++refreshId.current;
+    setRefreshing(true);
     try {
       const [next, profile] = await Promise.all([
         fetchConversations(),
         fetchUserProfile(),
       ]);
-      setCalls(next);
-      setMe(profile);
-      setLoaded(true);
+      if (id === refreshId.current) {
+        setCalls(next);
+        setMe(profile);
+        setLoaded(true);
+      }
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "一覧を取得できませんでした",
-      );
+      if (id === refreshId.current) {
+        setError(
+          error instanceof Error ? error.message : "一覧を取得できませんでした",
+        );
+      }
     } finally {
-      setBusy(false);
+      if (id === refreshId.current) setRefreshing(false);
     }
   }, []);
   useEffect(() => {
@@ -125,7 +131,11 @@ export const SessionList = () => {
         </section>
         <div className="row between">
           <h2>参加できる通話</h2>
-          <button type="button" disabled={busy} onClick={() => void refresh()}>
+          <button
+            type="button"
+            disabled={busy || refreshing}
+            onClick={() => void refresh()}
+          >
             一覧を更新
           </button>
         </div>

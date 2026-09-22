@@ -54,6 +54,28 @@ after(async () => {
   assert.doesNotMatch(logs, /ERROR: AddressSanitizer|runtime error:/);
 });
 
+test('notification items and unread count use one snapshot during concurrent inserts', async () => {
+  const recipient = await person('Snapshot reader');
+  const responses = [];
+  await Promise.all([
+    (async () => {
+      for (let i = 0; i < 80; i++) {
+        await db.execute('INSERT INTO notifications(user_id,actor_id,event_key,kind) VALUES (?,?,?,?)',
+          [recipient.id, users[0].id, randomUUID(), 'friend_request']);
+      }
+    })(),
+    (async () => {
+      for (let i = 0; i < 30; i++) responses.push(await request('/notifications', recipient));
+    })(),
+  ]);
+  for (const response of responses) {
+    assert.equal(response.status, 200);
+    // Fewer than the page limit, and every fixture notice is unread.
+    assert.equal(response.body.unread, response.body.items.length);
+  }
+  assert.equal((await request('/notifications', recipient)).body.unread, 80);
+});
+
 test('friendship requires recipient consent, concurrent retries deduplicate, activity hints remain private', async () => {
   const [a, b, c] = users;
   const sa = activity(a), sb = activity(b), sc = activity(c);

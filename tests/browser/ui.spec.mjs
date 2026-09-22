@@ -11,6 +11,38 @@ async function authenticate(page, request) {
   return token;
 }
 
+test('background list refresh keeps a selected invitation actionable', async ({ page, request }) => {
+  await authenticate(page, request);
+  await page.goto('/sessionlist');
+  await page.getByLabel('ユーザー名を検索').fill('Bob');
+  await page.getByRole('button', { name: '検索', exact: true }).click();
+  const invite = page.getByRole('button', { name: 'Bob と通話する', exact: true });
+  await expect(invite).toBeEnabled();
+  const refreshing = Promise.withResolvers();
+  const release = Promise.withResolvers();
+  await page.route('**/api/conversations', async route => {
+    refreshing.resolve();
+    await release.promise;
+    await route.continue();
+  });
+  // Observe the click without creating a call; the list request stays pending.
+  await page.route('**/api/conversations/direct', route => route.fulfill({
+    status: 503, contentType: 'application/json', body: '{"error":"Test service unavailable"}',
+  }));
+  try {
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await refreshing.promise;
+    await expect(page.getByRole('button', { name: '一覧を更新' })).toBeDisabled();
+    await expect(invite).toBeEnabled();
+    const sent = page.waitForResponse(response => response.url().endsWith('/api/conversations/direct'));
+    await invite.click();
+    expect((await sent).status()).toBe(503);
+  } finally {
+    release.resolve();
+    await page.unrouteAll({ behavior: 'wait' });
+  }
+});
+
 test('native dialog contains keyboard focus, restores it, and submits the event form', async ({ page, request }) => {
   await authenticate(page, request);
   await page.goto('/admin');

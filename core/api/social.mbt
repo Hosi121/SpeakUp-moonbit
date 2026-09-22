@@ -122,10 +122,13 @@ async fn friendship(
 
 ///|
 async fn inbox(uid : Int) -> @shared.InboxDto {
-  let items = rows(
-    "SELECT n.id,n.kind,n.conversation_id,n.message_id,n.read_at,n.created_at,u.id AS actor_id,u.username,u.avatar_url FROM notifications n JOIN users u ON u.id=n.actor_id WHERE n.user_id=? ORDER BY n.id DESC LIMIT 100",
-    [uid.to_json()],
-  ).map(fn(v) raise {
+  // One statement keeps the unread count and the displayed read watermark in
+  // the same snapshot, even when a notification is inserted concurrently.
+  let result = rows(
+    "SELECT n.id,n.kind,n.conversation_id,n.message_id,n.read_at,n.created_at,u.id AS actor_id,u.username,u.avatar_url,(SELECT COUNT(*) FROM notifications WHERE user_id=? AND read_at IS NULL) AS unread FROM notifications n JOIN users u ON u.id=n.actor_id WHERE n.user_id=? ORDER BY n.id DESC LIMIT 100",
+    [uid.to_json(), uid.to_json()],
+  )
+  let items = result.map(fn(v) raise {
     @shared.NotificationDto::{
       id: number(v, "id"),
       kind: string(v, "kind"),
@@ -148,13 +151,9 @@ async fn inbox(uid : Int) -> @shared.InboxDto {
       created_at: iso(string(v, "created_at")),
     }
   })
-  let count = one(
-    "SELECT COUNT(*) AS unread FROM notifications WHERE user_id=? AND read_at IS NULL",
-    [uid.to_json()],
-  )
   {
     items,
-    unread: @json.from_json(field(count, "unread")),
+    unread: if result.is_empty() { 0 } else { number(result[0], "unread") },
     now: (host().now_millis)(),
   }
 }

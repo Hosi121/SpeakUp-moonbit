@@ -47,4 +47,6 @@ jobs:
       - run: npm run test:integration:native
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+        id: browser-node
       - run: npm run test:browser:native
+        if: success() || (failure() && steps.browser-node.conclusion == 'failure')
