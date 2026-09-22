@@ -1,6 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 import App from "./App.tsx";
 import { Settings } from "./components/pages/Settings.tsx";
 import { Home } from "./components/pages/Home.tsx";
@@ -17,10 +21,9 @@ import FriendRequest from "./components/pages/FriendRequest.tsx";
 import Login from "./components/pages/Login.tsx";
 import { Stats } from "./components/pages/Stats.tsx";
 import { ConversationHistory } from "./components/pages/ConversationHistory.tsx";
-import { CssBaseline, ThemeProvider } from "@mui/material";
 import AdminPage from "./components/pages/adminPage.tsx";
 import FriendList from "./components/utils/FriendList.tsx";
-import Theme from "./styles/Theme.tsx";
+import "./styles/app.css";
 import { SessionHistoryFriendlist } from "./components/pages/SessionHistoryFriendlist.tsx";
 import TrophyNotification from "./components/pages/TrophyNotification.tsx";
 import { isTestMode } from "./services/appMode.ts";
@@ -125,11 +128,8 @@ const rootElement = document.getElementById("root");
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <ThemeProvider theme={Theme}>
-        <RouterProvider router={router} />
-        <CssBaseline />
-      </ThemeProvider>
-    </StrictMode>
+      <RouterProvider router={router} />
+    </StrictMode>,
   );
 } else {
   console.error("Failed to find the root element");

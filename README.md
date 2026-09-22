@@ -51,7 +51,7 @@ core/native_transport native WebSocket・送信 queue
 core/native_host      DB worker / JWT / 外部 API の型付き FFI
 core/platform     TS2Mbt で生成した JS host binding
 server            比較用 JS backend、DB migration / seed
-frontend          既存 React UI、型付きブラウザアダプター
+frontend          React + 標準 HTML/CSS、型付きブラウザアダプター
 ```
 
 TS2Mbt と Mbt2TS は `@mizchi/ts@0.6.0` を固定して使います。共通型を TS に手で二重定義せず、MoonBit interface から生成します。手書きコード、生成 bridge、公開型の `any` / `Any` / `JSValue` を CI で禁止しています。
@@ -87,6 +87,6 @@ Playwright はイベント／随時通話の双方で audio RTP 受信、退出�
 
 ## 現在の範囲
 
-Go backend の主要 route と通話を移植し、会話のライフサイクル・随時通話・振り返り・履歴を新モデルで実装しました。React/MUI は TypeScript、backend I/O は MoonBit async と Connector/C・OpenSSL binding です。着信の push 通知、実績・AI feedback、イベント管理 UI の全面統合、サーバ側の厳密な期限管理、元の Ent DB の移行、production rollout は未実施です。[機能別の対応表と変更点](docs/migration.md)で区別しています。
+Go backend の主要 route と通話を移植し、会話のライフサイクル・随時通話・振り返り・履歴を新モデルで実装しました。画面は React/TypeScript と標準 HTML/CSS。MUI・Emotion は削除し、別の UI framework は追加していません。[UI の構成と残る TypeScript](docs/frontend.md)を参照してください。backend I/O は MoonBit async と Connector/C・OpenSSL binding です。着信の push 通知、実績・AI feedback、イベント管理 UI の全面統合、サーバ側の厳密な期限管理、元の Ent DB の移行、production rollout は未実施です。[機能別の対応表と変更点](docs/migration.md)で区別しています。
 
 公開したコードは本番への切替ではありません。元 repo はそのまま残しています。元チームのコード・画像の出典は [NOTICE.md](NOTICE.md) を参照してください。

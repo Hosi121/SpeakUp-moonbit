@@ -1,74 +1,34 @@
-import { Card, CardContent, Typography, Avatar, Box, Container, Stack } from "@mui/material";
-import Grid from '@mui/material/Grid2';
+import type { ReactNode } from "react";
 
 type SessionContainerProps = {
   theme: string;
-  users: { name: string; icon: JSX.Element; }[]
+  users: { name: string; icon: ReactNode }[];
   isSpeak: boolean;
   isOpponentSpeak: boolean;
-}
+};
 
-const SessionContainer = ({ theme, users, isSpeak, isOpponentSpeak }: SessionContainerProps) => {
+export default function SessionContainer({
+  theme,
+  users,
+  isSpeak,
+  isOpponentSpeak,
+}: SessionContainerProps) {
   return (
-    <Container
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        position: "relative",
-      }}
-    >
-      <Container sx={{ pt: 3 }}>
-        <Stack sx={{ margin: "30px auto 0", width: "100%" }}>
-          <Typography variant="h5" align="center" gutterBottom color="primary.main" fontWeight="bolder">
-            テーマ: {theme}
-          </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", mb: 2 }}>
-            <UserCard user={users[0]} isSpeak={isSpeak} index={0} />
-            <UserCard user={users[1]} isSpeak={isOpponentSpeak} index={1} />
-          </Box>
-        </Stack>
-      </Container>
-    </Container>
+    <section className="stack">
+      <h1 className="center">テーマ: {theme}</h1>
+      <div className="participants">
+        {users.map((user, index) => (
+          <div
+            className="panel participant"
+            data-speaking={index === 0 ? isSpeak : isOpponentSpeak}
+            key={index}
+          >
+            {user.icon}
+            <h2>{user.name || "接続待ち"}</h2>
+            <small>{index === 0 ? "あなた" : "通話相手"}</small>
+          </div>
+        ))}
+      </div>
+    </section>
   );
-};
-
-export default SessionContainer;
-
-type UserCardProps = {
-  user: { name: string; icon: JSX.Element; };
-  isSpeak: boolean;
-  index: number;
-};
-
-const UserCard = ({ user, isSpeak, index }: UserCardProps) => {
-  return (
-    <Card
-      key={index}
-      sx={{
-        bgcolor: "secondary.main",
-        mb: 2,
-        width: "100%",
-        height: "25vh",
-        borderRadius: 5,
-        border: "6px solid",
-        boxSizing: "border-box",
-        p: 1,
-        display: "grid",
-        placeContent: "center",
-        borderColor: isSpeak ? "primary.main" : "#eee",
-      }}
-    >
-      <CardContent>
-        <Grid container spacing={2} justifyContent="center">
-          <Grid>
-            <Avatar sx={{ bgcolor: "#eee", width: "80px", height: "80px" }}>{user.icon}</Avatar>
-            <Typography variant="h6" align="center" sx={{ mt: 1 }}>
-              {user.name}
-            </Typography>
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
-  )
-};
+}

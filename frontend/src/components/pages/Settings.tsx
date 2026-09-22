@@ -1,28 +1,9 @@
 import { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  IconButton,
-  Avatar,
-  TextField,
-  Button,
-  Paper,
-  Grid,
-  Divider,
-  useTheme,
-  styled,
-  Container,
-} from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import SettingsIcon from "@mui/icons-material/Settings";
-import LogoutIcon from "@mui/icons-material/Logout";
-import AddIcon from "@mui/icons-material/Add";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
-import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
-import { ArrowBack } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
+import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
+import TopSection from "../utils/TopSection";
+import { Avatar } from "../ui/Avatar";
+import { Input } from "../ui/Field";
 import type { UserProfile } from "../../types/types";
 import {
   fetchUserProfile,
@@ -30,345 +11,150 @@ import {
   uploadAvatar,
 } from "../../services/userService";
 
-const rank = 5;
-
-// ユーザー名の最大文字数
-const MAX_USERNAME_LENGTH = 10;
-// メールアドレスの最大文字数
-const MAX_EMAIL_LENGTH = 20;
-
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  borderRadius: theme.shape.borderRadius * 2,
-  boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-}));
-
-const StyledTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiOutlinedInput-root": {
-    borderRadius: theme.shape.borderRadius * 2,
-  },
-}));
-
-const AvatarUpload = styled(Box)(({ theme }) => ({
-  position: "relative",
-  width: 100,
-  height: 100,
-  marginRight: theme.spacing(3),
-}));
-
-const UploadButton = styled(IconButton)(({ theme }) => ({
-  position: "absolute",
-  right: -8,
-  bottom: -8,
-  backgroundColor: theme.palette.primary.main,
-  color: theme.palette.common.white,
-  "&:hover": {
-    backgroundColor: theme.palette.primary.dark,
-  },
-}));
-
-const SettingsContainer = () => {
-  const theme = useTheme();
+export function Settings() {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [editName, setEditName] = useState(false);
-  const [editEmail, setEditEmail] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
+  const [editing, setEditing] = useState<"username" | "email" | null>(null);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const profile = await fetchUserProfile();
-        setUser(profile);
-        setNewName(profile.username);
-        setNewEmail(profile.email);
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-      }
-    };
-
-    fetchUserData();
+    void fetchUserProfile()
+      .then(setUser)
+      .catch(() => setError("ユーザー情報を取得できませんでした。"));
   }, []);
-
-  const getFullAvatarUrl = (avatarUrl: string) => {
-    if (!avatarUrl) return ""; // デフォルトのアバター画像のURLを設定することもできます
-    if (avatarUrl.startsWith("http")) return avatarUrl; // すでに完全なURLの場合
-    return `http://localhost:8081${avatarUrl}`; // ローカル開発環境の場合
-  };
-
-  const handleAvatarUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (event.target.files && event.target.files[0]) {
-      try {
-        const avatarUrl = await uploadAvatar(event.target.files[0]);
-        setUser((prevUser) =>
-          prevUser
-            ? { ...prevUser, avatarUrl }
-            : null
-        );
-      } catch (error) {
-        console.error("Failed to upload avatar:", error);
-        // Handle error (e.g., show notification)
-      }
+  const save = async () => {
+    if (!editing || !user) return;
+    setBusy(true);
+    setError("");
+    try {
+      await updateUserProfile({ [editing]: draft });
+      setUser({ ...user, [editing]: draft });
+      setEditing(null);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "保存できませんでした。",
+      );
+    } finally {
+      setBusy(false);
     }
   };
-
-  const handleSaveName = () => {
-    if (user) {
-      // Update the user's name via API
-      const updateUser = async () => {
-        try {
-          await updateUserProfile({ username: newName });
-          setUser({ ...user, username: newName });
-          setEditName(false);
-        } catch (error) {
-          console.error("Failed to update username:", error);
-          // Handle error
-        }
-      };
-      updateUser();
+  const upload = async (file: File) => {
+    setBusy(true);
+    setError("");
+    try {
+      const avatarUrl = await uploadAvatar(file);
+      setUser((user) => user && { ...user, avatarUrl });
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "画像をアップロードできませんでした。",
+      );
+    } finally {
+      setBusy(false);
     }
   };
-
-  const handleSaveEmail = () => {
-    if (user) {
-      // Update the user's email via API
-      const updateUser = async () => {
-        try {
-          await updateUserProfile({ email: newEmail });
-          setUser({ ...user, email: newEmail });
-          setEditEmail(false);
-        } catch (error) {
-          console.error("Failed to update email:", error);
-          // Handle error
-        }
-      };
-      updateUser();
-    }
-  };
-
-  const handleLogout = () => {
-    // Implement logout logic
-    localStorage.removeItem("token"); // Remove the token
-    // Redirect to login page or update state accordingly
-  };
-
-  if (!user) {
-    // Show a loading state or skeleton until user data is fetched
-    return <Typography>Loading...</Typography>;
-  }
-
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
-  const getRankColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return "#00FF00";
-      case 2:
-        return "#00BFFF";
-      case 3:
-        return "#CD7F32";
-      case 4:
-        return "#C0C0C0";
-      case 5:
-        return "#F3B500";
-      default:
-        return "#000000";
-    }
-  };
-
-  //文字列を切り捨てる
-  const truncateString = (str: string, num: number) => {
-    if (!str) {
-      return "";
-    }
-    if (str.length <= num) {
-      return str;
-    }
-    return str.slice(0, num) + "...";
-  };
-
-  return (
-    <Container
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        height: "100vh",
-      }}
-    >
-      <Container sx={{ pt: 3 }}>
-        <Box
-          sx={{
-            position: "relative",
-            display: "flex",
-            justifyContent: "flex-start",
-            alignItems: "center",
-            pt: 2,
-            pb: 2,
-          }}
-        >
-          <IconButton onClick={handleGoBack}>
-            <ArrowBack sx={{ fontSize: 40 }} />
-          </IconButton>
-          <Typography
-            variant="h4"
-            sx={{ fontWeight: "bold", textAlign: "left" }}
-          >
-            <SettingsIcon
-              sx={{ fontSize: 40, mr: 2, verticalAlign: "bottom" }}
-            />
-            設定
-          </Typography>
-        </Box>
-
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={6}>
-            <StyledPaper elevation={0}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                <AvatarUpload>
-                  <Avatar
-                    src={getFullAvatarUrl(user.avatarUrl)}
-                    sx={{ width: 100, height: 100 }}
-                  />
-                  <UploadButton size="small">
-                    <AddIcon />
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                    />
-                  </UploadButton>
-                </AvatarUpload>
-                <Box>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                    <MilitaryTechIcon
-                      sx={{ color: getRankColor(rank), marginRight: 1 }}
-                    />{" "}
-                    {editName ? (
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <StyledTextField
-                          value={newName}
-                          onChange={(e) => setNewName(e.target.value)}
-                          variant="outlined"
-                          size="small"
-                        />
-                        <IconButton
-                          onClick={handleSaveName}
-                          size="small"
-                          sx={{ ml: 1 }}
-                        >
-                          <CheckIcon />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => setEditName(false)}
-                          size="small"
-                        >
-                          <CloseIcon />
-                        </IconButton>
-                      </Box>
-                    ) : (
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Typography variant="h6">
-                          {truncateString(user.username, MAX_USERNAME_LENGTH)}
-                        </Typography>
-                        <IconButton
-                          onClick={() => setEditName(true)}
-                          size="small"
-                          sx={{ ml: 1 }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    )}
-                  </Box>
-                  {editEmail ? (
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <StyledTextField
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
-                        variant="outlined"
-                        size="small"
-                      />
-                      <IconButton
-                        onClick={handleSaveEmail}
-                        size="small"
-                        sx={{ ml: 1 }}
-                      >
-                        <CheckIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => setEditEmail(false)}
-                        size="small"
-                      >
-                        <CloseIcon />
-                      </IconButton>
-                    </Box>
-                  ) : (
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Typography variant="body1" color="text.secondary">
-                        {truncateString(user.email, MAX_EMAIL_LENGTH)}
-                      </Typography>
-                      <IconButton
-                        onClick={() => setEditEmail(true)}
-                        size="small"
-                        sx={{ ml: 1 }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            </StyledPaper>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <StyledPaper elevation={0}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                アカウント設定
-              </Typography>
-              {/* Additional settings can go here */}
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                クレジット情報
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {/* Display credit information if applicable */}
-              </Typography>
-            </StyledPaper>
-          </Grid>
-        </Grid>
-
-        <Box sx={{ mt: 4, textAlign: "center" }}>
-          <Button
-            variant="contained"
-            startIcon={<LogoutIcon />}
-            sx={{
-              borderRadius: theme.shape.borderRadius * 2,
-              textTransform: "none",
-              px: 4,
-              py: 1,
-            }}
-            onClick={handleLogout}
-          >
-            ログアウト
-          </Button>
-        </Box>
-      </Container>
-    </Container>
-  );
-};
-
-export const Settings = () => {
   return (
     <BottomNavigationTemplate value="other">
-      <SettingsContainer />
+      <div className="page stack">
+        <TopSection />
+        <h1>設定</h1>
+        {error && (
+          <p role="alert" className="alert">
+            {error}
+          </p>
+        )}
+        {!user && !error && <p role="status">読み込み中…</p>}
+        {user && (
+          <section className="panel stack">
+            <div className="row">
+              <Avatar src={user.avatarUrl} name={user.username} large />
+              <Input
+                label="プロフィール画像"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void upload(file);
+                  event.target.value = "";
+                }}
+              />
+            </div>
+            {(["username", "email"] as const).map((field) => (
+              <div key={field} className="stack compact">
+                {editing === field ? (
+                  <form
+                    className="stack compact"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void save();
+                    }}
+                  >
+                    <Input
+                      label={
+                        field === "username" ? "ユーザー名" : "メールアドレス"
+                      }
+                      type={field === "email" ? "email" : "text"}
+                      required
+                      value={draft}
+                      onChange={(event) => setDraft(event.target.value)}
+                      autoFocus
+                      disabled={busy}
+                    />
+                    <div className="row">
+                      <button type="submit" disabled={busy} className="primary">
+                        保存
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setEditing(null)}
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="row between">
+                    <div className="grow">
+                      <small>
+                        {field === "username" ? "ユーザー名" : "メールアドレス"}
+                      </small>
+                      <p>{user[field]}</p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      aria-label={
+                        field === "username"
+                          ? "ユーザー名を編集"
+                          : "メールアドレスを編集"
+                      }
+                      onClick={() => {
+                        setDraft(user[field]);
+                        setEditing(field);
+                      }}
+                    >
+                      編集
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            localStorage.removeItem("token");
+            navigate("/login", { replace: true });
+          }}
+        >
+          ログアウト
+        </button>
+      </div>
     </BottomNavigationTemplate>
   );
-};
+}

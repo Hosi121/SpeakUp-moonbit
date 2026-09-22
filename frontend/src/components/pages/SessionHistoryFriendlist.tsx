@@ -1,77 +1,59 @@
-import { Stack } from "@mui/system";
-import { Box, Container, Tab } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import TopSection from "../utils/TopSection";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
-import { useEffect, useState } from "react";
-import TabContext from "@mui/lab/TabContext";
-import TabList from "@mui/lab/TabList";
-import TabPanel from "@mui/lab/TabPanel";
+import { ChoiceGroup } from "../ui/ChoiceGroup";
 import FriendList from "../utils/FriendList";
 import SessionHistory from "../utils/SessionHistory";
 import { fetchSessionHistory } from "../../services/appData";
 import type { SessionHistoryItem } from "../../types/types";
 
-const SessionHistoryFriendlistContainer = () => {
+export function SessionHistoryFriendlist() {
   const [history, setHistory] = useState<SessionHistoryItem[]>([]);
-  const [value, setValue] = useState("1");
-
-  const handleChange = (_: React.SyntheticEvent, newValue: string) => {
-    setValue(newValue);
-  };
-
+  const [value, setValue] = useState("history");
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
   useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        const data = await fetchSessionHistory();
+    void fetchSessionHistory()
+      .then((data) => {
         setHistory(data);
-      } catch (error) {
-        console.error("Failed to fetch session history", error);
-      }
-    };
-    loadHistory();
+        setLoaded(true);
+      })
+      .catch(() => setError("履歴を取得できませんでした。"));
   }, []);
-
-  return (
-    <Container
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        height: "100vh",
-      }}
-    >
-      <Container sx={{ pt: 3 }}>
-        <TopSection />
-        <Stack sx={{ width: "100%" }}>
-          <Box sx={{ width: "100%" }}>
-            <TabContext value={value}>
-              <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                <TabList
-                  onChange={handleChange}
-                  sx={{ display: "grid", placeContent: "center" }}
-                >
-                  <Tab label=" セッション履歴" value="1" />
-                  <Tab label="フレンド" value="2" />
-                </TabList>
-              </Box>
-              <TabPanel value="1">
-                <SessionHistory history={history} />
-              </TabPanel>
-              <TabPanel value="2">
-                <FriendList />
-              </TabPanel>
-            </TabContext>
-          </Box>
-        </Stack>
-      </Container>
-    </Container>
-  );
-};
-
-export const SessionHistoryFriendlist = () => {
   return (
     <BottomNavigationTemplate value="record">
-      <SessionHistoryFriendlistContainer />
+      <div className="page stack">
+        <TopSection />
+        <h1>履歴とフレンド</h1>
+        <ChoiceGroup
+          label="表示する一覧"
+          value={value}
+          onChange={setValue}
+          options={[
+            { value: "history", label: "セッション履歴" },
+            { value: "friends", label: "フレンド" },
+          ]}
+        />
+        {value === "history" ? (
+          <>
+            {error && (
+              <p role="alert" className="alert">
+                {error}
+              </p>
+            )}
+            {loaded && history.length === 0 && (
+              <p>
+                セッション履歴はありません。
+                <Link to="/sessionlist">通話へ</Link>
+              </p>
+            )}
+            <SessionHistory history={history} />
+          </>
+        ) : (
+          <FriendList />
+        )}
+      </div>
     </BottomNavigationTemplate>
   );
-};
+}

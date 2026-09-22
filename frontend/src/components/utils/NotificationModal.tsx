@@ -1,111 +1,63 @@
 import { useState, useEffect } from "react";
-import { Box, Button, Typography, IconButton, Avatar, List, ListItem, ListItemAvatar, ListItemText, Dialog, DialogTitle, DialogContent } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
-import NotificationsIcon from "@mui/icons-material/Notifications";
+import { Dialog } from "../ui/Dialog";
+import { Icon } from "../ui/Icon";
+import { Avatar } from "../ui/Avatar";
 import { fetchNotifications } from "../../services/appData";
 import type { NotificationItem } from "../../types/types";
 
-const NotificationModal = () => {
-  // State to control the modal open/close
+export default function NotificationModal() {
   const [open, setOpen] = useState(false);
-  const [notificationsData, setNotificationsData] = useState<NotificationItem[]>([]); // Explicitly set the type of notificationsData
-
-  // Function to open the modal
-  const handleOpen = () => {
-    setOpen(true);
-  };
-
-  // Function to close the modal
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  // Load notifications from imported JSON
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [error, setError] = useState("");
   useEffect(() => {
-    const loadNotifications = async () => {
-      try {
-        const data = await fetchNotifications();
-        setNotificationsData(data);
-      } catch (error) {
-        console.error("Failed to fetch notifications", error);
-      }
-    };
-    loadNotifications();
+    void fetchNotifications()
+      .then(setNotifications)
+      .catch(() => setError("通知を取得できませんでした。"));
   }, []);
-
   return (
-    <div>
-      {/* Button or Icon to trigger the modal */}
-      <IconButton onClick={handleOpen}>
-        <NotificationsIcon sx={{ fontSize: 40 }} />
-      </IconButton>
-
-      {/* Dialog (Modal) */}
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs" PaperProps={{ sx: { padding: "10px", boxSizing: "border-box", maxHeight: "60vh" } }}>
-        <DialogTitle>
-          {/* Header with Notification Icon and Settings */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              width: "100%",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <NotificationsIcon sx={{ fontSize: 40 }} />
-              <Typography variant="h6" sx={{ ml: 1 }}>
-                通知
-              </Typography>
-            </Box>
-            <IconButton>
-              <SettingsIcon sx={{ fontSize: 32 }} />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-
-        <DialogContent>
-          {/* Notifications List */}
-          <List sx={{ width: "100%" }}>
-            {notificationsData.map((notification) => (
-              <ListItem key={notification.id} sx={{ mb: 2, flexWrap: "wrap", padding: "0" }}>
-                <ListItemAvatar sx={{ mr: 1, width: "fit-content", minWidth: "auto" }}>
-                  <Avatar src={notification.profileIcon} alt={`${notification.user} icon`} />
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
-                      <Typography variant="body1" sx={{ mr: 1 }}>
-                        {notification.user}
-                      </Typography>
-                      <Typography variant="body2" sx={{}}>
-                        {notification.message}
-                      </Typography>
-                    </Box>
-                  }
-                  secondary={
-                    <Typography variant="caption" sx={{}}>
-                      {notification.time}
-                    </Typography>
-                  }
-                  sx={{ width: "70%" }}
-                />
-                {notification.type === "friendRequest" && (
-                  <Box sx={{ display: "flex", ml: "auto", width: "70%" }}>
-                    <Button variant="contained" size="small" sx={{ mr: 1 }}>
-                      承認
-                    </Button>
-                    <Button variant="outlined" size="small">
-                      拒否
-                    </Button>
-                  </Box>
-                )}
-              </ListItem>
-            ))}
-          </List>
-        </DialogContent>
+    <>
+      <button
+        type="button"
+        className="icon-button"
+        aria-label="通知"
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
+        <Icon name="bell" size={28} />
+      </button>
+      <Dialog open={open} onClose={() => setOpen(false)} title="通知">
+        {error && (
+          <p role="alert" className="alert">
+            {error}
+          </p>
+        )}
+        {!error && notifications.length === 0 && (
+          <p>新しい通知はありません。</p>
+        )}
+        <ul className="plain-list stack">
+          {notifications.map((notification) => (
+            <li key={notification.id} className="row">
+              <Avatar src={notification.profileIcon} name={notification.user} />
+              <div className="grow">
+                <p>
+                  <strong>{notification.user}</strong> {notification.message}
+                </p>
+                <small>{notification.time}</small>
+              </div>
+              {notification.type === "friendRequest" && (
+                <div className="row">
+                  <button type="button" disabled>
+                    承認
+                  </button>
+                  <button type="button" disabled>
+                    拒否
+                  </button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
       </Dialog>
-    </div>
+    </>
   );
-};
-
-export default NotificationModal;
+}

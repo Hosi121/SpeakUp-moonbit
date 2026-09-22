@@ -1,187 +1,87 @@
 import { useState, useEffect } from "react";
-import { Box, Container, Typography, CircularProgress } from "@mui/material";
+import { Link } from "react-router-dom";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import TopSection from "../utils/TopSection";
 import TopWaves from "../utils/TopWaves";
 import HomeLogo from "../../assets/homeLogo";
 import { IconButton } from "../utils/IconButton";
-import { LibraryBooks, Mic } from "@mui/icons-material";
-import { Event } from "../../types/types";
-import * as eventService from "../../services/eventService";
+import { Icon } from "../ui/Icon";
+import type { Event } from "../../types/types";
+import { fetchEvents } from "../../services/eventService";
 
-const HomeContainer = () => {
-  const [eventData, setEventData] = useState<Event[]>([]);
+export function Home() {
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  const [error, setError] = useState("");
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // APIからイベントデータを取得
-        const events = await eventService.fetchEvents();
-        setEventData(events);
-
-        setLoading(false);
-      } catch (error) {
-        console.error("Failed to fetch data", error);
-        setError("データの取得に失敗しました");
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    void fetchEvents()
+      .then(setEvents)
+      .catch(() => setError("データの取得に失敗しました。"))
+      .finally(() => setLoading(false));
   }, []);
-
-  const getNextEvent = () => {
-    if (!eventData || eventData.length === 0) return null;
-
-    const now = new Date();
-    return (
-      eventData.find((event) => new Date(event.eventStart) > now) ||
-      eventData[0]
-    );
-  };
-
-  const nextEvent = getNextEvent();
-
+  const next =
+    events.find((event) => new Date(event.eventStart).getTime() > Date.now()) ??
+    events[0];
   return (
-    <Container
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        height: "calc(100vh - 70px)",
-      }}
-    >
-      <Container sx={{ pt: 3 }}>
+    <BottomNavigationTemplate value="home">
+      <div className="page stack">
         <TopSection />
-        <Container sx={{ mb: 3 }}>
+        <div>
           <TopWaves isFlipped={false} />
-          <Box
-            sx={{
-              margin: "0 calc(50% - 50vw)",
-              width: "100vw",
-              height: "calc(15vh + 1px)",
-              marginTop: "-1px",
-              backgroundColor: "secondary.main",
-              display: "grid",
-              placeItems: "center",
-            }}
-          >
-            <HomeLogo style={{ width: "70%" }} />
-          </Box>
-          <TopWaves isFlipped={true} />
-        </Container>
-        <Box
-          sx={{
-            width: "100%",
-            backgroundColor: "secondary.main",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            mt: 3,
-            mb: 3,
-            p: 3,
-            boxSizing: "border-box",
-            borderRadius: 3,
-          }}
-        >
-          <h3>直近の参加予定</h3>
+          <div className="home-brand">
+            <HomeLogo />
+          </div>
+          <TopWaves isFlipped />
+        </div>
+        <section className="panel stack center">
+          <h1>直近の参加予定</h1>
           {loading ? (
-            <CircularProgress />
+            <p role="status">読み込み中…</p>
           ) : error ? (
-            <Typography color="error">{error}</Typography>
-          ) : nextEvent ? (
+            <p role="alert">{error}</p>
+          ) : next ? (
             <>
-              <Typography
-                sx={{
-                  mt: 1,
-                  mb: 1,
-                  color: "primary.main",
-                  fontSize: "1.3rem",
-                  fontWeight: "bolder",
-                  textAlign: "center",
-                }}
-              >
-                {new Date(nextEvent.eventStart).toLocaleString("ja-JP", {
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </Typography>
-              <Typography
-                sx={{
-                  color: "primary.main",
-                  fontSize: "1rem",
-                  fontWeight: "bolder",
-                  textAlign: "center",
-                }}
-              >
-                テーマ: {nextEvent.theme.themeText}
-              </Typography>
-              <Typography
-                sx={{
-                  color: "primary.main",
-                  fontSize: "0.9rem",
-                  textAlign: "center",
-                  mt: 1,
-                }}
-              >
-                トピック1: {nextEvent.theme.topic1}
-              </Typography>
-              <Typography
-                sx={{
-                  color: "primary.main",
-                  fontSize: "0.9rem",
-                  textAlign: "center",
-                }}
-              >
-                トピック2: {nextEvent.theme.topic2}
-              </Typography>
-              <Typography
-                sx={{
-                  color: "primary.main",
-                  fontSize: "0.9rem",
-                  textAlign: "center",
-                }}
-              >
-                トピック3: {nextEvent.theme.topic3}
-              </Typography>
+              <p className="accent numeric">
+                <strong>
+                  {new Date(next.eventStart).toLocaleString("ja-JP", {
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </strong>
+              </p>
+              <h2>テーマ: {next.theme.themeText}</h2>
+              <ul className="plain-list stack compact">
+                {[next.theme.topic1, next.theme.topic2, next.theme.topic3]
+                  .filter(Boolean)
+                  .map((topic, index) => (
+                    <li key={index}>
+                      トピック{index + 1}: {topic}
+                    </li>
+                  ))}
+              </ul>
             </>
           ) : (
-            <Typography>予定されているイベントはありません</Typography>
+            <p>
+              予定されているイベントはありません。
+              <Link to="/sessionlist">通話を始める</Link>
+            </p>
           )}
-        </Box>
-
-        <Box
-          sx={{
-            display: "flex",
-            placeContent: "center",
-            flexWrap: "wrap",
-            justifyContent: "space-between",
-          }}
-        >
+        </section>
+        <div className="grid">
           <IconButton
-            icon={<LibraryBooks sx={{ fontSize: "60px" }} />}
+            icon={<Icon name="book" size={48} />}
             text="記録"
             url="record"
           />
           <IconButton
-            icon={<Mic sx={{ fontSize: "60px" }} />}
+            icon={<Icon name="mic" size={48} />}
             text="セッション"
             url="sessionlist"
           />
-        </Box>
-      </Container>
-    </Container>
-  );
-};
-
-export const Home = () => {
-  return (
-    <BottomNavigationTemplate value="home">
-      <HomeContainer />
+        </div>
+      </div>
     </BottomNavigationTemplate>
   );
-};
+}

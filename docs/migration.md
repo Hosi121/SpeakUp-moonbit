@@ -24,7 +24,7 @@ flowchart LR
   B <-->|音声: direct または TURN| P[相手のブラウザ]
 ```
 
-React/MUI の描画とブラウザの WebRTC オブジェクトを TS に残した。Go の HTTP controller にあった入力検査、応答構築、ユーザー・メモ・イベント・フレンド処理は `core/api`、一時的な接続状態は `core/signaling`、ペア生成は `core/matching`。永続的な会話の開始・終了・取消は `core/conversation`。SQL も MoonBit 側に置き、アダプターは実行・トランザクション・SDK 呼び出しを担当する。
+React の描画とブラウザの WebRTC オブジェクトを TS に残した。UI は標準 HTML/CSS で、MUI・Emotion と独自の `sx` / theme API は削除済み。Go の HTTP controller にあった入力検査、応答構築、ユーザー・メモ・イベント・フレンド処理は `core/api`、一時的な接続状態は `core/signaling`、ペア生成は `core/matching`。永続的な会話の開始・終了・取消は `core/conversation`。SQL も MoonBit 側に置き、アダプターは実行・トランザクション・SDK 呼び出しを担当する。
 
 イベントのラウンドと随時通話を同じ会話で扱うよう、ドメインを再設計した。[会話モデル](domain-model.md)に遷移、参加者の制約、履歴・振り返り、接続との分離を記載している。
 
@@ -95,6 +95,8 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 | メモ | user_id の UNIQUE と upsert で同時更新の重複作成を防止 |
 | avatar | 2 MiB 上限、画像形式確認、暗号学的乱数による保存名、設定された公開 origin |
 | chat | 認証必須、20 秒 timeout。model は環境変数で変更可能 |
+| UI dependencies | MUI / Emotion を削除。標準 form / dialog / radio / nav と CSS、少数の型付き React 部品へ。詳細は [frontend](frontend.md) |
+| UI 操作 | `/` はサインインへ。フォームは Enter 送信可能、設定の画像選択とログアウト遷移を修正。マイクチェック終了時は取得した全 track を停止 |
 
 これらはバグを含む既存動作の逐語的な互換再現ではなく、独立 repo としての意図的変更。既存サービスへの無停止切替を実施したものではない。
 

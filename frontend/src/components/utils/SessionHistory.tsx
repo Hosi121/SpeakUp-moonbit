@@ -1,79 +1,46 @@
-import { List, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Button, Box } from "@mui/material";
+import { Link } from "react-router-dom";
+import { Avatar } from "../ui/Avatar";
 import type { SessionHistoryItem } from "../../types/types";
 
-interface SessionHistoryProps {
+export default function SessionHistory({
+  history,
+}: {
   history: SessionHistoryItem[];
-}
-
-const SessionHistory = ({ history }: SessionHistoryProps) => {
+}) {
   return (
-    <List>
-      {history.map((data) => (
-        <ListItem alignItems="flex-start" sx={{ mb: 2, display: "flex", flexDirection: "column" }}>
-          <Box sx={{ mb: 1, display: "flex", flexDirection: "row", width: "100%", flexWrap: "wrap" }}>
-            <ListItemAvatar sx={{ width: "30%" }}>
-              <Avatar alt={data.user} src={data.avatar} />
-            </ListItemAvatar>
-            <ListItemText
-              sx={{ width: "70%" }}
-              primary={
-                <Box display="flex" alignItems="center">
-                  <Typography component="span" variant="body1" color="text.primary">
-                    {data.user}
-                  </Typography>
-                </Box>
-              }
-              secondary={
-                <>
-                  <Typography component="span" variant="body2" color="text.primary">
-                    話したテーマ: {data.theme}
-                  </Typography>
-                  <br />
-                  <Typography component="span" variant="body2" color="text.secondary">
-                    {`最終日: ${data.date}`}
-                  </Typography>
-                  <br />
-                  <Typography component="span" variant="body2" color="text.secondary">
-                    {`ランク${data.rank}`}
-                  </Typography>
-                </>
-              }
-            />
-          </Box>
-          {data.friendState === "friend" && (
-            <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-              <Button sx={{ width: "55%" }} variant="contained" disabled color="primary">
-                フレンド申請済
-              </Button>
-              <Button sx={{ width: "43%" }} variant="contained" color="primary">
+    <ul className="plain-list stack">
+      {history.map((data, index) => (
+        <li key={index} className="panel stack">
+          <div className="row">
+            <Avatar src={data.avatar} name={data.user} />
+            <div className="grow">
+              <h2>{data.user}</h2>
+              <p>話したテーマ: {data.theme}</p>
+              <p>最終日: {data.date}</p>
+              <small>ランク{data.rank}</small>
+            </div>
+          </div>
+          <div className="row">
+            <button type="button" disabled>
+              {data.friendState === "unapplied"
+                ? "フレンド申請"
+                : "フレンド申請済"}
+            </button>
+            {data.friendState === "friend" ? (
+              <Link
+                className="button"
+                to={`/message/${encodeURIComponent(data.user)}`}
+              >
                 メッセージ
-              </Button>
-            </Box>
-          )}
-          {data.friendState === "pending" && (
-            <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-              <Button sx={{ width: "55%" }} variant="contained" disabled color="primary">
-                フレンド申請済
-              </Button>
-              <Button sx={{ width: "43%" }} variant="contained" disabled color="primary">
+              </Link>
+            ) : (
+              <button type="button" disabled>
                 メッセージ
-              </Button>
-            </Box>
-          )}
-          {data.friendState === "unapplied" && (
-            <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-              <Button sx={{ width: "55%" }} variant="contained" color="primary">
-                フレンド申請
-              </Button>
-              <Button sx={{ width: "43%" }} variant="contained" disabled color="primary">
-                メッセージ
-              </Button>
-            </Box>
-          )}
-        </ListItem>
+              </button>
+            )}
+          </div>
+        </li>
       ))}
-    </List>
+    </ul>
   );
-};
-
-export default SessionHistory;
+}

@@ -1,12 +1,11 @@
-import { Stack } from "@mui/material";
 import HomeLogo from "../../assets/homeLogo";
-import { Mic } from "@mui/icons-material";
+import { Icon } from "../ui/Icon";
 
-export const MicIcon = () => {
+export function MicIcon() {
   return (
-    <Stack sx={{ width: "150px", height: "150px", borderRadius: 50, backgroundColor: "secondary.main", display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", p: 3 }}>
-      <HomeLogo style={{ width: "100%", height: "fit-content", marginBottom: "10px" }} />
-      <Mic sx={{ fontSize: "60px" }} />
-    </Stack>
+    <div className="brand-mark stack compact">
+      <HomeLogo />
+      <Icon name="mic" size={36} />
+    </div>
   );
-};
+}

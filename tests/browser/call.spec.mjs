@@ -75,6 +75,27 @@ for (const kind of ['direct', 'event']) test(`${kind} conversations share real a
     }
     const started = await api(`/conversations/${id}`);
     expect(started.started_at).toBeGreaterThan(0); expect(started.revision).toBe(1);
+    // Replacing the UI primitives must not interrupt media or lose keyboard access.
+    const mute = alice.getByRole('button', { name: 'マイクをミュート', exact: true });
+    await mute.click();
+    await expect(mute).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => alice.evaluate(() => globalThis.__testPeers
+      .filter(peer => peer.connectionState === 'connected')
+      .every(peer => peer.getSenders().every(sender => !sender.track || !sender.track.enabled)))).toBe(true);
+    await mute.click();
+    await expect(mute).toHaveAttribute('aria-pressed', 'false');
+    await alice.getByRole('button', { name: 'メモ', exact: true }).click();
+    const memo = alice.getByRole('dialog', { name: 'メモ', exact: true });
+    await expect(memo).toBeVisible();
+    await memo.getByRole('radio', { name: '持ち込みメモ', exact: true }).focus();
+    await alice.keyboard.press('ArrowRight');
+    await expect(memo.getByRole('radio', { name: 'ワードリスト' })).toBeChecked();
+    await alice.keyboard.press('Escape');
+    await expect(memo).toBeHidden();
+    await expect(alice.getByRole('button', { name: 'メモ', exact: true })).toBeFocused();
+    await alice.getByRole('button', { name: 'トピック', exact: true }).click();
+    await expect(alice.getByRole('dialog')).toBeVisible();
+    await alice.getByRole('dialog').getByRole('button', { name: '閉じる' }).click();
     await bob.getByRole('button', { name: '通話一覧へ戻る' }).click();
     await expect(alice.getByRole('alert')).toContainText('相手が通話から退出しました');
     await expect.poll(() => alice.evaluate(() => globalThis.__testPeers.every(p => p.connectionState === 'closed'))).toBe(true);

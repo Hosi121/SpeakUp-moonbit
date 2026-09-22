@@ -1,29 +1,17 @@
-import { Box, IconButton } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
-import NotificationModal from "../utils/NotificationModal";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { Icon } from "../ui/Icon";
+import NotificationModal from "./NotificationModal";
 
-const TopSection = () => {
-  const navigate = useNavigate(); // Initialize useNavigate
-
-  // Function to navigate to settings page
-  const handleNavigateSettings = () => {
-    navigate("/settings");
-  };
-
+export default function TopSection() {
   return (
-    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-      {/* Notification Icon */}
-      <Box>
-        <NotificationModal />
-      </Box>
-
-      {/* Settings Icon (navigate to /settings) */}
-      <IconButton onClick={handleNavigateSettings}>
-        <SettingsIcon sx={{ fontSize: 40 }} />
-      </IconButton>
-    </Box>
+    <header className="top-section">
+      <NotificationModal />
+      <Link to="/home" aria-label="SpeakUp ホーム">
+        SpeakUp
+      </Link>
+      <Link to="/settings" className="button icon-button" aria-label="設定">
+        <Icon name="settings" size={28} />
+      </Link>
+    </header>
   );
-};
-
-export default TopSection;
+}

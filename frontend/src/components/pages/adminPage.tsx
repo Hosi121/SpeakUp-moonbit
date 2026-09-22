@@ -1,316 +1,240 @@
-import { useState, useEffect } from "react";
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Typography,
-  Snackbar,
-  Tab,
-  Tabs,
-  Paper,
-  Alert,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  CircularProgress,
-} from "@mui/material";
-import { Event, EventDetails, User } from "../../types/types";
+import { useState } from "react";
+import { Dialog } from "../ui/Dialog";
+import { Input } from "../ui/Field";
+import { Avatar } from "../ui/Avatar";
+import { ChoiceGroup } from "../ui/ChoiceGroup";
+import TopSection from "../utils/TopSection";
+import type { Event, User } from "../../types/types";
 import * as eventService from "../../services/eventService";
 import { searchUsers } from "../../services/userService";
 
-const AdminPage: React.FC = () => {
-  const [openDialog, setOpenDialog] = useState<boolean>(false);
-  const [dateTime, setDateTime] = useState<string>("");
-  const [theme, setTheme] = useState<string>("");
-  const [topics, setTopics] = useState<string[]>(["", "", ""]);
-  const [successMessage, setSuccessMessage] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [lastCreatedEvent, setLastCreatedEvent] = useState<Event | null>(null);
-  const [activeTab, setActiveTab] = useState<number>(0);
-  const [, setEvents] = useState<Event[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+export default function AdminPage() {
+  const [open, setOpen] = useState(false);
+  const [dateTime, setDateTime] = useState("");
+  const [theme, setTheme] = useState("");
+  const [topics, setTopics] = useState(["", "", ""]);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [dialogError, setDialogError] = useState("");
+  const [lastCreated, setLastCreated] = useState<Event | null>(null);
+  const [section, setSection] = useState("events");
+  const [query, setQuery] = useState("");
   const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    const fetchInitialEvents = async () => {
-      try {
-        const fetchedEvents = await eventService.fetchEvents();
-        setEvents(fetchedEvents);
-      } catch (error) {
-        console.error("Failed to fetch initial events", error);
-        setErrorMessage("初期イベントの取得に失敗しました");
-      }
-    };
-    fetchInitialEvents();
-  }, []);
-
-  const handleGenerateTheme = async () => {
-    try {
-      const generatedTheme = await eventService.generateTheme();
-      setTheme(generatedTheme);
-    } catch {
-      setErrorMessage("テーマの生成に失敗しました");
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const isoDateTime = new Date(dateTime).toISOString();
-      const eventPayload: EventDetails = {
-        eventStart: isoDateTime,
-        theme,
-        topics,
-      };
-
-      const createdEvent = await eventService.createEvent(eventPayload);
-      setSuccessMessage("イベントが正常に作成されました");
-      setLastCreatedEvent(createdEvent);
-      handleCloseDialog();
-      const fetchedEvents = await eventService.fetchEvents();
-      setEvents(fetchedEvents);
-    } catch {
-      setErrorMessage("イベントの作成に失敗しました");
-    }
-  };
-
-  const handleOpenDialog = () => {
-    setOpenDialog(true);
-    setSuccessMessage("");
-    setErrorMessage("");
-    setLastCreatedEvent(null);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  const [searched, setSearched] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const close = () => {
+    setOpen(false);
     setDateTime("");
     setTheme("");
     setTopics(["", "", ""]);
+    setDialogError("");
   };
-
-  const handleTopicChange = (index: number, value: string) => {
-    const newTopics = [...topics];
-    newTopics[index] = value;
-    setTopics(newTopics);
-  };
-
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
-
-  const handleSnackbarClose = () => {
-    setSuccessMessage("");
-    setErrorMessage("");
-  };
-
-  const handleSearchUsers = async () => {
-    setIsLoading(true);
+  const create = async () => {
+    setBusy(true);
+    setDialogError("");
     try {
-      const foundUsers = await searchUsers(searchQuery);
-      setUsers(foundUsers);
+      const created = await eventService.createEvent({
+        eventStart: new Date(dateTime).toISOString(),
+        theme,
+        topics,
+      });
+      setLastCreated(created);
+      setSuccess("イベントが正常に作成されました");
+      close();
     } catch (error) {
-      console.error("Failed to search users", error);
-      setErrorMessage("ユーザーの検索に失敗しました");
+      setDialogError(
+        error instanceof Error
+          ? error.message
+          : "イベントの作成に失敗しました。",
+      );
     } finally {
-      setIsLoading(false);
+      setBusy(false);
     }
   };
-
+  const generate = async () => {
+    setBusy(true);
+    setDialogError("");
+    try {
+      setTheme(await eventService.generateTheme());
+    } catch {
+      setDialogError("テーマの生成に失敗しました。");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const search = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      setUsers(await searchUsers(query));
+      setSearched(true);
+    } catch {
+      setError("ユーザーの検索に失敗しました。");
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
-    <Box sx={{ p: 2 }}>
-      <Tabs value={activeTab} onChange={handleTabChange} centered>
-        <Tab label="イベント管理" />
-        <Tab label="ユーザー情報" />
-      </Tabs>
-
-      {activeTab === 0 && (
-        <Box sx={{ mt: 4 }}>
-          <Button variant="contained" onClick={handleOpenDialog}>
+    <main className="page stack">
+      <TopSection />
+      <h1>管理</h1>
+      <ChoiceGroup
+        label="管理する項目"
+        value={section}
+        onChange={setSection}
+        options={[
+          { value: "events", label: "イベント管理" },
+          { value: "users", label: "ユーザー情報" },
+        ]}
+      />
+      {success && (
+        <p role="status" className="alert">
+          {success}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="alert">
+          {error}
+        </p>
+      )}
+      {section === "events" ? (
+        <section className="stack">
+          <button
+            type="button"
+            className="primary"
+            aria-haspopup="dialog"
+            onClick={() => {
+              setOpen(true);
+              setError("");
+              setSuccess("");
+            }}
+          >
             イベント作成
-          </Button>
-
-          {lastCreatedEvent && (
-            <Paper sx={{ mt: 4, p: 5 }}>
-              <Typography
-                variant="h6"
-                fontWeight="bolder"
-                color="primary.main"
-                sx={{ mb: 1 }}
-              >
-                最後に作成したイベント
-              </Typography>
-              <Typography variant="body1">
-                予定日時: {new Date(lastCreatedEvent.eventStart).toLocaleString()}
-              </Typography>
-              <Typography
-                variant="h6"
-                fontWeight="bolder"
-                fontSize="1.1rem"
-                sx={{ mt: 3, mb: 1 }}
-              >
-                テーマ
-              </Typography>
-              <Typography variant="body1">{lastCreatedEvent.theme.themeText}</Typography>
-              <Typography
-                variant="h6"
-                fontWeight="bolder"
-                fontSize="1.1rem"
-                sx={{ mt: 3, mb: 1 }}
-              >
-                トピック
-              </Typography>
-              <List sx={{ width: "100%", p: 0 }}>
+          </button>
+          {lastCreated && (
+            <article className="panel stack">
+              <h2>最後に作成したイベント</h2>
+              <p>
+                予定日時: {new Date(lastCreated.eventStart).toLocaleString()}
+              </p>
+              <h3>テーマ</h3>
+              <p>{lastCreated.theme.themeText}</p>
+              <h3>トピック</h3>
+              <ul>
                 {[
-                  lastCreatedEvent.theme.topic1,
-                  lastCreatedEvent.theme.topic2,
-                  lastCreatedEvent.theme.topic3,
+                  lastCreated.theme.topic1,
+                  lastCreated.theme.topic2,
+                  lastCreated.theme.topic3,
                 ].map((topic, index) => (
-                  <ListItem key={index} sx={{ p: 0 }}>
-                    <ListItemText sx={{ textAlign: "center" }}>
-                      {topic || "(未入力)"}
-                    </ListItemText>
-                  </ListItem>
+                  <li key={index}>{topic || "(未入力)"}</li>
                 ))}
-              </List>
-            </Paper>
+              </ul>
+            </article>
           )}
-          <Dialog open={openDialog} onClose={handleCloseDialog}>
-            <DialogTitle>イベント作成</DialogTitle>
-            <DialogContent>
-              <Box sx={{ mt: 2 }}>
-                <TextField
-                  fullWidth
-                  label="予定日時"
-                  type="datetime-local"
-                  value={dateTime}
-                  onChange={(e) => setDateTime(e.target.value)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  inputProps={{
-                    step: 1,
-                  }}
-                />
-              </Box>
-              <Box sx={{ mt: 2 }}>
-                <TextField
-                  fullWidth
-                  label="テーマ"
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value)}
-                />
-                <Button
-                  variant="outlined"
-                  sx={{ mt: 1 }}
-                  onClick={handleGenerateTheme}
-                >
-                  AIによる生成
-                </Button>
-              </Box>
-              {[0, 1, 2].map((index) => (
-                <Box sx={{ mt: 2 }} key={index}>
-                  <TextField
-                    fullWidth
-                    label={`トピック ${index + 1}`}
-                    value={topics[index]}
-                    onChange={(e) => handleTopicChange(index, e.target.value)}
-                    placeholder="ここにトピックを入力してください"
-                  />
-                </Box>
-              ))}
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>キャンセル</Button>
-              <Button onClick={handleSubmit} variant="contained">
-                作成
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </Box>
-      )}
-
-      {activeTab === 1 && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h6">ユーザー情報検索</Typography>
-          <Box sx={{ display: "flex", alignItems: "center", mt: 2 }}>
-            <TextField
-              fullWidth
+        </section>
+      ) : (
+        <section className="stack">
+          <h2>ユーザー情報検索</h2>
+          <form
+            className="row search-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void search();
+            }}
+          >
+            <Input
               label="ユーザー名で検索"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              required
             />
-            <Button
-              variant="contained"
-              sx={{ ml: 2 }}
-              onClick={handleSearchUsers}
-              disabled={isLoading}
-            >
-              {isLoading ? <CircularProgress size={24} /> : "検索"}
-            </Button>
-          </Box>
-
-          <List sx={{ mt: 2 }}>
-            {isLoading ? (
-              <ListItem>
-                <CircularProgress />
-              </ListItem>
-            ) : users && users.length > 0 ? (
-              users.map((user) => (
-                <ListItem key={user.id}>
-                  <ListItemAvatar>
-                    <Avatar
-                      src={user.avatarUrl || "/default-avatar.png"}
-                      alt={user.username}
-                    />
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={user.username}
-                    secondary={
-                      <>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          color="text.primary"
-                        >
-                          メール: {user.email}
-                        </Typography>
-                        <br />
-                        登録日: {new Date(user.createdAt).toLocaleString()}
-                      </>
-                    }
-                  />
-                </ListItem>
-              ))
-            ) : (
-              <ListItem>
-                <ListItemText primary="ユーザーが見つかりません" />
-              </ListItem>
-            )}
-          </List>
-        </Box>
+            <button type="submit" disabled={busy}>
+              検索
+            </button>
+          </form>
+          {busy && <p role="status">検索中…</p>}
+          {searched && users.length === 0 && (
+            <p>ユーザーが見つかりません。別の名前で検索してください。</p>
+          )}
+          <ul className="plain-list stack">
+            {users.map((user) => (
+              <li key={user.id} className="panel row">
+                <Avatar src={user.avatarUrl} name={user.username} />
+                <div className="grow">
+                  <h3>{user.username}</h3>
+                  <p>メール: {user.email}</p>
+                  <small>
+                    登録日: {new Date(user.createdAt).toLocaleString()}
+                  </small>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-
-      <Snackbar
-        open={!!successMessage || !!errorMessage}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
+      <Dialog
+        open={open}
+        onClose={() => {
+          if (!busy) close();
+        }}
+        title="イベント作成"
       >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={successMessage ? "success" : "error"}
-          sx={{ width: "100%" }}
+        <form
+          className="stack"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void create();
+          }}
         >
-          {successMessage || errorMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Input
+            label="予定日時"
+            type="datetime-local"
+            step={1}
+            required
+            disabled={busy}
+            value={dateTime}
+            onChange={(event) => setDateTime(event.target.value)}
+          />
+          <Input
+            label="テーマ"
+            required
+            disabled={busy}
+            value={theme}
+            onChange={(event) => setTheme(event.target.value)}
+          />
+          <button type="button" disabled={busy} onClick={() => void generate()}>
+            AIによる生成
+          </button>
+          {topics.map((topic, index) => (
+            <Input
+              key={index}
+              label={`トピック ${index + 1}`}
+              disabled={busy}
+              value={topic}
+              onChange={(event) =>
+                setTopics((topics) =>
+                  topics.map((topic, i) =>
+                    i === index ? event.target.value : topic,
+                  ),
+                )
+              }
+            />
+          ))}
+          {dialogError && (
+            <p role="alert" className="alert">
+              {dialogError}
+            </p>
+          )}
+          <div className="row">
+            <button type="button" disabled={busy} onClick={close}>
+              キャンセル
+            </button>
+            <button className="primary" type="submit" disabled={busy}>
+              作成
+            </button>
+          </div>
+        </form>
+      </Dialog>
+    </main>
   );
-};
-
-export default AdminPage;
+}

@@ -1,120 +1,82 @@
-import { useState, useEffect, useRef } from "react";
-import { Box, Typography } from "@mui/material";
-import { styled } from "@mui/system";
+import { useState, useEffect } from "react";
 
-const VisualizerContainer = styled(Box)(() => ({
-  width: "140px",
-  height: 25,
-  display: "flex",
-  alignItems: "flex-end",
-  justifyContent: "center",
-}));
-
-const Bar = styled(Box)(() => ({
-  width: 5,
-  maxHeight: 25,
-  backgroundColor: "#000",
-  transition: "height 0.1s ease",
-}));
-
-const AudioVisualizer: React.FC = () => {
-  const [audioData, setAudioData] = useState<Uint8Array>(new Uint8Array(128));
-  const [error, setError] = useState<string | null>(null);
-
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const rafIdRef = useRef<number | null>(null);
-
+export default function AudioVisualizer({
+  onReady,
+}: {
+  onReady: (ready: boolean) => void;
+}) {
+  const [levels, setLevels] = useState<number[]>(Array(10).fill(0));
+  const [error, setError] = useState("");
   useEffect(() => {
-    startListening();
-
-    return () => {
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+    let disposed = false;
+    let stream: MediaStream | undefined;
+    let context: AudioContext | undefined;
+    let frame = 0;
+    let update: (() => void) | undefined;
+    const visibility = () => {
+      cancelAnimationFrame(frame);
+      if (!document.hidden) update?.();
+    };
+    document.addEventListener("visibilitychange", visibility);
+    const start = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (disposed) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        context = new AudioContext();
+        const analyser = context.createAnalyser();
+        context.createMediaStreamSource(stream).connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        onReady(true);
+        update = () => {
+          if (disposed || document.hidden) return;
+          analyser.getByteFrequencyData(data);
+          const band = Math.max(1, Math.floor((data.length * 0.7) / 10));
+          setLevels(
+            Array.from({ length: 10 }, (_, i) => {
+              let sum = 0;
+              for (let j = i * band; j < (i + 1) * band; j++) sum += data[j];
+              return Math.max(0.02, Math.min(1, sum / band / 255));
+            }),
+          );
+          frame = requestAnimationFrame(updateFrame);
+        };
+        const updateFrame = () => update?.();
+        update();
+      } catch {
+        stream?.getTracks().forEach((track) => track.stop());
+        if (!disposed) {
+          onReady(false);
+          setError(
+            "マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。",
+          );
+        }
       }
     };
-  }, []);
-
-  const compressArray = (array: Uint8Array): Uint8Array => {
-    const length = array.length * 0.7; // 高周波はカット
-    return new Uint8Array(10).map((_, i) => {
-      // startからendまでの平均値を取得
-      const start = Math.floor(i * (length / 10));
-      const end = Math.floor((i + 1) * (length / 10));
-      const sum = array.slice(start, end).reduce((acc, val) => acc + val, 0);
-      const average = sum / (end - start);
-      const max = 255 * 1.0; // 表示上の頭打ち振幅を100%にする
-      const min = 255 * 0.05; // 5%までは無音扱い
-      const actualValue = Math.max(0, Math.min(255, average));
-      const height = 25;
-      return Math.round((actualValue / (max - min)) * height);
-    });
-  };
-
-  const startListening = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
-      sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
-      sourceRef.current.connect(analyserRef.current);
-
-      const updateAudioData = () => {
-        if (analyserRef.current && dataArrayRef.current) {
-          analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-          const scaledData = compressArray(dataArrayRef.current);
-
-          setAudioData(scaledData);
-        }
-        rafIdRef.current = requestAnimationFrame(updateAudioData);
-      };
-
-      updateAudioData();
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      setError("マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。");
-    }
-  };
-
-  return (
-    <Box>
-      {error ? (
-        <Typography color="error" align="center" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      ) : (
-        <Box sx={{ mb: 2 }}>
-          <VisualizerContainer sx={{ display: "flex", justifyContent: "space-between" }}>
-            {Array.from(audioData.slice(0, 10)).map((value, index) => (
-              <Bar
-                key={index}
-                style={{
-                  height: `${Math.min(value, 25)}px`,
-                }}
-              />
-            ))}
-          </VisualizerContainer>
-          <VisualizerContainer sx={{ display: "flex", justifyContent: "space-between", transform: "scaleY(-1)" }}>
-            {Array.from(audioData.slice(0, 10)).map((value, index) => (
-              <Bar
-                key={index}
-                style={{
-                  height: `${Math.min(value, 25)}px`,
-                }}
-              />
-            ))}
-          </VisualizerContainer>
-        </Box>
-      )}
-    </Box>
+    void start();
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", visibility);
+      cancelAnimationFrame(frame);
+      stream?.getTracks().forEach((track) => track.stop());
+      void context?.close().catch(() => {});
+    };
+  }, [onReady]);
+  return error ? (
+    <p role="alert" className="alert">
+      {error}
+    </p>
+  ) : (
+    <div className="audio-visualizer" role="img" aria-label="マイクの音量">
+      {levels.map((level, index) => (
+        <span
+          className="audio-bar"
+          key={index}
+          style={{ transform: `scaleY(${level})` }}
+        />
+      ))}
+    </div>
   );
-};
-
-export default AudioVisualizer;
+}

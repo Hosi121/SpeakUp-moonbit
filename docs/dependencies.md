@@ -2,7 +2,7 @@
 
 初回移植後の `npm audit` は frontend に 21 件（high 12、moderate 8、low 1）。互換範囲の更新後は high/critical 0、moderate 2。`npm audit fix --force` は使っていない。
 
-Axios 1.13.2 → 1.20.0、Vite 7.3.1 → 7.3.6、React Router 6.30.3 → 6.30.6 と推移的依存を更新した。ESLint 9.39.5 / typescript-eslint 8.70.1 に揃え、元の plugin が起動時に落ちる組み合わせも解消した。React/MUI の major update は含めない。
+Axios 1.13.2 → 1.20.0、Vite 7.3.1 → 7.3.6、React Router 6.30.3 → 6.30.6 と推移的依存を更新した。ESLint 9.39.5 / typescript-eslint 8.70.1 に揃え、元の plugin が起動時に落ちる組み合わせも解消した。React の major update は含めない。その後 MUI・Emotion を削除し、標準 HTML/CSS へ置換した。[依存削減と build 比較](frontend.md)。
 
 残る監査項目は react-router / react-router-dom に対する以下の advisory。修正版は 7.18.0 以降であり、v7 への移行は別作業にする。
 
@@ -11,4 +11,4 @@ Axios 1.13.2 → 1.20.0、Vite 7.3.1 → 7.3.6、React Router 6.30.3 → 6.30.6 
 
 監査結果がゼロという意味ではない。上記は現在の利用箇所に基づく判断であり、依存の脆弱性そのものを修正したものではない。
 
-更新後の TypeScript check、production build、API/WS 結合テスト、ブラウザの通話・ログイン・メモ保存を検証した。更新直後の JS bundle は約 698 kB → 713 kB（minified、約 2% 増）。その後の会話モデル整理で約 708 kB、lint の従来の hooks 依存配列警告は 2 件となった。500 kB を超える chunk の build 警告は残っている。
+更新後の TypeScript check、production build、API/WS 結合テスト、ブラウザの通話・ログイン・メモ保存を検証した。更新直後の JS bundle は約 698 kB → 713 kB、その後の会話モデル整理で約 708 kB。MUI 削除後は約 422 kB、lint の従来の hooks 警告 2 件と 500 kB を超える chunk の build 警告は解消した。MUI 削除による残存パッケージのバージョン変更はなく、Router の moderate 2 件は残る。

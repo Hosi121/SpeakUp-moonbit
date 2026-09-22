@@ -1,42 +1,33 @@
-import { TextField } from "@mui/material";
-import { Dispatch, SetStateAction } from "react";
+import { useId } from "react";
+import { Textarea } from "../ui/Field";
 
-interface MemoInputFieldProps {
+type MemoInputFieldProps = {
   value: string;
-  setValue: Dispatch<SetStateAction<string>>;
+  setValue: (value: string) => void;
   label: string;
   maxLength?: number;
-  height?: string;
-}
+};
 
-export const MemoInputField: React.FC<MemoInputFieldProps> = ({
+export function MemoInputField({
   value,
   setValue,
   label,
   maxLength = 500,
-  height = "300px",
-}) => {
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const text = event.target.value.slice(0, maxLength);
-    setValue(text);
-  };
-
+}: MemoInputFieldProps) {
+  const countId = useId();
   return (
-    <TextField
-      label={label}
-      multiline
-      fullWidth
-      variant="outlined"
-      value={value}
-      onChange={handleChange}
-      helperText={`${value.length}/${maxLength}`}
-      InputProps={{
-        style: {
-          height: height,
-        },
-      }}
-      rows={10}
-      sx={{ bgcolor: "secondary.main", borderRadius: 2 }}
-    />
+    <div className="stack compact">
+      <Textarea
+        label={label}
+        rows={8}
+        value={value}
+        maxLength={maxLength}
+        onChange={(event) => setValue(event.target.value)}
+        aria-describedby={countId}
+      />
+      <small id={countId} className="numeric">
+        {value.length}/{maxLength}
+      </small>
+    </div>
   );
-};
+}

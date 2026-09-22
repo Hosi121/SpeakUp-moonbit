@@ -1,166 +1,89 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Button, Container, TextField, Typography, IconButton, InputAdornment } from '@mui/material';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { signIn } from '../../services/authService';
-import { isTestMode } from '../../services/appMode';
-import Logo from "../../assets/logo.tsx";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Input } from "../ui/Field";
+import { signIn } from "../../services/authService";
+import { isTestMode } from "../../services/appMode";
+import Logo from "../../assets/logo";
 
-const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-
-  const handleClickShowPassword = () => setShowPassword(!showPassword);
-
-  // Function to handle navigation to the sign-up page
-  const handleNavigateToSignup = () => {
-    navigate("/signup");
-  };
-
-  // ログイン処理
-  const handleLogin = async () => {
+  const login = async (email: string, password: string) => {
+    setBusy(true);
+    setError("");
     try {
-      await signIn(email, password);  // authServiceの関数を使用
-      navigate('/home');  // ログイン成功後にリダイレクト
-    } catch (err) {
-      setError((err as Error).message);  // エラーメッセージを設定
+      await signIn(email, password);
+      navigate("/home");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "サインインできませんでした。",
+      );
+    } finally {
+      setBusy(false);
     }
   };
-
-  const handleTestLogin = async () => {
-    try {
-      await signIn("test@example.com", "test");
-      navigate('/home');
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
   return (
-    <Container
-      maxWidth="md"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100vh",
-        backgroundColor: "#FFDD66",
-        padding: "16px",
-        borderRadius: "16px",
-      }}
-    >
-      <Box
-        sx={{
-          backgroundColor: "white",
-          width: 150,
-          height: 150,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          mb: 4,
+    <main className="auth-page">
+      <form
+        className="auth-form stack"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void login(email, password);
         }}
       >
-        <Logo style={{ width: "80%" }} />
-      </Box>
-
-      <Typography variant="h4" component="h1" sx={{ mb: 4 }}>
-        サインイン
-      </Typography>
-
-      {/* Email Field */}
-      <TextField
-        label="Email"
-        type="email"
-        fullWidth
-        variant="outlined"
-        margin="normal"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-
-      {/* Error message */}
-      {error && (
-        <Typography color="error" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      )}
-
-      {/* Password Field */}
-      <TextField
-        label="パスワード"
-        type={showPassword ? "text" : "password"}
-        fullWidth
-        variant="outlined"
-        margin="normal"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton onClick={handleClickShowPassword}>
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
-
-      <Button
-        variant="contained"
-        fullWidth
-        sx={{
-          backgroundColor: "#FF007F",
-          color: "white",
-          marginY: 2,
-          "&:hover": {
-            backgroundColor: "#FF3399",
-          },
-        }}
-        onClick={handleLogin}  // ログイン処理を実行
-      >
-        サインイン
-      </Button>
-      {isTestMode && (
-        <Button
-          variant="outlined"
-          fullWidth
-          sx={{ marginBottom: 2 }}
-          onClick={handleTestLogin}
-        >
-          Test Login (Bypass)
-        </Button>
-      )}
-
-      {/* Forgot Password and Sign Up */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          width: "100%",
-        }}
-      >
-        <Typography variant="body2" color="textSecondary">
-          パスワードを忘れた場合はこちら
-        </Typography>
-
-        {/* Clickable Sign-Up text */}
-        <Typography
-          variant="body2"
-          color="textSecondary"
-          sx={{ cursor: "pointer", textDecoration: "underline" }}
-          onClick={handleNavigateToSignup} // OnClick handler to navigate to /signup
-        >
+        <div className="brand-mark">
+          <Logo style={{ width: "100%" }} />
+        </div>
+        <h1 className="center">サインイン</h1>
+        <Input
+          label="Email"
+          type="email"
+          autoComplete="username"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        <Input
+          label="パスワード"
+          type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <label className="radio-option">
+          <input
+            type="checkbox"
+            checked={showPassword}
+            onChange={(event) => setShowPassword(event.target.checked)}
+          />
+          入力内容を表示
+        </label>
+        {error && (
+          <p role="alert" className="alert">
+            {error}
+          </p>
+        )}
+        <button type="submit" className="primary" disabled={busy}>
+          {busy ? "サインイン中…" : "サインイン"}
+        </button>
+        {isTestMode && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void login("test@example.com", "test")}
+          >
+            Test Login (Bypass)
+          </button>
+        )}
+        <Link className="center" to="/signup">
           サインアップ
-        </Typography>
-      </Box>
-    </Container>
+        </Link>
+      </form>
+    </main>
   );
-};
-
-export default Login;
+}

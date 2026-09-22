@@ -1,19 +1,20 @@
-import { ReactNode } from "react";
-import { MainBottomNavigation, mainBottomNavigation } from "../utils/MainBottomNavigation";
-import { Box } from "@mui/material";
+import type { ReactNode } from "react";
+import {
+  MainBottomNavigation,
+  type mainBottomNavigation,
+} from "../utils/MainBottomNavigation";
 
-type bottomNavigationTemplateProps = {
+export function BottomNavigationTemplate({
+  value,
+  children,
+}: {
   value: mainBottomNavigation;
   children: ReactNode;
-};
-
-export const BottomNavigationTemplate = ({ value, children }: bottomNavigationTemplateProps) => {
+}) {
   return (
-    <Box width={"100vw"} height={"100vh"}>
-      <Box height={"calc(100vh - 70px)"} overflow={"auto"}>
-        {children}
-      </Box>
+    <div className="app-shell">
+      <main>{children}</main>
       <MainBottomNavigation value={value} />
-    </Box>
+    </div>
   );
-};
+}

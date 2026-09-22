@@ -1,46 +1,30 @@
-import { Home, LibraryBooks, Mic } from "@mui/icons-material";
-import { BottomNavigation, BottomNavigationAction } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-
-type bottomNavigationProps = {
-  value: mainBottomNavigation;
-};
+import { Link } from "react-router-dom";
+import { Icon } from "../ui/Icon";
 
 export type mainBottomNavigation = "record" | "home" | "session" | "other";
 
-export const MainBottomNavigation = ({ value }: bottomNavigationProps) => {
-  const navigate = useNavigate();
-  const mainBottomNavigationToIndex = (value: mainBottomNavigation): number => {
-    switch (value) {
-      case "record":
-        return 0;
-      case "home":
-        return 1;
-      case "session":
-        return 2;
-      default:
-        return -1;
-    }
-  };
-  const index = mainBottomNavigationToIndex(value);
-
+export function MainBottomNavigation({
+  value,
+}: {
+  value: mainBottomNavigation;
+}) {
   return (
-    <BottomNavigation
-      showLabels
-      value={index}
-      sx={{
-        padding: "20px 0",
-        height: "70px",
-        position: "sticky",
-        bottom: 0,
-        zIndex: 100,
-        backgroundColor: "background.default",
-        boxShadow: "0 0 5px rgba(0, 0, 0, 0.6)",
-      }}
-    >
-      <BottomNavigationAction onClick={() => navigate("/record")} icon={<LibraryBooks fontSize="large" />} />
-      <BottomNavigationAction onClick={() => navigate("/home")} icon={<Home fontSize="large" />} />
-      <BottomNavigationAction onClick={() => navigate("/sessionlist")} icon={<Mic fontSize="large" />} />
-    </BottomNavigation>
+    <nav className="bottom-navigation" aria-label="メインナビゲーション">
+      <Link to="/record" aria-current={value === "record" ? "page" : undefined}>
+        <Icon name="book" />
+        記録
+      </Link>
+      <Link to="/home" aria-current={value === "home" ? "page" : undefined}>
+        <Icon name="home" />
+        ホーム
+      </Link>
+      <Link
+        to="/sessionlist"
+        aria-current={value === "session" ? "page" : undefined}
+      >
+        <Icon name="mic" />
+        通話
+      </Link>
+    </nav>
   );
-};
+}

@@ -1,124 +1,80 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Button,
-  Container,
-  TextField,
-  Typography,
-  Link,
-} from "@mui/material";
-import { signUp } from "../../services/authService"; // authServiceのサインアップ関数をインポート
-import Logo from "../../assets/logo.tsx";
+import { Link, useNavigate } from "react-router-dom";
+import { Input } from "../ui/Field";
+import { signUp } from "../../services/authService";
+import Logo from "../../assets/logo";
 
-const SignUp = () => {
+export default function SignUp() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState(""); // パスワードの状態
-  const [, setError] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const handleSignUp = async () => {
-    if (password.length < 8) {
-      setError("パスワードは8文字以上である必要があります。");
-      return;
-    }
-
+  const submit = async () => {
+    setBusy(true);
+    setError("");
     try {
-      await signUp(username, email, password); // authServiceの関数を使用
-      navigate("/login"); // サインアップ後、ログインページにリダイレクト
+      await signUp(username, email, password);
+      navigate("/login");
     } catch (error) {
-      setError((error as Error).message);
+      setError(
+        error instanceof Error ? error.message : "登録できませんでした。",
+      );
+    } finally {
+      setBusy(false);
     }
   };
-
   return (
-    <Container
-      maxWidth="md"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100vh",
-        backgroundColor: "#FFDD66",
-        padding: "16px",
-        borderRadius: "16px",
-      }}
-    >
-      <Box
-        sx={{
-          backgroundColor: "white",
-          width: 150,
-          height: 150,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          mb: 4,
+    <main className="auth-page">
+      <form
+        className="auth-form stack"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
         }}
       >
-        <Logo style={{ width: "80%" }} />
-      </Box>
-
-      <Typography variant="h4" component="h1" sx={{ mb: 4 }}>
-        サインアップ
-      </Typography>
-
-      <TextField
-        label="ユーザー名(セッション時の表示名)"
-        type="text"
-        fullWidth
-        variant="outlined"
-        margin="normal"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
-
-      <TextField
-        label="Email"
-        type="email"
-        fullWidth
-        variant="outlined"
-        margin="normal"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-
-      <TextField
-        label="パスワード"
-        type="password"
-        fullWidth
-        variant="outlined"
-        margin="normal"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      <Button
-        variant="contained"
-        fullWidth
-        sx={{
-          backgroundColor: "#FF007F",
-          color: "white",
-          marginY: 2,
-          "&:hover": {
-            backgroundColor: "#FF3399",
-          },
-        }}
-        onClick={handleSignUp}
-      >
-        メールを送信して仮登録
-      </Button>
-      <Link
-        component="button"
-        variant="body2"
-        sx={{ mt: 2, cursor: "pointer", textDecoration: "underline" }}
-        onClick={() => navigate("/login")}
-      >
-        ログインページに戻る
-      </Link>
-    </Container>
+        <div className="brand-mark">
+          <Logo style={{ width: "100%" }} />
+        </div>
+        <h1 className="center">サインアップ</h1>
+        <Input
+          label="ユーザー名(セッション時の表示名)"
+          autoComplete="nickname"
+          required
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+        />
+        <Input
+          label="Email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        <Input
+          label="パスワード"
+          type="password"
+          autoComplete="new-password"
+          required
+          minLength={8}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <small>パスワードは8文字以上で入力してください。</small>
+        {error && (
+          <p role="alert" className="alert">
+            {error}
+          </p>
+        )}
+        <button className="primary" type="submit" disabled={busy}>
+          メールを送信して仮登録
+        </button>
+        <Link className="center" to="/login">
+          ログインページに戻る
+        </Link>
+      </form>
+    </main>
   );
-};
-
-export default SignUp;
+}

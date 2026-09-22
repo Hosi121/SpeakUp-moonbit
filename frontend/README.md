@@ -1,50 +1,13 @@
-# React + TypeScript + Vite
+# SpeakUp frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React / TypeScript と標準 HTML/CSS による UI。共通の会話モデルと DTO は MoonBit の JS target と Mbt2TS から生成した `../dist/shared.js` / `.d.ts` を利用する。MUI・Emotion・CSS-in-JS の依存はない。
 
-Currently, two official plugins are available:
+セットアップと native backend の起動は [ルート README](../README.md) を参照。ルートで `npm run dev` を実行すると共通コードをビルドし、native backend と Vite を起動する。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- `npm run build` — TypeScript check と production build
+- `npm run lint` — ESLint
+- `src/styles/app.css` — 共通の CSS と色
+- `src/components/ui` — 型付き DOM 部品
+- `src/services` — HTTP / WebRTC / マイク等のブラウザ境界
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
-
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+MUI の削除内容、bundle 比較、残る依存と未実装機能は [frontend の設計](../docs/frontend.md) に記載している。
