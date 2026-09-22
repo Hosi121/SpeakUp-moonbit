@@ -6,6 +6,8 @@
 
 MySQL worker / pool と WebSocket の送信・終了処理は、別 repo の **[servicekit.mbt](https://github.com/Hosi121/servicekit.mbt)** に切り出しています。`hosi121/mysql` と `hosi121/ws_session` は別々に利用でき、SpeakUp は `vendor/servicekit` の Git submodule で commit を固定して参照します。通話 ID、認証、JSON 検証、JS callback の規約と型生成の検査はアプリ側に置きます。[切り分けの理由](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/design.md)
 
+DB 部分は現状 MySQL 専用です。独立した repo / module にしたことと、RDBMS 間で共通の API を設計・検証したことは別です。後者は未実装であり、[共通 session / transaction と PostgreSQL adapter の設計案](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/database-abstraction.md)に整理しています。
+
 **今回の測定では native 化による高速化は確認できませんでした。** signaling 中継の中央値は Go 比較用実装の約 0.95 倍。中継プログラムの RSS は JS/Node の約 85 MiB に対し native は約 10.5 MiB でした。[測定方法と結果](docs/performance.md)を参照してください。
 
 ## 起動
