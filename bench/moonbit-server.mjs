@@ -1,7 +1,7 @@
 // Same synthetic admission as the Go reference, using the production MoonBit hub.
 import { createServer } from 'node:http';
 import { WebSocketServer } from 'ws';
-import { createHub, join, leave, relay } from '../dist/signaling.js';
+import { createHub, join, leave, receive } from '../dist/signaling.js';
 const h = createHub(), clients = new Map(); let id = 0;
 const http = createServer((_, res) => res.end('ok'));
 const server = new WebSocketServer({ server: http, maxPayload: 65536, perMessageDeflate: false });
@@ -10,7 +10,7 @@ server.on('connection', (ws, req) => {
   const url = new URL(req.url, 'http://localhost');
   const conn = ++id; clients.set(conn, ws);
   deliver(join(h, conn, Number(url.searchParams.get('user')), Number(url.searchParams.get('room'))));
-  ws.on('message', (raw, binary) => { if (binary) ws.close(1008); else deliver(relay(h, conn, raw.toString())); });
+  ws.on('message', (raw, binary) => { if (binary) ws.close(1008); else deliver(receive(h, conn, raw.toString()).deliveries); });
   ws.on('close', () => { clients.delete(conn); deliver(leave(h, conn)); });
 });
 http.listen(Number(process.env.PORT ?? 18102), '127.0.0.1');

@@ -1,6 +1,6 @@
-import { startVoiceCall } from "../../services/voiceCall";
+import { startVoiceCall, type VoiceConnectionState } from "../../services/voiceCall";
 import { HalfModal } from "../utils/HalfModal";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Typography,
   Box,
@@ -19,24 +19,23 @@ import { SessionBottomNavigationTemplate } from "../templates/SessionBottomNavig
 import SessionContainer from "../utils/SessionContainer";
 import { fetchMemo } from "../../services/memoService"; // Import the fetchMemo function
 import { TabContext, TabList, TabPanel } from "@mui/lab";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { TopicPopup } from "../utils/TopicPopup";
 import { AudioVolumeAnalyzer } from "../utils/AudioVolumeAnalyzer";
 import { fetchUserProfile } from "../../services/userService";
 import { askAssistant } from "../../services/chatService";
-import { SessionStepContext } from "../utils/SessionStepContextProvider";
-
-const theme = "好きな言葉";
-
-
-
-type UserCardData = {
-  name: string;
-  icon: JSX.Element;
-};
+import { conversationClock, conversationPartner, type ConversationDto } from "../../../../dist/shared.js";
+import { finishConversation, cancelConversation } from "../../services/conversationService";
+import type { UserProfile } from "../../types/types";
 
 export const Session = () => {
-  const sessionTime = 300; // [s]
+  const [query] = useSearchParams();
+  const id = Number(query.get("conversation"));
+  return Number.isInteger(id) && id > 0 && id <= 2147483647
+    ? <ConversationSession key={id} id={id} /> : <Navigate to="/sessionlist" replace />;
+};
+
+const ConversationSession = ({ id }: { id: number }) => {
   const [memoOpen, setMemoOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [messages, setMessages] = useState<string[]>([]);
@@ -46,35 +45,23 @@ export const Session = () => {
   const [wordList, setWordList] = useState("");
   const [value, setValue] = useState("1");
   const [isMuted, setIsMuted] = useState(false);
-  const [countdown, setCountdown] = useState(sessionTime + 3);
+  const mutedRef = useRef(false);
   const navigate = useNavigate();
-  const { sessionStep, setSessionStep } = useContext(SessionStepContext);
-
+  const [conversation, setConversation] = useState<ConversationDto | null>(null);
+  const [now, setNow] = useState(Date.now);
+  const [retry, setRetry] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const ending = useRef(false);
+  const automaticFinish = useRef(false);
   const [showTopicPopup, setShowTopicPopup] = useState(false);
-  const [isPriorityHighClicked, setIsPriorityHighClicked] = useState(false);
+  const clock = conversation ? conversationClock(conversation, now) : null;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isPriorityHighClicked) {
-        setShowTopicPopup(true);
-      }
-    }, 8000); // 2 minutes and 3 seconds
-    return () => clearTimeout(timer);
-  }, [isPriorityHighClicked]);
+    if (clock?.phase !== "active") return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [clock?.phase]);
 
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      navigate("/sessioninterval");
-      const nextStep = sessionStep + 1;
-      setSessionStep(nextStep);
-      if (nextStep >= 3) {
-        navigate("/sessionrecord");
-      }
-    }
-  }, [countdown, navigate]);
   useEffect(() => {
     // コンポーネント読み込み時にメモを取得
     const getMemo = async () => {
@@ -100,7 +87,6 @@ export const Session = () => {
   };
   const handlePriorityHighClick = () => {
     setShowTopicPopup(true);
-    setIsPriorityHighClicked(true);
   };
   const handleSendMessage = async () => {
     if (inputMessage.trim() === "") return;
@@ -131,11 +117,16 @@ export const Session = () => {
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const callRef = useRef<ReturnType<typeof startVoiceCall> | null>(null);
   const [callError, setCallError] = useState("");
+  const [connection, setConnection] = useState<VoiceConnectionState>("connecting");
   useEffect(() => {
     const audio = remoteAudioRef.current;
     if (!audio) return;
+    setCallError("");
     const call = startVoiceCall({
-      audio, round: sessionStep + 1, onError: message => {
+      audio, conversationId: id,
+      onConnection: setConnection,
+      onState: next => setConversation(current => !current || next.revision >= current.revision ? next : current),
+      onError: message => {
         setCallError(message);
         volumeAnalyzerRef.current?.stop();
         opponentVolumeAnalyzerRef.current?.stop();
@@ -150,14 +141,16 @@ export const Session = () => {
       },
     });
     callRef.current = call;
+    call.mute(mutedRef.current);
     return () => {
       call.stop();
       volumeAnalyzerRef.current?.stop();
       opponentVolumeAnalyzerRef.current?.stop();
     };
-  }, [sessionStep]);
+  }, [id, retry]);
   const toggleMute = () => {
     const muted = !isMuted;
+    mutedRef.current = muted;
     setIsMuted(muted);
     callRef.current?.mute(muted);
   };
@@ -168,46 +161,39 @@ export const Session = () => {
   const [isSpeak, setisSpeak] = useState(false);
   const [isOpponentSpeak, setIsOpponentSpeak] = useState(false);
 
-  // userInfo
-  const initialUserCardInfo = { name: "", icon: <Person /> };
-  const [userCardInfo, setUserCardInfo] =
-    useState<UserCardData>(initialUserCardInfo);
-  const [opponentUserCardInfo, setOpponentUserCardInfo] =
-    useState<UserCardData>(initialUserCardInfo);
-
-  const getFullAvatarUrl = (avatarUrl: string) => {
-    if (!avatarUrl) return ""; // デフォルトのアバター画像のURLを設定することもできます
-    if (avatarUrl.startsWith("http")) return avatarUrl; // すでに完全なURLの場合
-    return `http://localhost:8081${avatarUrl}`; // ローカル開発環境の場合
-  };
-
+  const [me, setMe] = useState<UserProfile | null>(null);
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userInfoResponse = await fetchUserProfile();
-        const opponentUserCardDataResponse = await fetchUserProfile();
-        const userInfo: UserCardData = {
-          name: userInfoResponse.username,
-          icon: (
-            <Avatar
-              src={getFullAvatarUrl(userInfoResponse.avatarUrl)}
-              sx={{ width: 80, height: 80 }}
-            />
-          ),
-        };
-        const opponentUserInfo: UserCardData = {
-          name: opponentUserCardDataResponse.username,
-          icon: <Person />,
-        };
-        setUserCardInfo(userInfo);
-        setOpponentUserCardInfo(opponentUserInfo);
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-      }
-    };
-
-    fetchUserData();
+    let disposed = false;
+    void fetchUserProfile().then(value => { if (!disposed) setMe(value); }).catch(() => {
+      if (!disposed) setCallError("ユーザー情報を取得できませんでした");
+    });
+    return () => { disposed = true; };
   }, []);
+  const partner = conversation && me ? conversationPartner(conversation, me.id) : null;
+  const users = [
+    { name: me?.username ?? "", icon: me?.avatarUrl ? <Avatar src={me.avatarUrl} /> : <Person /> },
+    { name: partner?.username ?? "", icon: partner?.avatar_url ? <Avatar src={partner.avatar_url} /> : <Person /> },
+  ];
+  const finish = useCallback(async () => {
+    if (ending.current) return;
+    ending.current = true; setSaving(true);
+    try { setConversation(await finishConversation(id)); }
+    catch (error) { setCallError(error instanceof Error ? error.message : "終了を保存できませんでした。もう一度お試しください"); }
+    finally { ending.current = false; setSaving(false); }
+  }, [id]);
+  useEffect(() => {
+    if (clock?.phase === "completed") navigate(`/sessionrecord?conversation=${id}`, { replace: true });
+    if (clock?.phase === "active" && clock.has_deadline && clock.remaining_seconds === 0 && !automaticFinish.current) {
+      automaticFinish.current = true;
+      void finish();
+    }
+  }, [clock?.phase, clock?.has_deadline, clock?.remaining_seconds, finish, id, navigate]);
+  const cancel = async () => {
+    setSaving(true);
+    try { setConversation(await cancelConversation(id)); }
+    catch (error) { setCallError(error instanceof Error ? error.message : "取り消せませんでした"); }
+    finally { setSaving(false); }
+  };
 
   return (
     <SessionBottomNavigationTemplate
@@ -219,12 +205,22 @@ export const Session = () => {
       onPriorityHighClick={handlePriorityHighClick}
     >
       <SessionContainer
-        theme={theme}
-        users={[userCardInfo, opponentUserCardInfo]}
+        theme={conversation?.theme ?? "読み込み中"}
+        users={users}
         isSpeak={isSpeak && !isMuted}
         isOpponentSpeak={isOpponentSpeak}
       />
-      <TopicPopup isVisible={showTopicPopup} onClose={handleCloseTopicPopup} />
+      <Box sx={{ p: 2 }}>
+        <Typography role="status">
+          {clock?.phase === "active" ? (callError ? "通話は中断しています" : connection !== "connected" ? "再接続しています" : clock.has_deadline ? `通話中：残り ${clock.remaining_seconds} 秒` : "通話中")
+            : clock?.phase === "cancelled" ? "通話はキャンセルされました" : "相手の接続を待っています"}
+        </Typography>
+        {clock?.can_finish && <Button variant="contained" disabled={saving} onClick={() => void finish()}>通話を終了して記録する</Button>}
+        {clock?.phase === "planned" && <Button disabled={saving} onClick={() => void cancel()}>通話の予定を取り消す</Button>}
+        {callError && clock?.can_join && <Button onClick={() => setRetry(value => value + 1)}>再接続</Button>}
+        <Button onClick={() => navigate("/sessionlist")}>通話一覧へ戻る</Button>
+      </Box>
+      <TopicPopup isVisible={showTopicPopup} onClose={handleCloseTopicPopup} topics={conversation?.topics ?? []} />
       <HalfModal open={memoOpen} handleClose={handleMemoClose} title="">
         <TabContext value={value}>
           <Box sx={{ borderBottom: 1, borderColor: "divider" }}>

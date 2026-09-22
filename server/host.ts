@@ -1,6 +1,6 @@
 import mysql, { type Pool, type RowDataPacket, type ResultSetHeader } from 'mysql2/promise';
 import { generateKeyPair, importPKCS8, importSPKI, SignJWT, jwtVerify } from 'jose';
-import type { dispatch as Dispatch, now as Now, eventTimes as EventTimes, publicUrl as PublicUrl } from '../bindings/host.js';
+import type { dispatch as Dispatch, now as Now, nowMillis as NowMillis, eventTimes as EventTimes, publicUrl as PublicUrl } from '../bindings/host.js';
 
 type SqlValue = string | number | boolean | null;
 type Statement = { sql: string; params: SqlValue[] };
@@ -28,6 +28,7 @@ function statement(value: unknown): Statement {
   return { sql: text(s.sql), params };
 }
 export const now: typeof Now = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
+export const nowMillis: typeof NowMillis = () => Date.now();
 export const publicUrl: typeof PublicUrl = value => value === '' || /^https?:\/\//.test(value)
   ? value : `${process.env.PUBLIC_ORIGIN ?? 'http://localhost:8081'}${value}`;
 export const eventTimes: typeof EventTimes = value => {

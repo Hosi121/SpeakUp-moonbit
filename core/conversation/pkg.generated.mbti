@@ -1,0 +1,50 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/conversation"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn begin(Snapshot, Int, Double) -> Snapshot raise StateError
+
+pub fn cancel(Snapshot, Int, Double) -> Snapshot raise StateError
+
+pub fn finish(Snapshot, Int, Double) -> Snapshot raise StateError
+
+pub fn partner(Snapshot, Int) -> Int raise StateError
+
+pub fn remaining(Snapshot, Double, Int) -> Int raise StateError
+
+pub fn state(Snapshot) -> String raise StateError
+
+// Errors
+pub suberror StateError {
+  InvalidSnapshot
+  NotParticipant
+  NotStarted
+  AlreadyCompleted
+  AlreadyStarted
+  InvalidClock
+} derive(Eq, @debug.Debug)
+pub fn StateError::equal(Self, Self) -> Bool
+pub fn StateError::not_equal(Self, Self) -> Bool
+pub fn StateError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct Snapshot {
+  id : Int
+  first : Int
+  second : Int
+  started_at : Double
+  ended_at : Double
+  cancelled_at : Double
+  revision : Int
+} derive(ToJson, @json.FromJson)
+pub fn Snapshot::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn Snapshot::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits

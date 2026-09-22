@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/json",
+  "hosi121/speakup/conversation",
 }
 
 options(
@@ -17,6 +18,11 @@ options(
         "map_conversation:mapConversation",
         "parse_signal:parseSignal",
         "normalize_avatar:normalizeAvatar",
+        "decode_conversation:parseConversation",
+        "decode_conversations:parseConversations",
+        "view_conversation_clock:conversationClock",
+        "view_conversation_partner:conversationPartner",
+        "decode_reflection:parseReflection",
       ],
     },
   },

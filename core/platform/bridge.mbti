@@ -13,6 +13,9 @@ declare pub fn now() -> String
 declare pub fn dispatch(request : String, done : DispatchDoneCallback) -> Unit
 
 ///|
+declare pub fn nowMillis() -> Double
+
+///|
 declare pub fn publicUrl(value : String) -> String
 
 ///|

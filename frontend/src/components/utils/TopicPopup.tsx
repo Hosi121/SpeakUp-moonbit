@@ -1,29 +1,13 @@
 import { Card, CardContent, Typography, List, ListItem, ListItemText, IconButton } from "@mui/material";
-import { useEffect, useState } from "react";
 import { Close } from "@mui/icons-material";
-import { fetchTopics } from "../../services/appData";
 
 type TopicPopupProps = {
   isVisible: boolean;
   onClose: () => void;
+  topics: string[];
 };
 
-export const TopicPopup = ({ isVisible, onClose }: TopicPopupProps) => {
-  const [topicData, setTopicData] = useState<string[]>([]);
-
-  useEffect(() => {
-    const loadTopics = async () => {
-      try {
-        const topics = await fetchTopics();
-        const allTopics = topics.flatMap((topic) => topic.topics);
-        setTopicData(allTopics);
-      } catch (error) {
-        console.error("Failed to fetch topics", error);
-      }
-    };
-    loadTopics();
-  }, []);
-
+export const TopicPopup = ({ isVisible, onClose, topics }: TopicPopupProps) => {
   if (!isVisible) {
     return null;
   }
@@ -45,8 +29,9 @@ export const TopicPopup = ({ isVisible, onClose }: TopicPopupProps) => {
         <Typography variant="h6" color="primary.main" gutterBottom textAlign="left" width="90%">
           まだ話していないトピックはありますか？
         </Typography>
+        {topics.length === 0 && <Typography>この通話には指定されたトピックがありません。</Typography>}
         <List sx={{ height: "20vh" }}>
-          {topicData.map((topic, index) => (
+          {topics.map((topic, index) => (
             <ListItem key={index} sx={{ height: "30%" }}>
               <ListItemText primary={topic} />
             </ListItem>

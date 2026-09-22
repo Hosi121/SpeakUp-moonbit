@@ -2,11 +2,10 @@ import { createServer, type IncomingMessage } from 'node:http';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID, createHmac } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
-import type { RowDataPacket } from 'mysql2/promise';
 import { handle } from '../dist/api.js';
-import { createHub, destroyHub, join, leave, relay, type Delivery } from '../dist/signaling.js';
-import { parseSignal } from '../dist/shared.js';
-import { getPool, verifyToken, closePool } from './host.ts';
+import { createHub, destroyHub, join, leave, receive, publish, type Delivery } from '../dist/signaling.js';
+import { parseSignal, parseConversation } from '../dist/shared.js';
+import { verifyToken, closePool } from './host.ts';
 
 const origins = new Set((process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173').split(','));
 const hub = createHub();
@@ -14,6 +13,24 @@ const clients = new Map<number, WebSocket>();
 const MAX_BUFFER = 256 * 1024;
 const MAX_CLIENTS = 10_000;
 let serial = 0;
+type ApiResult = { status: number; body: string };
+function callApi(method: string, path: string, user: number, input = '', query = ''): Promise<ApiResult> {
+  return new Promise(resolve => handle(method, path, user, input, query, (status, body) => resolve({ status, body })));
+}
+// Serialize admission and durable lifecycle commands for one conversation.
+// ICE/SDP relay does not wait on this queue or touch the database.
+const conversationWork = new Map<number, Promise<void>>();
+function withConversation<T>(id: number, work: () => Promise<T>): Promise<T> {
+  const next = (conversationWork.get(id) ?? Promise.resolve()).then(work);
+  const barrier = next.then(() => {}, () => {});
+  conversationWork.set(id, barrier);
+  void barrier.then(() => { if (conversationWork.get(id) === barrier) conversationWork.delete(id); });
+  return next;
+}
+function publishConversation(body: string): void {
+  const conversation = parseConversation(body);
+  deliver(publish(hub, conversation.id, `{"type":"conversation","value":${body}}`, conversation.ended_at > 0 || conversation.cancelled_at > 0));
+}
 async function body(req: IncomingMessage, limit = 64 * 1024): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -31,7 +48,7 @@ function deliver(messages: Delivery[]): void {
     if (!ws || ws.readyState !== WebSocket.OPEN) continue;
     if (ws.bufferedAmount + Buffer.byteLength(m.payload) > MAX_BUFFER) { ws.terminate(); continue; }
     ws.send(m.payload, error => { if (error) ws.terminate(); });
-    if (m.close_code) ws.close(m.close_code, 'Invalid signaling state');
+    if (m.close_code) ws.close(m.close_code, m.close_code === 1000 ? 'Conversation completed' : 'Invalid signaling state');
   }
 }
 const server = createServer(async (req, res) => {
@@ -44,6 +61,12 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204).end(); return; }
   try {
     const url = new URL(req.url ?? '/', 'http://localhost');
+    const path = decodeURIComponent(url.pathname);
+    // Begin is emitted only by the signaling controller after both peers report
+    // media connected. The HTTP adapter cannot invoke this internal command.
+    if (/^\/conversations\/[^/]+\/start$/.test(path)) {
+      res.writeHead(405, { 'Content-Type': 'application/json' }).end('{"error":"Begin requires media negotiation"}'); return;
+    }
     if (req.method === 'GET' && /^\/upload\/[a-f0-9-]+\.(png|jpg|webp)$/.test(url.pathname)) {
       const file = await readFile(`uploads/${url.pathname.split('/').pop()}`);
       const extension = url.pathname.split('.').pop();
@@ -84,9 +107,13 @@ const server = createServer(async (req, res) => {
       await writeFile(`uploads/${name}`, data, { flag: 'wx' });
       input = JSON.stringify({ avatar_url: `/upload/${name}` });
     } else if (req.method === 'POST' || req.method === 'PUT') input = (await body(req)).toString('utf8');
-    const result = await new Promise<{ status: number; body: string }>(resolve => {
-      handle(req.method ?? 'GET', decodeURIComponent(url.pathname), userId, input, url.searchParams.get('q') ?? '', (status, body) => resolve({ status, body }));
-    });
+    const finish = req.method === 'POST' ? /^\/conversations\/([1-9][0-9]*)\/(?:finish|cancel)$/.exec(path) : null;
+    const execute = async () => {
+      const result = await callApi(req.method ?? 'GET', path, userId, input, url.searchParams.get('q') ?? '');
+      if (finish && result.status === 200) publishConversation(result.body);
+      return result;
+    };
+    const result = finish ? await withConversation(Number(finish[1]), execute) : await execute();
     res.writeHead(result.status, { 'Content-Type': 'application/json; charset=utf-8' }).end(result.body);
   } catch (error) {
     const status = error instanceof Error && error.message === 'too large' ? 413 : 400;
@@ -108,6 +135,8 @@ websocket.on('connection', (ws: WebSocket) => {
   if (id > 2147483647) { ws.close(1013); return; }
   clients.set(id, ws);
   let state: 'new' | 'authenticating' | 'ready' | 'closed' = 'new';
+  let userId = 0;
+  let conversationId = 0;
   let alive = true;
   let count = 0;
   let windowStart = Date.now();
@@ -126,16 +155,32 @@ websocket.on('connection', (ws: WebSocket) => {
       state = 'authenticating';
       void (async () => {
         try {
-          const userId = await verifyToken(auth.token);
-          const [rooms] = await getPool().execute<RowDataPacket[]>("SELECT r.id FROM rooms r JOIN users u ON u.id=? AND u.is_deleted=0 WHERE r.id=? AND (r.user_a=? OR r.user_b=?) AND r.status='MATCHED'", [userId, auth.room, userId, userId]);
-          if (ws.readyState !== WebSocket.OPEN) return;
-          if (rooms.length !== 1) { ws.close(1008, 'Room access denied'); return; }
-          clearTimeout(timeout);
-          state = 'ready';
-          deliver(join(hub, id, userId, auth.room));
+          userId = await verifyToken(auth.token);
+          conversationId = auth.room;
+          await withConversation(conversationId, async () => {
+            const result = await callApi('GET', `/conversations/${conversationId}`, userId);
+            if (ws.readyState !== WebSocket.OPEN) return;
+            if (result.status !== 200) { ws.close(1008, 'Conversation access denied'); return; }
+            const conversation = parseConversation(result.body);
+            if (conversation.ended_at > 0 || conversation.cancelled_at > 0) { ws.close(1008, 'Conversation access denied'); return; }
+            clearTimeout(timeout);
+            state = 'ready';
+            deliver(join(hub, id, userId, conversationId));
+            if (ws.readyState === WebSocket.OPEN) ws.send(`{"type":"conversation","value":${result.body}}`);
+          });
         } catch { ws.close(1008, 'Authentication failed'); }
       })();
-    } else if (state === 'ready') deliver(relay(hub, id, text));
+    } else if (state === 'ready') {
+      const received = receive(hub, id, text);
+      deliver(received.deliveries);
+      if (received.media_ready) {
+        void withConversation(conversationId, async () => {
+          const result = await callApi('POST', `/conversations/${conversationId}/start`, userId);
+          if (result.status === 200) publishConversation(result.body);
+          else deliver(publish(hub, conversationId, '{"type":"error","error":"Could not start conversation"}', true));
+        }).catch(() => ws.close(1011, 'Conversation unavailable'));
+      }
+    }
     else ws.close(1008, 'Wait for authentication');
   });
   ws.on('error', () => ws.terminate());

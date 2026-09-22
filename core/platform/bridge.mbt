@@ -10,6 +10,9 @@ pub extern "js" fn now() -> String = "now"
 pub extern "js" fn dispatch(request : String, done : DispatchDoneCallback) -> Unit = "dispatch"
 
 #module("#speakup/host")
+extern "js" fn now_millis() -> Double = "nowMillis"
+
+#module("#speakup/host")
 extern "js" fn public_url(value : String) -> String = "publicUrl"
 
 #module("#speakup/host")
@@ -18,6 +21,10 @@ extern "js" fn event_times(value : String) -> String = "eventTimes"
 #warnings("-3")
 #external
 pub type DispatchDoneCallback
+
+pub fn nowMillis() -> Double {
+  now_millis()
+}
 
 pub fn publicUrl(value : String) -> String {
   public_url(value)

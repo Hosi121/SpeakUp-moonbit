@@ -1,10 +1,28 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createHub, destroyHub, join, leave, relay, connectionCount } from '../dist/signaling.js';
+import { createHub, destroyHub, join, leave, relay, receive, publish, connectionCount } from '../dist/signaling.js';
 import { parseSignal } from '../dist/shared.js';
 import { pairRound } from '../dist/matching.js';
 const offer = JSON.stringify({ type: 'offer', offer: { type: 'offer', sdp: 'v=0\r\n' } });
 const answer = JSON.stringify({ type: 'answer', answer: { type: 'answer', sdp: 'v=0\r\n' } });
+test('media acknowledgements belong to one negotiation and terminal publication releases peers', () => {
+  const h = createHub();
+  const ready = connection => receive(h, connection, '{ "type": "media-ready" }').media_ready;
+  try {
+    join(h, 1, 11, 8); join(h, 2, 12, 8);
+    assert.equal(ready(1), false); assert.equal(ready(2), false);
+    relay(h, 2, offer); relay(h, 1, answer);
+    assert.equal(ready(1), false); assert.equal(ready(1), false);
+    leave(h, 2); join(h, 3, 12, 8);
+    assert.equal(ready(2), false); assert.equal(ready(3), false);
+    relay(h, 3, offer); relay(h, 1, answer);
+    assert.equal(ready(3), false); // The surviving peer's old acknowledgement was cleared.
+    assert.equal(ready(1), true); assert.equal(ready(3), false);
+    assert.deepEqual(publish(h, 8, 'finished', true).map(d => [d.connection, d.close_code]), [[1, 1000], [3, 1000]]);
+    assert.equal(connectionCount(h), 0); assert.equal(ready(1), false);
+    assert.deepEqual(leave(h, 1), []); assert.deepEqual(publish(h, 8, 'again', true), []);
+  } finally { destroyHub(h); }
+});
 test('two-party readiness, direction and negotiation order', () => {
   const h = createHub();
   try {

@@ -1,12 +1,16 @@
-import { parseSignal } from '../../../dist/shared.js';
+import { parseSignal, parseConversation, conversationClock, type ConversationDto } from '../../../dist/shared.js';
 import api from './api';
+import { fetchConversation } from './conversationService';
 
+export type VoiceConnectionState = 'connecting' | 'waiting' | 'connected';
 type VoiceOptions = {
   audio: HTMLAudioElement;
   onLocal: (stream: MediaStream) => void;
   onRemote: (stream: MediaStream) => void;
   onError: (message: string) => void;
-  round: number;
+  conversationId: number;
+  onState: (conversation: ConversationDto) => void;
+  onConnection: (state: VoiceConnectionState) => void;
 };
 export function startVoiceCall(options: VoiceOptions): { stop: () => void; mute: (muted: boolean) => void } {
   let stopped = false;
@@ -34,10 +38,11 @@ export function startVoiceCall(options: VoiceOptions): { stop: () => void; mute:
     for (const candidate of pending.splice(0)) await pc.addIceCandidate(candidate);
   };
   void (async () => {
-    const response = await api.get<unknown>('/rooms');
-    if (!Array.isArray(response.data)) throw new Error('通話の予定を取得できませんでした');
-    const room: unknown = response.data.find((r: unknown) => typeof r === 'object' && r !== null && 'round' in r && r.round === options.round);
-    if (typeof room !== 'object' || room === null || !('id' in room) || typeof room.id !== 'number') throw new Error('参加できる通話がありません');
+    options.onConnection('connecting');
+    const conversation = await fetchConversation(options.conversationId);
+    if (stopped) return;
+    options.onState(conversation);
+    if (!conversationClock(conversation, Date.now()).can_join) { stop(); return; }
     // ICE configuration comes from the server; TURN secrets never enter Vite env.
     const configurationResponse = await api.get<RTCConfiguration>('/rtc-config');
     if (stopped) return;
@@ -59,8 +64,15 @@ export function startVoiceCall(options: VoiceOptions): { stop: () => void; mute:
         options.onRemote(event.streams[0]);
       }
     };
-    pc.onconnectionstatechange = () => { if (pc?.connectionState === 'failed') fail(new Error('通話が切断されました')); };
-    ws.onopen = () => send({ type: 'Authorization', token: `Bearer ${localStorage.getItem('token') ?? ''}`, room: room.id });
+    pc.onconnectionstatechange = () => {
+      if (stopped) return;
+      if (pc?.connectionState === 'failed') fail(new Error('通話が切断されました'));
+      if (pc?.connectionState === 'connected') {
+        options.onConnection('connected');
+        try { send({ type: 'media-ready' }); } catch (error) { fail(error); }
+      }
+    };
+    ws.onopen = () => send({ type: 'Authorization', token: `Bearer ${localStorage.getItem('token') ?? ''}`, room: conversation.id });
     ws.onmessage = event => {
       const raw: unknown = event.data;
       messages = messages.then(async () => {
@@ -68,8 +80,16 @@ export function startVoiceCall(options: VoiceOptions): { stop: () => void; mute:
         if (typeof raw !== 'string') throw new Error('不正な通話メッセージです');
         const signal = parseSignal(raw);
         switch (signal.kind) {
-          case 'waiting': return;
+          case 'conversation': {
+            const next = parseConversation(signal.payload);
+            if (next.id !== options.conversationId) throw new Error('別の通話の状態を受信しました');
+            options.onState(next);
+            if (!conversationClock(next, Date.now()).can_join) stop();
+            return;
+          }
+          case 'waiting': options.onConnection('waiting'); return;
           case 'callType':
+            options.onConnection('connecting');
             if (signal.isOffer) {
               const offer = await pc.createOffer();
               if (stopped) return;

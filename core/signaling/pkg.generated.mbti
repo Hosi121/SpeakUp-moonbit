@@ -2,6 +2,8 @@
 package "hosi121/speakup/signaling"
 
 // Values
+pub fn confirm_media(Int, Int) -> Bool
+
 pub fn connection_count(Int) -> Int
 
 pub fn create_hub() -> Int
@@ -12,6 +14,10 @@ pub fn join(Int, Int, Int, Int) -> Array[Delivery]
 
 pub fn leave(Int, Int) -> Array[Delivery]
 
+pub fn publish(Int, Int, String, Bool) -> Array[Delivery]
+
+pub fn receive(Int, Int, String) -> Reception
+
 pub fn relay(Int, Int, String) -> Array[Delivery]
 
 // Errors
@@ -21,6 +27,11 @@ pub(all) struct Delivery {
   connection : Int
   payload : String
   close_code : Int
+}
+
+pub(all) struct Reception {
+  deliveries : Array[Delivery]
+  media_ready : Bool
 }
 
 // Type aliases

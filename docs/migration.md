@@ -13,13 +13,17 @@ flowchart LR
   UI --> N[Node HTTP transport]
   N --> A[MoonBit API / matching]
   A --> S
+  A --> C[MoonBit conversation lifecycle]
+  S --> C
   A --> G[TS2Mbt generated typed bridge]
   G --> IO[Node MySQL / JWT / external HTTP adapters]
   IO --> DB[(MySQL connection pool)]
   B <-->|音声: direct または TURN| P[相手のブラウザ]
 ```
 
-React/MUI の描画とブラウザの WebRTC オブジェクトを TS に残した。Go の HTTP controller にあった入力検査、応答構築、ユーザー・メモ・イベント・フレンド処理は `core/api`、部屋の状態は `core/signaling`、ペア生成は `core/matching`。SQL も MoonBit 側に置き、アダプターは実行・トランザクション・SDK 呼び出しを担当する。
+React/MUI の描画とブラウザの WebRTC オブジェクトを TS に残した。Go の HTTP controller にあった入力検査、応答構築、ユーザー・メモ・イベント・フレンド処理は `core/api`、一時的な接続状態は `core/signaling`、ペア生成は `core/matching`。永続的な会話の開始・終了・取消は `core/conversation`。SQL も MoonBit 側に置き、アダプターは実行・トランザクション・SDK 呼び出しを担当する。
+
+イベントのラウンドと随時通話を同じ会話で扱うよう、ドメインを再設計した。[会話モデル](domain-model.md)に遷移、参加者の制約、履歴・振り返り、接続との分離を記載している。
 
 `core/shared` に DTO と画面向け変換を定義し、frontend と backend が同じ型を使う。画面固有の型・モック専用の型まで無理に共有していない。JS target の一つの MoonBit module であり、frontend 全体を MoonBit の UI framework に書き直したものではない。
 
@@ -60,7 +64,8 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 - `moon build` の標準 `.d.ts` は struct を `any` にするため、その出力を直接配布しない。Mbt2TS が生成した interface から、実際の `moon.pkg` の export 一覧に一致する宣言と構造型を機械的に抽出する。trait method は JS export ではないため公開しない。生成結果を手編集しない。
 - MoonBit struct は JS で class instance。JSON の構造は一致するが、`Object.getPrototypeOf` や `instanceof` まで既存の plain object と同じではない。純粋な型変換の fixture は JSON 構造で比較する。MoonBit の Json/Map/Result/内部 enum は公開境界へ渡さない。
 - legacy の省略可能な memo は TS 側で空文字へ正規化し、MoonBit には必須文字列を渡す。ICE の nullable field は protocol decoder で個別に検証する。
-- DB の ID は signed 32-bit Int。JS の `number` 全域を Int とみなさず、HTTP/WS 入力では正の整数と範囲を検証する。日時は wire 上の文字列で扱う。
+- `raise` を直接 export すると内部 Result が JS に漏れる compiler 挙動を実呼び出しで検出した。同期の公開入口は通常値か JS Error に変換し、直接 export を生成時に拒否する。Int の FromJson は小数を切り捨てるため、元の Json に対して整数性・範囲を検証する。[境界の回帰テスト](../tests/conversations.test.mjs)
+- DB の ID は signed 32-bit Int。HTTP/WS 入力で整数と範囲を検証する。会話の時刻は整数の epoch milliseconds（Double の安全な整数範囲）、既存 event/reflection の表示時刻は ISO 文字列。任意の event/round は両方 0 を随時通話とする平坦な DTO で渡し、Option の内部表現を公開しない。
 - `Json` はネットワーク・DB のシリアライズに使う。ドメインの任意 JS object としての `Any` は使わない。`npm run check` が手書き TS、MoonBit、生成 bridge、公開宣言を検査する。
 
 `mizchi/js` / `mizchi/npm_typed` / `mizchi/x` も用途を確認した。この版は Node の既存 HTTP/WS/MySQL/JWT ランタイムと React を保つ JS target を選び、共通の小さな host interface を TS2Mbt で生成した。サーバ I/O の native 移植は実施していない。shared/signaling/matching の純粋部分は native でもコンパイル可能。native の I/O は [`moonbitlang/async`](https://docs.moonbitlang.com/en/latest/language/async-experimental.html) や [`mizchi/x`](https://github.com/mizchi/x) を次の候補にできるが、現測定から native サーバの速さを推測しない。
@@ -75,9 +80,12 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 | event 作成 | ADMIN/SUPERUSER のみ。30 分。timezone なしは旧 Go と同じ UTC、返却は UTC に正規化 |
 | friend 一覧 | 固定 Alice/Bob/Charlie モックからユーザー本人の DB 一覧へ |
 | 空の一覧 | `null` ではなく `[]` |
-| 部屋・マッチング | event と round を明示、ペアを一行で保存、参加表の record ID 混同を廃止 |
+| 会話・参加者 | event/round は任意。会話と二人の参加行を一括保存し、同一 event/round 内の二重割当を席の位置によらず拒否 |
+| 随時通話 | 対象ユーザーを指定して作成、request_id で並行再送を集約。相手も明示的に参加 |
+| 開始・終了 | 両者の media-ready で開始。終了は参加者の操作、時刻はサーバ保存。再送・再接続で開始終了を重複記録しない |
+| 振り返り・履歴 | 本人だけの記録を保存。履歴は終了済み会話の projection。キャンセルした予定は含めない |
 | pairing | rank 順、round で片側を回転。参加ビットと重複 ID を検証。奇数なら未ペアの一人は待機。全員の完全公平性・全 round の重複最小性を保証する最適化ではない |
-| roster 更新 | matching 開始時に event 行をロックして roster を凍結。room の一括公開は transaction。重複実行は 409、部分公開しない |
+| roster 更新 | matching 開始時に event 行をロックして roster を凍結。公開 marker と会話を transaction で一括保存。空の結果も重複実行は 409、部分公開しない |
 | DB | MySQL は維持するが新規 schema。Ent の edge 列を使う旧 DB をそのまま接続しない |
 | メモ | user_id の UNIQUE と upsert で同時更新の重複作成を防止 |
 | avatar | 2 MiB 上限、画像形式確認、UUID の保存名、設定された公開 origin |
@@ -94,8 +102,11 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 | memo / friends / events | 実装済み、MySQL 結合テストあり |
 | `/ws`, `/rooms`, `/rtc-config` | 実装済み、二ブラウザの実 RTP 受信確認あり |
 | `/events/:id/register`, `/events/:id/match` | 参加・マッチング API を追加。管理用 API、既存管理 UI への全面統合は未実施 |
-| topics / sessions / session_history | DB を読む API を追加。room 終了の永続化・学習履歴の生成ワークフローは未完成 |
-| conversation_history / notifications / achievements / AI feedback | 元 Go に対応 route がない、または UI モックのみ。新しい永続化を発明せず未実装として残した |
+| `/conversations`, `/conversations/direct`, `/conversations/:id` | イベント／随時の共通 API。参加者だけが読み書きできる |
+| `/conversations/:id/finish`, `/cancel`, `/reflection` | 永続化と再送、並行操作を検証済み。開始 API は内部 WS controller 専用で HTTP からは不可 |
+| `/conversations/history`, 会話履歴 UI | 終了した会話の一覧と本人の振り返りを実装。旧モックの `/conversation_history` API は公開しない |
+| topics / sessions / session_history | 互換用 API。旧 `/session_history` はイベントに限定し、新 UI は共通の会話履歴を利用 |
+| notifications / achievements / AI feedback | 元 Go に対応 route がない、または UI モックのみ。未実装として残した |
 | web-rtc-test の別試作 | 本体の通話経路へ統合、試作用 repo はコピーしていない |
 
 ## 検証と未実施範囲
@@ -104,4 +115,4 @@ core/* -- moon info --> pkg.generated.mbti -- Mbt2TS --> dist/*.d.ts
 
 source oracle は `contract/source/` の元コード抜粋を実行して生成する。入力はケースとして定義するが expected は手書きしない。`npm run fixtures` で再生成でき、CI が差分を検査する。純粋変換と旧 Go の message/avatar シリアライズを対象にした structural parity であり、全 endpoint を旧稼働環境へ replay した比較ではない。
 
-MoonBit type check / JS test / native core test、TypeScript strict check、frontend production build、MySQL API/WS integration、Playwright 二ブラウザの音声受信と既存画面を検証する。Supabase/OpenAI への実 API 呼び出し、TURN 実回線、production traffic の shadow/replay、canary は未実施。新 schema のため既存 DB のデータ移行も別作業。元 Go repo を変更せず残しており、今回の公開による本番切替はない。
+MoonBit type check / JS test / native core test、TypeScript strict check、frontend production build、MySQL API/WS integration、初回移植 DB の更新、Playwright 二ブラウザの音声受信と再接続・終了・振り返りを検証する。Supabase/OpenAI への実 API 呼び出し、TURN 実回線、production traffic の shadow/replay、canary は未実施。元の Ent DB のデータ移行は別作業。元 Go repo を変更せず残しており、今回の公開による本番切替はない。

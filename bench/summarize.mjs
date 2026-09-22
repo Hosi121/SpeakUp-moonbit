@@ -10,7 +10,7 @@ const f = (n, d = 2) => n.toLocaleString('en-US', { maximumFractionDigits: d, mi
 const range = kind => { const rows = r.results.filter(x => x.kind === kind).map(x => x.messagesPerSecond); return `${f(Math.min(...rows), 0)}–${f(Math.max(...rows), 0)}`; };
 writeFileSync('docs/performance.md', `# 性能測定
 
-今回の測定では、MoonBit JS が Go より高速である根拠は得られなかった。中継 throughput の中央値は Go に対して **${f(m.messagesPerSecond / g.messagesPerSecond, 3)} 倍**でほぼ同程度。RSS は **${f(m.serverRssBytes / g.serverRssBytes, 1)} 倍**で、Node/V8 の常駐コストが目立つ。この比較で移植の利点として確認できたのは型と状態管理の統合であり、言語変更だけによる高速化ではない。
+MoonBit JS の中継 throughput の中央値は、Go 比較用実装に対して **${f(m.messagesPerSecond / g.messagesPerSecond, 3)} 倍**。RSS は **${f(m.serverRssBytes / g.serverRssBytes, 1)} 倍**で、Node/V8 の常駐コストが目立つ。これは中継実装と runtime を含む比較であり、言語単体の性能差を示すものではない。
 
 | 指標（5 trial の中央値） | Go 比較用実装 | MoonBit → JS / Node |
 | --- | ---: | ---: |
@@ -37,7 +37,7 @@ writeFileSync('docs/performance.md', `# 性能測定
 - RSS は trial 最後の標本であり peak ではない。CPU は /proc の user+system tick の差分。allocator ごとの allocation 数や GC pause は未測定。
 - trial 間の揺らぎは大きく、1% 程度の差から優劣は判断できない。これは最大同時接続数や production capacity の認定ではない。
 
-元 Go は無同期 map と複数 writer を含むため、そのままの throughput を「正しく動く baseline」として使わない。DB を接続時に全件読む設計の改善効果と、言語/runtime 変更の効果を分けた。認証・DB・接続 churn を含む production-shaped replay は未実施。
+初回の [測定記録](https://github.com/Hosi121/SpeakUp-moonbit/blob/9a2aa3d6707416a33699fdef2de33677b330843b/docs/performance.md) では throughput 比は 0.993 倍だった。今回とは Go 側の絶対値も大きく異なるため、時点をまたぐ数値を今回の再設計の効果とみなさない。会話の DB 処理削減や JSON 再生成の除去はコード上の変更として確認できるが、変更別の性能寄与を分離した測定は未実施。\n\n元 Go は無同期 map と複数 writer を含むため、そのままの throughput を「正しく動く baseline」として使わない。DB を接続時に全件読む設計の改善効果と、言語/runtime 変更の効果を分けた。認証・DB・接続 churn を含む production-shaped replay は未実施。
 
 Go reference は別途 \`BENCH_GO_RACE=1 BENCH_ROUNDS=1 BENCH_MESSAGES=300 node bench/run.mjs\` で race detector を有効にして同時接続を実行できる。race 有効の数値はこの表へ混ぜない。
 

@@ -6,6 +6,16 @@ import {
 }
 
 // Values
+pub fn conversation_clock(ConversationDto, Double) -> ConversationClock raise
+
+pub fn conversation_partner(ConversationDto, Int) -> FriendSummaryDto raise
+
+pub fn decode_conversation(String) -> ConversationDto
+
+pub fn decode_conversations(String) -> Array[ConversationDto]
+
+pub fn decode_reflection(String) -> ReflectionDto
+
 pub fn from_memo(MemoDto) -> UserNotes
 
 pub fn map_conversation(ConversationHistoryDto) -> ConversationHistoryItem
@@ -22,13 +32,49 @@ pub fn map_user(UserDto) -> User
 
 pub fn normalize_avatar(String, String) -> String
 
+pub fn parse_conversation(String) -> ConversationDto raise
+
+pub fn parse_conversations(String) -> Array[ConversationDto] raise
+
+pub fn parse_reflection(String) -> ReflectionDto raise
+
 pub fn parse_signal(String) -> ParsedSignal
 
 pub fn to_memo(UserNotes) -> MemoDto
 
+pub fn validate_signal(String) -> ParsedSignal
+
+pub fn view_conversation_clock(ConversationDto, Double) -> ConversationClock
+
+pub fn view_conversation_partner(ConversationDto, Int) -> FriendSummaryDto
+
 // Errors
 
 // Types and methods
+pub(all) struct ConversationClock {
+  phase : String
+  remaining_seconds : Int
+  can_finish : Bool
+  can_join : Bool
+  has_deadline : Bool
+}
+
+pub(all) struct ConversationDto {
+  id : Int
+  event_id : Int
+  round : Int
+  started_at : Double
+  ended_at : Double
+  cancelled_at : Double
+  revision : Int
+  theme : String
+  topics : Array[String]
+  participants : Array[FriendSummaryDto]
+  event_start : String
+} derive(ToJson, @json.FromJson)
+pub fn ConversationDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn ConversationDto::to_json(Self) -> Json
+
 pub(all) struct ConversationExample {
   english : String
   japanese : String
@@ -119,6 +165,16 @@ pub(all) struct ParsedSignal {
   isOffer : Bool
   error : String
 }
+
+pub(all) struct ReflectionDto {
+  saved : Bool
+  satisfaction : Int
+  comment : String
+  learned_expressions : String
+  updated_at : String
+} derive(ToJson, @json.FromJson)
+pub fn ReflectionDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn ReflectionDto::to_json(Self) -> Json
 
 pub(all) struct SessionData {
   theme : String

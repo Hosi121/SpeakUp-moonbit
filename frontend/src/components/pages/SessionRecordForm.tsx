@@ -1,67 +1,70 @@
-import React, { useContext, useState } from "react";
-import { Box, Typography, TextField, Button, Paper, Container, Stack } from "@mui/material";
-import { styled } from "@mui/system";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Alert, Button, Container, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { conversationClock, type ConversationDto } from "../../../../dist/shared.js";
+import { fetchConversation, fetchReflection, saveReflection } from "../../services/conversationService";
 import TopSection from "../utils/TopSection";
-import { SessionStepContext } from "../utils/SessionStepContextProvider";
 
-const DashedBox = styled(Paper)({
-  border: "2px dashed #FFD700",
-  padding: "20px",
-  marginBottom: "20px",
-});
-const SessionRecordForm: React.FC = () => {
-  const [satisfaction, setSatisfaction] = useState<string>("");
-  const [thoughts, setThoughts] = useState<string>("");
-  const { learnedExpressions, setLearnedExpressions } = useContext(SessionStepContext);
+export default function SessionRecordForm() {
+  const [query] = useSearchParams();
+  const id = Number(query.get("conversation"));
+  return Number.isInteger(id) && id > 0 && id <= 2147483647
+    ? <RecordForm key={id} id={id} /> : <Navigate to="/conversation_history" replace />;
+}
+function RecordForm({ id }: { id: number }) {
   const navigate = useNavigate();
-
-  const handleNext = () => {
-    navigate("/sessionfeedback");
+  const [conversation, setConversation] = useState<ConversationDto | null>(null);
+  const [satisfaction, setSatisfaction] = useState("50");
+  const [comment, setComment] = useState("");
+  const [learned, setLearned] = useState("");
+  const [busy, setBusy] = useState(true);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    let disposed = false;
+    void Promise.all([fetchConversation(id), fetchReflection(id)]).then(([call, reflection]) => {
+      if (disposed) return;
+      setConversation(call); setSatisfaction(String(reflection.satisfaction));
+      setComment(reflection.comment); setLearned(reflection.learned_expressions); setSaved(reflection.saved);
+    }).catch(error => { if (!disposed) setError(error instanceof Error ? error.message : "記録を読み込めませんでした"); })
+      .finally(() => { if (!disposed) setBusy(false); });
+    return () => { disposed = true; };
+  }, [id]);
+  const complete = conversation && conversationClock(conversation, Date.now()).phase === "completed";
+  const save = async () => {
+    const rating = Number(satisfaction);
+    if (satisfaction.trim() === "" || !Number.isInteger(rating) || rating < 0 || rating > 100) {
+      setError("満足度は 0〜100 の整数で入力してください"); return;
+    }
+    setBusy(true); setError(""); setSaved(false);
+    try {
+      await saveReflection(id, { satisfaction: rating, comment, learned_expressions: learned });
+      setSaved(true);
+    } catch (error) { setError(error instanceof Error ? error.message : "保存できませんでした"); }
+    finally { setBusy(false); }
   };
-
-  return (
-    <Container
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-      }}
-    >
-      <Container sx={{ pt: 3, pb: 3 }}>
-        <TopSection />
-        <Stack sx={{ margin: "30px auto 0", width: "90%" }}>
-          <Typography variant="h3" sx={{ mb: 1, textAlign: "left", color: "primary.main", fontFamily: "bangers" }}>
-            GOOD JOB!
-          </Typography>
-          <Typography textAlign="left" sx={{ mb: 2 }}>
-            記録を残してみませんか？
-          </Typography>
-          <DashedBox elevation={0}>
-            <Typography variant="body1">5月15日</Typography>
-            <Typography variant="body1">参加したセッション数: 3</Typography>
-            <TextField fullWidth label="満足度 (%)" value={satisfaction} onChange={(e) => setSatisfaction(e.target.value)} margin="normal" />
-            <TextField fullWidth label="感想" multiline rows={3} value={thoughts} onChange={(e) => setThoughts(e.target.value)} margin="normal" />
-            <TextField fullWidth label="学んだ表現" multiline rows={3} value={learnedExpressions} onChange={(e) => setLearnedExpressions(e.target.value)} margin="normal" />
-          </DashedBox>
-
-          <Typography variant="h6" align="center" gutterBottom fontWeight="bolder">
-            次に参加予定のセッション
-          </Typography>
-
-          <Box sx={{ backgroundColor: "secondary.main", padding: "10px", marginBottom: "20px", color: "primary.main", borderRadius: 2 }}>
-            <Typography variant="body1" align="center" sx={{ fontWeight: "bolder" }}>
-              7月17日20:00〜
-            </Typography>
-          </Box>
-
-          <Button variant="contained" fullWidth onClick={handleNext}>
-            次へ
-          </Button>
+  return <Container sx={{ py: 3 }}>
+    <TopSection />
+    <Stack spacing={3} sx={{ mt: 3 }}>
+      <Typography variant="h4" component="h1">会話の振り返り</Typography>
+      {conversation && <Paper sx={{ p: 3 }}>
+        <Typography variant="h6">{conversation.theme}</Typography>
+        <Typography>{conversation.participants.map(user => user.username).join(" / ")}</Typography>
+        <Typography>{conversation.started_at ? new Date(conversation.started_at).toLocaleString() : "未開始"}</Typography>
+      </Paper>}
+      {error && <Alert severity="error">{error}</Alert>}
+      {!busy && conversation && !complete && <Alert severity="info">通話が終了してから記録できます。</Alert>}
+      {saved && <Alert severity="success">保存済みです。振り返りは本人だけが閲覧できます。</Alert>}
+      <Paper component="form" sx={{ p: 3 }} onSubmit={event => { event.preventDefault(); void save(); }}>
+        <Stack spacing={2}>
+          <TextField label="満足度 (%)" type="number" value={satisfaction} onChange={event => { setSatisfaction(event.target.value); setSaved(false); }} inputProps={{ min: 0, max: 100, step: 1 }} disabled={busy || !complete} />
+          <TextField label="感想" multiline rows={3} value={comment} onChange={event => { setComment(event.target.value); setSaved(false); }} inputProps={{ maxLength: 4000 }} disabled={busy || !complete} />
+          <TextField label="学んだ表現" multiline rows={4} value={learned} onChange={event => { setLearned(event.target.value); setSaved(false); }} inputProps={{ maxLength: 8000 }} disabled={busy || !complete} />
+          <Button type="submit" variant="contained" disabled={busy || !complete}>保存</Button>
         </Stack>
-      </Container>
-    </Container>
-  );
-};
-
-export default SessionRecordForm;
+      </Paper>
+      <Button onClick={() => navigate("/sessionlist")}>通話一覧へ</Button>
+      <Button onClick={() => navigate("/conversation_history")}>会話の記録へ</Button>
+    </Stack>
+  </Container>;
+}

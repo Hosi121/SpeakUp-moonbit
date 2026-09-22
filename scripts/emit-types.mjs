@@ -15,6 +15,13 @@ for (const pkg of ['shared', 'signaling', 'api', 'matching']) {
   const config = readFileSync(`core/${pkg}/moon.pkg`, 'utf8');
   const entries = /"exports"\s*:\s*\[([^\]]+)\]/.exec(config)?.[1].match(/"[^"]+"/g) ?? [];
   const names = new Map(entries.map(e => { const [a, b] = JSON.parse(e).split(':'); return [a, b ?? a]; }));
+  const signatures = readFileSync(file, 'utf8').split('\n');
+  for (const name of names.keys()) {
+    const signature = signatures.find(line => line.startsWith(`pub fn ${name}(`));
+    if (!signature || /\braise\b|\basync\b|\bResult\[|\bOption\[/.test(signature)) {
+      throw new Error(`JS export needs a plain, synchronous boundary: ${pkg}.${name}`);
+    }
+  }
   const source = ts.createSourceFile(out, readFileSync(out, 'utf8'), ts.ScriptTarget.Latest, true);
   const nodes = [];
   for (const node of source.statements) {

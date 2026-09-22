@@ -8,6 +8,16 @@ export interface ToJson {
   readonly __ToJsonBrand?: never;
 }
 
+export function conversation_clock(arg0: ConversationDto, n: number): Result<ConversationClock, Error>;
+
+export function conversation_partner(arg0: ConversationDto, n: number): Result<FriendSummaryDto, Error>;
+
+export function decode_conversation(s: string): ConversationDto;
+
+export function decode_conversations(s: string): Array<ConversationDto>;
+
+export function decode_reflection(s: string): ReflectionDto;
+
 export function from_memo(value: MemoDto): UserNotes;
 
 export function map_conversation(value: ConversationHistoryDto): ConversationHistoryItem;
@@ -24,9 +34,47 @@ export function map_user(value: UserDto): User;
 
 export function normalize_avatar(s: string, s2: string): string;
 
+export function parse_conversation(s: string): Result<ConversationDto, Error>;
+
+export function parse_conversations(s: string): Result<Array<ConversationDto>, Error>;
+
+export function parse_reflection(s: string): Result<ReflectionDto, Error>;
+
 export function parse_signal(s: string): ParsedSignal;
 
 export function to_memo(value: UserNotes): MemoDto;
+
+export function validate_signal(s: string): ParsedSignal;
+
+export function view_conversation_clock(arg0: ConversationDto, n: number): ConversationClock;
+
+export function view_conversation_partner(arg0: ConversationDto, n: number): FriendSummaryDto;
+
+export interface ConversationClock {
+  phase: string;
+  remaining_seconds: number;
+  can_finish: boolean;
+  can_join: boolean;
+  has_deadline: boolean;
+}
+
+export interface ConversationDto extends ToJson, json.FromJson {
+  id: number;
+  event_id: number;
+  round: number;
+  started_at: number;
+  ended_at: number;
+  cancelled_at: number;
+  revision: number;
+  theme: string;
+  topics: Array<string>;
+  participants: Array<FriendSummaryDto>;
+  event_start: string;
+}
+
+export function ConversationDto_to_json(self : ConversationDto): Json;
+
+export function ConversationDto_from_json(arg0: Json, arg1: json.JsonPath): Result<ConversationDto, json.JsonDecodeError>;
 
 export interface ConversationExample extends ToJson, json.FromJson {
   english: string;
@@ -130,6 +178,18 @@ export interface ParsedSignal {
   isOffer: boolean;
   error: string;
 }
+
+export interface ReflectionDto extends ToJson, json.FromJson {
+  saved: boolean;
+  satisfaction: number;
+  comment: string;
+  learned_expressions: string;
+  updated_at: string;
+}
+
+export function ReflectionDto_to_json(self : ReflectionDto): Json;
+
+export function ReflectionDto_from_json(arg0: Json, arg1: json.JsonPath): Result<ReflectionDto, json.JsonDecodeError>;
 
 export interface SessionData {
   theme: string;

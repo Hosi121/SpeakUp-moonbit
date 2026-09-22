@@ -1,14 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import App from "./App.tsx";
 import { Settings } from "./components/pages/Settings.tsx";
 import { Home } from "./components/pages/Home.tsx";
 import { SessionList } from "./components/pages/SessionList.tsx";
-import { Waiting } from "./components/pages/Waiting.tsx";
 import { MicCheck } from "./components/pages/MicCheck.tsx";
 import { Session } from "./components/pages/Session.tsx";
-import { SessionInterval } from "./components/pages/SessionInterval.tsx";
 import SessionRecordForm from "./components/pages/SessionRecordForm.tsx";
 import SignUp from "./components/pages/SignUp.tsx";
 import { Record } from "./components/pages/Record.tsx";
@@ -25,7 +23,6 @@ import FriendList from "./components/utils/FriendList.tsx";
 import Theme from "./styles/Theme.tsx";
 import { SessionHistoryFriendlist } from "./components/pages/SessionHistoryFriendlist.tsx";
 import TrophyNotification from "./components/pages/TrophyNotification.tsx";
-import { SessionStepContextProvider } from "./components/utils/SessionStepContextProvider.tsx";
 import { isTestMode } from "./services/appMode.ts";
 import { seedMockData } from "./services/mockStore.ts";
 
@@ -56,7 +53,7 @@ const router = createBrowserRouter([
   },
   {
     path: "waiting",
-    element: <Waiting />,
+    element: <Navigate to="/sessionlist" replace />,
   },
   {
     path: "miccheck",
@@ -68,7 +65,7 @@ const router = createBrowserRouter([
   },
   {
     path: "sessioninterval",
-    element: <SessionInterval />,
+    element: <Navigate to="/sessionlist" replace />,
   },
   {
     path: "sessionrecord",
@@ -129,10 +126,8 @@ if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
       <ThemeProvider theme={Theme}>
-        <SessionStepContextProvider>
-          <RouterProvider router={router} />
-          <CssBaseline />
-        </SessionStepContextProvider>
+        <RouterProvider router={router} />
+        <CssBaseline />
       </ThemeProvider>
     </StrictMode>
   );

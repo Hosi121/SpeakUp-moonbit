@@ -11,4 +11,4 @@ Axios 1.13.2 → 1.20.0、Vite 7.3.1 → 7.3.6、React Router 6.30.3 → 6.30.6 
 
 監査結果がゼロという意味ではない。上記は現在の利用箇所に基づく判断であり、依存の脆弱性そのものを修正したものではない。
 
-更新後の TypeScript check、production build、API/WS 結合テスト、ブラウザの通話・ログイン・メモ保存を検証した。lint は実行可能になり、従来の UI に残る hooks の依存配列警告 4 件は別途整理する。JS bundle は約 698 kB → 713 kB（minified、約 2% 増）。
+更新後の TypeScript check、production build、API/WS 結合テスト、ブラウザの通話・ログイン・メモ保存を検証した。更新直後の JS bundle は約 698 kB → 713 kB（minified、約 2% 増）。その後の会話モデル整理で約 708 kB、lint の従来の hooks 依存配列警告は 2 件となった。500 kB を超える chunk の build 警告は残っている。

@@ -11,6 +11,17 @@ pub(all) struct ParsedSignal {
 
 ///|
 pub fn parse_signal(text : String) -> ParsedSignal {
+  parse_signal_fields(text, true)
+}
+
+///|
+/// The relay needs validation and routing fields, not a second JSON string.
+pub fn validate_signal(text : String) -> ParsedSignal {
+  parse_signal_fields(text, false)
+}
+
+///|
+fn parse_signal_fields(text : String, capture_payload : Bool) -> ParsedSignal {
   let invalid : ParsedSignal = {
     kind: "error",
     token: "",
@@ -53,7 +64,16 @@ pub fn parse_signal(text : String) -> ParsedSignal {
       if sdp.length() == 0 || sdp.length() > 60000 {
         return invalid
       }
-      { ..invalid, kind: "offer", payload: payload.stringify(), error: "", }
+      {
+        ..invalid,
+        kind: "offer",
+        payload: if capture_payload {
+          payload.stringify()
+        } else {
+          ""
+        },
+        error: "",
+      }
     }
     {
       "type": String("answer"),
@@ -63,7 +83,16 @@ pub fn parse_signal(text : String) -> ParsedSignal {
       if sdp.length() == 0 || sdp.length() > 60000 {
         return invalid
       }
-      { ..invalid, kind: "answer", payload: payload.stringify(), error: "", }
+      {
+        ..invalid,
+        kind: "answer",
+        payload: if capture_payload {
+          payload.stringify()
+        } else {
+          ""
+        },
+        error: "",
+      }
     }
     {
       "type": String("ice-candidate"),
@@ -93,7 +122,11 @@ pub fn parse_signal(text : String) -> ParsedSignal {
       {
         ..invalid,
         kind: "ice-candidate",
-        payload: payload.stringify(),
+        payload: if capture_payload {
+          payload.stringify()
+        } else {
+          ""
+        },
         error: "",
       }
     }
@@ -105,6 +138,16 @@ pub fn parse_signal(text : String) -> ParsedSignal {
       { ..invalid, kind: "waiting", error: "", }
     { "type": String("peer-left"), .. } =>
       { ..invalid, kind: "peer-left", error: "", }
+    { "type": String("media-ready"), .. } =>
+      { ..invalid, kind: "media-ready", error: "", }
+    { "type": String("conversation"), "value": value, .. } => {
+      if !capture_payload {
+        return invalid
+      }
+      let payload = value.stringify()
+      let _ = parse_conversation(payload) catch { _ => return invalid }
+      { ..invalid, kind: "conversation", payload, error: "", }
+    }
     { "type": String("error"), "error": String(message), .. } =>
       { ..invalid, error: message, }
     _ => invalid

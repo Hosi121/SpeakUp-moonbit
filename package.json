@@ -23,7 +23,7 @@
     "fixtures": "node scripts/capture.mjs",
     "db:migrate": "node --env-file-if-exists=.env server/migrate.ts",
     "db:seed": "node --env-file-if-exists=.env server/seed.ts",
-    "test:native": "node scripts/moon.mjs test --target native core/shared core/signaling core/matching",
+    "test:native": "node scripts/moon.mjs test --target native core/shared core/signaling core/matching core/conversation",
     "test:browser": "playwright test --global-timeout=120000"
   },
   "dependencies": {

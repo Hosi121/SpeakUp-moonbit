@@ -222,9 +222,14 @@ async fn route(
     }
     ("GET", "/rooms") =>
       return rows(
-        "SELECT id,user_a,user_b,event_id,round FROM rooms WHERE (user_a=? OR user_b=?) AND status='MATCHED' ORDER BY id",
+        "SELECT c.id,a.user_id AS user_a,b.user_id AS user_b,c.event_id,c.round_no AS round FROM conversations c JOIN conversation_members a ON a.conversation_id=c.id AND a.seat=0 JOIN conversation_members b ON b.conversation_id=c.id AND b.seat=1 WHERE (a.user_id=? OR b.user_id=?) AND c.ended_at=0 AND c.cancelled_at=0 ORDER BY c.id",
         [uid.to_json(), uid.to_json()],
       ).to_json()
+    ("GET", "/conversations") => return list_conversations(uid, false).to_json()
+    ("GET", "/conversations/history") =>
+      return list_conversations(uid, true).to_json()
+    ("POST", "/conversations/direct") =>
+      return create_direct(uid, body).to_json()
     ("GET", "/topics") =>
       return rows(
           "SELECT theme_text AS theme,topic1,topic2,topic3 FROM ai_themes ORDER BY id DESC",
@@ -258,13 +263,28 @@ async fn route(
         .to_json()
     ("GET", "/session_history") =>
       return rows(
-        "SELECT u.avatar_url AS avatar,u.username AS user,t.theme_text AS theme,e.event_start AS date,u.rank,'unapplied' AS friend_state FROM rooms r JOIN users u ON u.id=IF(r.user_a=?,r.user_b,r.user_a) JOIN events e ON e.id=r.event_id JOIN ai_themes t ON t.id=e.theme_id WHERE (r.user_a=? OR r.user_b=?) AND r.status='FINISHED' ORDER BY r.id DESC",
-        [uid.to_json(), uid.to_json(), uid.to_json()],
+        "SELECT u.avatar_url AS avatar,u.username AS user,t.theme_text AS theme,e.event_start AS date,u.rank,'unapplied' AS friend_state FROM conversation_members mine JOIN conversations c ON c.id=mine.conversation_id JOIN conversation_members partner ON partner.conversation_id=c.id AND partner.user_id<>mine.user_id JOIN users u ON u.id=partner.user_id JOIN events e ON e.id=c.event_id JOIN ai_themes t ON t.id=e.theme_id WHERE mine.user_id=? AND c.ended_at>0 ORDER BY c.ended_at DESC,c.id DESC",
+        [uid.to_json()],
       ).to_json()
     _ => ()
   }
   let segments = path.split("/").map(fn(s) { s.to_owned() }).collect()
   match (verb, segments) {
+    ("GET", ["", "conversations", id]) =>
+      return conversation_dto(conversation_row(path_id(id), uid)).to_json()
+    ("POST", ["", "conversations", id, "start"]) =>
+      return change_conversation(path_id(id), uid, "start").to_json()
+    ("POST", ["", "conversations", id, "finish"]) =>
+      return change_conversation(path_id(id), uid, "finish").to_json()
+    ("POST", ["", "conversations", id, "cancel"]) =>
+      return change_conversation(path_id(id), uid, "cancel").to_json()
+    ("GET", ["", "conversations", id, "reflection"]) => {
+      let id = path_id(id)
+      conversation_row(id, uid) |> ignore
+      return get_reflection(id, uid).to_json()
+    }
+    ("PUT", ["", "conversations", id, "reflection"]) =>
+      return save_reflection(path_id(id), uid, body).to_json()
     ("POST", ["", "events", event_id, "register"]) => {
       let id = path_id(event_id)
       let bit = match field(body, "participates_bit") {
@@ -343,22 +363,42 @@ async fn route(
           "sql": "SELECT id FROM events WHERE id=? FOR UPDATE",
           "params": [id.to_json()],
         },
+        {
+          "sql": "INSERT INTO event_match_publications(event_id) VALUES (?)",
+          "params": [id.to_json()],
+        },
       ]
       for round in 1..<=3 {
         for pair in @matching.pair_round(roster, round, 0) {
           statements.push({
-            "sql": "INSERT INTO rooms(event_id,round,user_a,user_b) VALUES (?,?,?,?)",
+            "sql": "INSERT INTO conversations(event_id,round_no) VALUES (?,?)",
+            "params": [id.to_json(), round.to_json()],
+          })
+          let first = if pair.first < pair.second {
+            pair.first
+          } else {
+            pair.second
+          }
+          let second = if pair.first < pair.second {
+            pair.second
+          } else {
+            pair.first
+          }
+          statements.push({
+            "sql": "INSERT INTO conversation_members(conversation_id,event_id,round_no,user_id,seat) VALUES (LAST_INSERT_ID(),?,?,?,0),(LAST_INSERT_ID(),?,?,?,1)",
             "params": [
               id.to_json(),
               round.to_json(),
-              pair.first.to_json(),
-              pair.second.to_json(),
+              first.to_json(),
+              id.to_json(),
+              round.to_json(),
+              second.to_json(),
             ],
           })
         }
       }
       statements.push({
-        "sql": "SELECT id,user_a,user_b,event_id,round FROM rooms WHERE event_id=? ORDER BY round,id",
+        "sql": "SELECT c.id,a.user_id AS user_a,b.user_id AS user_b,c.event_id,c.round_no AS round FROM conversations c JOIN conversation_members a ON a.conversation_id=c.id AND a.seat=0 JOIN conversation_members b ON b.conversation_id=c.id AND b.seat=1 WHERE c.event_id=? ORDER BY c.round_no,c.id",
         "params": [id.to_json()],
       })
       return invoke({

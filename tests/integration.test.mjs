@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { WebSocket } from 'ws';
+import mysql from 'mysql2/promise';
+import { randomUUID } from 'node:crypto';
 
 // Only the disposable, seeded port database. No source application secrets.
 const base = 'http://127.0.0.1:18081';
 const origin = 'http://localhost:5173';
-let child, logs = '', alice, bob;
+let child, logs = '', alice, bob, outsiderId, database;
 async function request(path, token, method = 'GET', payload) {
   const response = await fetch(base + path, { method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' }, body: payload === undefined ? undefined : JSON.stringify(payload) });
   return { status: response.status, body: await response.json() };
@@ -17,6 +19,9 @@ async function login(email) {
   assert.equal(r.status, 200, JSON.stringify(r)); return r.body.token;
 }
 before(async () => {
+  database = await mysql.createConnection(process.env.TEST_DATABASE_URL ?? 'mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit');
+  const [user] = await database.execute("INSERT INTO users(username,email) VALUES('Outside',?)", [`outside-${randomUUID()}@example.test`]);
+  outsiderId = user.insertId;
   child = spawn(process.execPath, ['server/main.ts'], { env: { ...process.env,
     AUTH_MODE: 'development', DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit', PORT: '18081', HOST: '127.0.0.1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.on('data', b => logs += b); child.stderr.on('data', b => logs += b);
@@ -26,7 +31,7 @@ before(async () => {
   ]);
   alice = await login('alice@example.test'); bob = await login('bob@example.test');
 });
-after(async () => { child?.kill('SIGTERM'); if (child && child.exitCode === null) await once(child, 'exit'); });
+after(async () => { child?.kill('SIGTERM'); if (child && child.exitCode === null) await once(child, 'exit'); await database?.end(); });
 
 test('authentication, memo isolation and concurrent upsert', async () => {
   assert.equal((await request('/memo')).status, 401);
@@ -54,6 +59,7 @@ test('event transaction, admin restriction, timezone, profile and persistent fri
   assert.equal((await request('/friend/register', alice, 'POST', { target_user_id: 1 })).status, 400);
   assert.equal((await request('/users/search?q=Bob', alice)).body[0].username, 'Bob');
   assert.equal((await request('/users/search/id/nope', alice)).status, 400);
+  for (const id of ['1.5', '1e0', '01', '2147483648']) assert.equal((await request(`/conversations/${id}`, alice)).status, 400);
   assert.equal((await request('/user/info', bob)).body.id, 2);
   assert.equal((await request('/rtc-config', alice)).body.iceServers.length, 1);
   assert.equal((await request('/chat/ask', alice, 'POST', { content: 'hello' })).status, 503);
@@ -76,15 +82,29 @@ test('matching snapshots participants, publishes rooms atomically and rejects du
   assert.ok(result.body.every(p => p.user_a !== p.user_b));
   assert.equal((await request(`/events/${id}/match`, alice, 'POST', {})).status, 409);
   assert.equal((await request(`/events/${id}/register`, bob, 'POST', { participates_bit: 1 })).status, 409);
+  const empty = await request('/events', alice, 'POST', { event_start: '2026-09-22T01:00:00Z', theme: 'Empty', topics: [] });
+  const attempts = await Promise.all(Array.from({ length: 4 }, () => request(`/events/${empty.body.id}/match`, alice, 'POST', {})));
+  assert.deepEqual(attempts.map(result => result.status).sort(), [200, 409, 409, 409]);
+  assert.deepEqual(attempts.find(result => result.status === 200).body, []);
+  const [members] = await database.execute('SELECT conversation_id,seat FROM conversation_members WHERE event_id=? AND round_no=1 ORDER BY seat', [id]);
+  const [another] = await database.execute('INSERT INTO conversations(event_id,round_no) VALUES(?,1)', [id]);
+  try {
+    // A participant cannot occupy seat 1 elsewhere after being put in seat 0.
+    await assert.rejects(database.execute('INSERT INTO conversation_members(conversation_id,event_id,round_no,user_id,seat) VALUES(?,?,1,1,1)', [another.insertId, id]), { code: 'ER_DUP_ENTRY' });
+    assert.equal(members.length, 2);
+  } finally { await database.execute('DELETE FROM conversations WHERE id=?', [another.insertId]); }
 });
 function connect() {
   const ws = new WebSocket(base.replace('http', 'ws') + '/ws', { origin });
-  const queue = []; const waiters = [];
-  ws.on('message', raw => { const v = JSON.parse(raw.toString()); if (waiters.length) waiters.shift()(v); else queue.push(v); });
-  return { ws, next: () => queue.length ? Promise.resolve(queue.shift()) : new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`message timeout: ${logs}`)), 3000);
+  const queue = []; const waiters = []; const seen = [];
+  ws.on('message', raw => { const v = JSON.parse(raw.toString()); seen.push([v.type, v.value?.revision, v.error]); if (waiters.length) waiters.shift()(v); else queue.push(v); });
+  const nextRaw = () => queue.length ? Promise.resolve(queue.shift()) : new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`message timeout (socket ${ws.readyState}, seen ${JSON.stringify(seen)}): ${logs}`)), 3000);
     waiters.push(value => { clearTimeout(timer); resolve(value); });
-  }) };
+  });
+  return { ws, next: async (predicate = value => value.type !== 'conversation') => {
+    for (;;) { const value = await nextRaw(); if (predicate(value)) return value; }
+  } };
 }
 test('real websocket authorization, relay, room isolation, disconnect and reconnect', async () => {
   const a = connect(), b = connect();
@@ -116,4 +136,100 @@ test('unauthorized, oversized and nonexistent-room sockets close without crashin
     assert.ok([1008, 1009].includes(code));
   }
   assert.equal((await request('/health')).status, 200);
+});
+
+async function direct(token = alice, target = 2, key = randomUUID()) {
+  const result = await request('/conversations/direct', token, 'POST', { target_user_id: target, request_id: key });
+  assert.equal(result.status, 200, JSON.stringify(result));
+  return result.body;
+}
+async function negotiate(id) {
+  const a = connect(), b = connect();
+  try {
+    await Promise.all([once(a.ws, 'open'), once(b.ws, 'open')]);
+    a.ws.send(JSON.stringify({ type: 'Authorization', token: `Bearer ${alice}`, room: id }));
+    assert.equal((await a.next()).type, 'waiting');
+    b.ws.send(JSON.stringify({ type: 'Authorization', token: `Bearer ${bob}`, room: id }));
+    assert.equal((await a.next()).type, 'callType'); assert.equal((await b.next()).type, 'callType');
+    b.ws.send(JSON.stringify({ type: 'offer', offer: { type: 'offer', sdp: 'v=0\r\n' } })); await a.next();
+    a.ws.send(JSON.stringify({ type: 'answer', answer: { type: 'answer', sdp: 'v=0\r\n' } })); await b.next();
+    return [a, b];
+  } catch (error) { a.ws.terminate(); b.ws.terminate(); throw error; }
+}
+
+test('direct invitations retry atomically and cannot expose another pair', async () => {
+  const key = randomUUID();
+  const attempts = await Promise.all(Array.from({ length: 8 }, () => direct(alice, 2, key)));
+  assert.equal(new Set(attempts.map(value => value.id)).size, 1);
+  assert.equal(attempts[0].event_id, 0); assert.equal(attempts[0].round, 0);
+  assert.deepEqual(attempts[0].participants.map(user => user.id), [1, 2]);
+  assert.equal((await request('/conversations/direct', alice, 'POST', { target_user_id: outsiderId, request_id: key })).status, 409);
+  assert.equal((await request('/conversations/direct', alice, 'POST', { target_user_id: 1, request_id: randomUUID() })).status, 400);
+  const other = await direct(bob, outsiderId);
+  for (const [path, verb] of [[`/conversations/${other.id}`, 'GET'], [`/conversations/${other.id}/finish`, 'POST'], [`/conversations/${other.id}/reflection`, 'GET']]) {
+    assert.equal((await request(path, alice, verb, verb === 'POST' ? {} : undefined)).status, 404);
+  }
+  assert.ok(!(await request('/conversations', alice)).body.some(value => value.id === other.id));
+  const stranger = connect();
+  try {
+    await once(stranger.ws, 'open');
+    const closed = once(stranger.ws, 'close');
+    stranger.ws.send(JSON.stringify({ type: 'Authorization', token: `Bearer ${alice}`, room: other.id }));
+    assert.equal((await closed)[0], 1008);
+  } finally { stranger.ws.terminate(); }
+});
+
+test('both media acknowledgements begin once; concurrent finish is stable and reflections remain private', async () => {
+  const call = await direct();
+  assert.equal((await request(`/conversations/${call.id}/finish`, alice, 'POST', {})).status, 409);
+  assert.equal((await request(`/conversations/${call.id}/start`, alice, 'POST', {})).status, 405);
+  assert.equal((await request(`/conversations/%31/start`, alice, 'POST', {})).status, 405);
+  assert.equal((await request(`/conversations/${call.id}/reflection`, alice, 'PUT', { satisfaction: 50 })).status, 409);
+  const [a, b] = await negotiate(call.id);
+  try {
+    a.ws.send('{ "type" : "media-ready" }');
+    // A relay behind the acknowledgement forms a deterministic processing barrier.
+    a.ws.send(JSON.stringify({ type: 'ice-candidate', candidate: { candidate: 'barrier' } }));
+    await b.next();
+    assert.equal((await request(`/conversations/${call.id}`, alice)).body.started_at, 0);
+    b.ws.send('{"type":"media-ready"}');
+    const started = (await a.next(value => value.type === 'conversation' && value.value.started_at > 0)).value;
+    const other = (await b.next(value => value.type === 'conversation' && value.value.started_at > 0)).value;
+    assert.deepEqual(started, other); // The snapshot has no viewer-specific partner field.
+    assert.equal(started.revision, 1);
+    a.ws.send('{"type":"media-ready"}'); b.ws.send('{"type":"media-ready"}');
+    assert.equal((await request(`/conversations/${call.id}/cancel`, alice, 'POST', {})).status, 409);
+    const results = await Promise.all(Array.from({ length: 8 }, (_, i) => request(`/conversations/${call.id}/finish`, i % 2 ? alice : bob, 'POST', {})));
+    assert.ok(results.every(value => value.status === 200), JSON.stringify(results));
+    assert.equal(new Set(results.map(value => value.body.ended_at)).size, 1);
+    const ended = results[0].body;
+    assert.equal(ended.started_at, started.started_at); assert.equal(ended.revision, 2);
+    assert.equal((await a.next(value => value.type === 'conversation' && value.value.ended_at > 0)).value.ended_at, ended.ended_at);
+    const note = { satisfaction: 82, comment: '本人の記録', learned_expressions: '日本語と English' };
+    const writes = await Promise.all(Array.from({ length: 6 }, () => request(`/conversations/${call.id}/reflection`, alice, 'PUT', note)));
+    assert.ok(writes.every(value => value.status === 200));
+    assert.equal((await request(`/conversations/${call.id}/reflection`, alice)).body.comment, note.comment);
+    assert.equal((await request(`/conversations/${call.id}/reflection`, bob)).body.saved, false);
+    assert.equal((await request(`/conversations/${call.id}/reflection`, alice, 'PUT', { ...note, satisfaction: 101 })).status, 400);
+    assert.ok((await request('/conversations/history', alice)).body.some(value => value.id === call.id));
+    assert.ok(!(await request('/conversations', alice)).body.some(value => value.id === call.id));
+    const [count] = await database.execute('SELECT COUNT(*) AS count FROM conversation_reflections WHERE conversation_id=? AND user_id=1', [call.id]);
+    assert.equal(count[0].count, 1);
+    const returning = connect();
+    try {
+      await once(returning.ws, 'open'); const closed = once(returning.ws, 'close');
+      returning.ws.send(JSON.stringify({ type: 'Authorization', token: `Bearer ${alice}`, room: call.id }));
+      assert.equal((await closed)[0], 1008);
+    } finally { returning.ws.terminate(); }
+  } finally { a.ws.terminate(); b.ws.terminate(); }
+});
+
+test('cancelling a pending invitation is idempotent and creates no learning history', async () => {
+  const call = await direct();
+  const first = await request(`/conversations/${call.id}/cancel`, bob, 'POST', {});
+  const second = await request(`/conversations/${call.id}/cancel`, alice, 'POST', {});
+  assert.equal(first.status, 200); assert.equal(first.body.cancelled_at, second.body.cancelled_at);
+  assert.equal(second.body.started_at, 0); assert.equal(second.body.ended_at, 0);
+  assert.ok(!(await request('/conversations/history', alice)).body.some(value => value.id === call.id));
+  assert.ok(!(await request('/conversations', alice)).body.some(value => value.id === call.id));
 });

@@ -99,13 +99,14 @@ fn number(v : Json, key : String) -> Int raise ApiError {
 
 ///|
 fn path_id(s : String) -> Int raise ApiError {
-  let id = @json.from_json(@json.parse(s)) catch {
-    _ => raise Invalid(400, "Invalid ID")
-  }
-  if id <= 0 {
+  if s.is_empty() ||
+    s.has_prefix("0") ||
+    s.length() > 10 ||
+    !s.iter().all(fn(c) { c >= '0' && c <= '9' }) {
     raise Invalid(400, "Invalid ID")
   }
-  id
+  let value = @json.parse(s) catch { _ => raise Invalid(400, "Invalid ID") }
+  number({ "id": value }, "id")
 }
 
 ///|
@@ -191,6 +192,16 @@ pub fn handle(
       Upstream("not_configured") =>
         respond(503, "{\"error\":\"External service is not configured\"}")
       Upstream("conflict") => respond(409, "{\"error\":\"Already exists\"}")
+      @conversation.NotParticipant =>
+        respond(403, "{\"error\":\"Not a participant\"}")
+      @conversation.NotStarted =>
+        respond(409, "{\"error\":\"Both participants must connect first\"}")
+      @conversation.AlreadyCompleted =>
+        respond(409, "{\"error\":\"Conversation already completed\"}")
+      @conversation.AlreadyStarted =>
+        respond(
+          409, "{\"error\":\"Conversation already started; finish it instead\"}",
+        )
       _ => respond(500, "{\"error\":\"Request failed\"}")
     }
   })

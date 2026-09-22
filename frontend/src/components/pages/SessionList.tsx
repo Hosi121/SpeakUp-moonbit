@@ -1,142 +1,86 @@
-import { useEffect, useState } from "react";
-import { Stack } from "@mui/system";
-import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
-import { Accordion, AccordionDetails, AccordionSummary, Button, Checkbox, Container, FormControlLabel, FormGroup, Typography } from "@mui/material";
-import TopSection from "../utils/TopSection";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Box, Button, Container, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { fetchSessions } from "../../services/appData";
-import type { SessionData } from "../../types/types";
-
-const SessionListContainer = () => {
-  const [sessionData, setSessionData] = useState<SessionData[]>([]);
-  const [selectedSessions, setSelectedSessions] = useState<{ [key: string]: number[] }>({});
-
-  useEffect(() => {
-    const loadSessions = async () => {
-      try {
-        const data = await fetchSessions();
-        setSessionData(data);
-        const initialSelections: { [key: string]: number[] } = {};
-        data.forEach((session) => {
-          initialSelections[session.dateTime] = [...session.sessions];
-        });
-        setSelectedSessions(initialSelections);
-      } catch (error) {
-        console.error("Failed to fetch sessions", error);
-      }
-    };
-    loadSessions();
-  }, []);
-
-  const handleCheckboxChange = (dateTime: string, session: number) => {
-    setSelectedSessions((prevSelected) => {
-      const newSelected = { ...prevSelected };
-      if (newSelected[dateTime].includes(session)) {
-        newSelected[dateTime] = newSelected[dateTime].filter((s) => s !== session);
-      } else {
-        newSelected[dateTime].push(session);
-      }
-      return newSelected;
-    });
-  };
-
-  const handleSave = (dateTime: string) => {
-    setSessionData((prevData) =>
-      prevData.map((data) => {
-        if (data.dateTime === dateTime) {
-          return { ...data, sessions: selectedSessions[dateTime] };
-        }
-        return data;
-      })
-    );
-  };
-
-  const navigate = useNavigate();
-
-  return (
-    <Container sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100vh" }}>
-      <Container sx={{ pt: 3 }}>
-        <TopSection />
-        <Stack sx={{ margin: "30px auto 0", width: "90%" }}>
-          <Typography variant="h5" sx={{ fontWeight: "bold", textAlign: "left" }}>
-            参加予定のセッション
-          </Typography>
-          <Button
-            sx={{
-              width: "100%",
-              backgroundColor: "secondary.main",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              mt: 3,
-              mb: 3,
-              p: 3,
-              boxSizing: "border-box",
-              borderRadius: 3,
-            }}
-            variant="contained"
-            onClick={() => navigate("/waiting")}
-          >
-            <Typography sx={{ mb: 2, color: "primary.main", fontSize: "1.3rem", fontWeight: "bolder", textAlign: "center" }}>{sessionData[0]?.dateTime}</Typography>
-            {sessionData[0]?.sessions.map((session) => <Typography sx={{ color: "primary.main", textAlign: "center", fontSize: "0.9rem" }}>セッション{session}</Typography>)}
-          </Button>
-        </Stack>
-        <Stack sx={{ margin: "30px auto 0", width: "90%" }}>
-          <Typography variant="h5" sx={{ fontWeight: "bold", textAlign: "left", mb: 3 }}>
-            参加可能なセッション
-          </Typography>
-          {sessionData.map((data, index) => (
-            <Accordion
-              key={index}
-              sx={{
-                mb: 2,
-                borderRadius: 3,
-                "&:before": {
-                  display: "none",
-                },
-              }}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ height: "50px" }}>
-                <Typography fontWeight="bolder" fontSize="large" color="primary.main" sx={{ display: "block", m: "auto" }}>
-                  {data.dateTime}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 2 }}>
-                <FormGroup>
-                  <FormControlLabel control={<Checkbox checked={selectedSessions[data.dateTime]?.includes(1)} onChange={() => handleCheckboxChange(data.dateTime, 1)} />} label="セッション1" sx={{ m: "0 auto" }} />
-                  <FormControlLabel control={<Checkbox checked={selectedSessions[data.dateTime]?.includes(2)} onChange={() => handleCheckboxChange(data.dateTime, 2)} />} label="セッション2" sx={{ m: "0 auto" }} />
-                  <FormControlLabel control={<Checkbox checked={selectedSessions[data.dateTime]?.includes(3)} onChange={() => handleCheckboxChange(data.dateTime, 3)} />} label="セッション3" sx={{ m: "0 auto" }} />
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    sx={{
-                      width: "50%",
-                      backgroundColor: "primary.main",
-                      color: "secondary.main",
-                      m: "20px auto",
-                      "&:hover": {
-                        backgroundColor: "#FF3399",
-                      },
-                    }}
-                    onClick={() => handleSave(data.dateTime)}
-                  >
-                    保存
-                  </Button>
-                </FormGroup>{" "}
-              </AccordionDetails>
-            </Accordion>
-          ))}{" "}
-        </Stack>
-      </Container>
-    </Container>
-  );
-};
+import { conversationClock, conversationPartner, type ConversationDto } from "../../../../dist/shared.js";
+import { createDirectConversation, fetchConversations } from "../../services/conversationService";
+import { fetchUserProfile, searchUsers } from "../../services/userService";
+import type { User, UserProfile } from "../../types/types";
+import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
+import TopSection from "../utils/TopSection";
 
 export const SessionList = () => {
-  return (
-    <BottomNavigationTemplate value="session">
-      <SessionListContainer />
-    </BottomNavigationTemplate>
-  );
+  const navigate = useNavigate();
+  const [calls, setCalls] = useState<ConversationDto[]>([]);
+  const [me, setMe] = useState<UserProfile | null>(null);
+  const [query, setQuery] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
+  const requestIds = useRef(new Map<number, string>());
+  const refresh = useCallback(async () => {
+    setBusy(true); setError("");
+    try {
+      const [next, profile] = await Promise.all([fetchConversations(), fetchUserProfile()]);
+      setCalls(next); setMe(profile); setLoaded(true);
+    } catch (error) { setError(error instanceof Error ? error.message : "一覧を取得できませんでした"); }
+    finally { setBusy(false); }
+  }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
+  const search = async () => {
+    if (!query.trim()) return;
+    setBusy(true); setError("");
+    try { setUsers((await searchUsers(query.trim())).filter(user => user.id !== me?.id)); }
+    catch (error) { setError(error instanceof Error ? error.message : "検索できませんでした"); }
+    finally { setBusy(false); }
+  };
+  const invite = async (user: User) => {
+    setBusy(true); setError("");
+    const key = requestIds.current.get(user.id) ?? crypto.randomUUID();
+    requestIds.current.set(user.id, key);
+    try {
+      const conversation = await createDirectConversation(user.id, key);
+      navigate(`/session?conversation=${conversation.id}`);
+    } catch (error) { setError(error instanceof Error ? error.message : "通話を作成できませんでした"); }
+    finally { setBusy(false); }
+  };
+  return <BottomNavigationTemplate value="session">
+    <Container sx={{ py: 3, pb: 12 }}>
+      <TopSection />
+      <Stack spacing={3} sx={{ mt: 3 }}>
+        <Typography variant="h4" component="h1">通話</Typography>
+        {error && <Alert severity="error">{error}</Alert>}
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" component="h2">相手を選んで通話する</Typography>
+          <Typography>相手が一覧から参加すると通話が始まります。</Typography>
+          <Box component="form" onSubmit={event => { event.preventDefault(); void search(); }} sx={{ display: "flex", gap: 1, mt: 2 }}>
+            <TextField label="ユーザー名を検索" value={query} onChange={event => setQuery(event.target.value)} fullWidth />
+            <Button type="submit" disabled={busy || !me || !query.trim()}>検索</Button>
+          </Box>
+          {users.map(user => <Box key={user.id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}>
+            <Typography>{user.username}</Typography>
+            <Button disabled={busy} variant="contained" onClick={() => void invite(user)}>{user.username} と通話する</Button>
+          </Box>)}
+        </Paper>
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Typography variant="h6" component="h2">参加できる通話</Typography>
+          <Button disabled={busy} onClick={() => void refresh()}>一覧を更新</Button>
+        </Box>
+        {loaded && calls.length === 0 && <Typography>参加できる通話はありません。</Typography>}
+        {calls.map(call => {
+          const clock = conversationClock(call, Date.now());
+          const partner = me ? conversationPartner(call, me.id).username : "";
+          return <Paper component="article" key={call.id} sx={{ p: 3 }}>
+            <Typography variant="h6">{call.theme}</Typography>
+            <Typography>{call.event_id ? `${new Date(call.event_start).toLocaleString()}・ラウンド ${call.round}` : "随時通話"}</Typography>
+            <Typography>相手：{partner}</Typography>
+            <Button variant="contained" disabled={!clock.can_join} onClick={() => navigate(`/session?conversation=${call.id}`)}>
+              {clock.phase === "active" ? "再参加する" : "参加する"}
+            </Button>
+          </Paper>;
+        })}
+        <Button onClick={() => navigate("/conversation_history")}>会話の記録を見る</Button>
+      </Stack>
+    </Container>
+  </BottomNavigationTemplate>;
 };

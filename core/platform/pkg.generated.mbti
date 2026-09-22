@@ -8,6 +8,8 @@ pub fn eventTimes(String) -> String
 
 pub fn now() -> String
 
+pub fn nowMillis() -> Double
+
 pub fn publicUrl(String) -> String
 
 // Errors

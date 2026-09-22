@@ -1,105 +1,36 @@
-import { useState, useEffect } from "react";
-import { Accordion, AccordionSummary, AccordionDetails, Typography, Container, Stack, Box } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { useEffect, useState } from "react";
+import { Alert, Button, Container, Paper, Stack, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { type ConversationDto } from "../../../../dist/shared.js";
+import { fetchConversations } from "../../services/conversationService";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import TopSection from "../utils/TopSection";
-import DescriptionIcon from "@mui/icons-material/Description";
-import { fetchConversationHistory } from "../../services/appData";
-import type { ConversationHistoryItem } from "../../types/types";
-
-const ConversationHistoryContainer = () => {
-  const [data, setData] = useState<ConversationHistoryItem[]>([]);
-
-  useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        const history = await fetchConversationHistory();
-        setData(history);
-      } catch (error) {
-        console.error("Failed to fetch conversation history", error);
-      }
-    };
-    loadHistory();
-  }, []);
-
-  return (
-    <Container
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        height: "100vh",
-      }}
-    >
-      <Container sx={{ pt: 3 }}>
-        <TopSection />
-        <Stack sx={{ margin: "30px auto 0", width: "90%" }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: "bold", textAlign: "left" }}>
-              <DescriptionIcon sx={{ fontSize: 40, mr: 2, verticalAlign: "bottom" }} />
-              会話の記録
-            </Typography>
-          </Box>
-          {data.map((item, index) => (
-            <Accordion
-              key={index}
-              sx={{
-                mb: 2,
-                borderRadius: 3,
-                "&:before": {
-                  display: "none",
-                },
-              }}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>{item.date}</Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 4 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-around", alignItems: "center", mb: 3 }}>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                    <Typography variant="h4" sx={{ color: "primary.main" }}>
-                      {item.sessions}
-                    </Typography>
-                    <Typography textAlign="center" fontWeight={"bolder"}>
-                      セッション数
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                    <Typography variant="h4" sx={{ color: "primary.main" }}>
-                      {item.completionRate}
-                    </Typography>
-                    <Typography textAlign="center" fontWeight={"bolder"}>
-                      満足度
-                    </Typography>
-                  </Box>
-                </Box>
-                <Typography variant="body2" fontSize={"large"} textAlign={"left"} sx={{ mb: 1 }} fontWeight={"bolder"}>
-                  感想
-                </Typography>
-                <Typography variant="body2" textAlign={"left"}>
-                  {item.comment}
-                </Typography>
-                <Typography variant="body2" fontSize={"large"} textAlign={"left"} sx={{ mt: 3, mb: 1 }} fontWeight={"bolder"}>
-                  学んだ表現
-                </Typography>
-                {item.examples.map((examples, index) => (
-                  <Typography key={index} variant="body2" textAlign={"left"}>
-                    {examples.english} : {examples.japanese}
-                  </Typography>
-                ))}
-              </AccordionDetails>
-            </Accordion>
-          ))}{" "}
-        </Stack>
-      </Container>
-    </Container>
-  );
-};
 
 export const ConversationHistory = () => {
-  return (
-    <BottomNavigationTemplate value="other">
-      <ConversationHistoryContainer />
-    </BottomNavigationTemplate>
-  );
+  const navigate = useNavigate();
+  const [calls, setCalls] = useState<ConversationDto[]>([]);
+  const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    let disposed = false;
+    void fetchConversations(true).then(calls => { if (!disposed) { setCalls(calls); setLoaded(true); } })
+      .catch(error => { if (!disposed) setError(error instanceof Error ? error.message : "履歴を取得できませんでした"); });
+    return () => { disposed = true; };
+  }, []);
+  return <BottomNavigationTemplate value="other">
+    <Container sx={{ py: 3, pb: 12 }}>
+      <TopSection />
+      <Stack spacing={3} sx={{ mt: 3 }}>
+        <Typography variant="h4" component="h1">会話の記録</Typography>
+        {error && <Alert severity="error">{error}</Alert>}
+        {loaded && calls.length === 0 && <Typography>終了した会話はまだありません。</Typography>}
+        {calls.map(call => <Paper component="article" key={call.id} sx={{ p: 3 }}>
+          <Typography variant="h6">{call.theme}</Typography>
+          <Typography>{call.participants.map(user => user.username).join(" / ")}</Typography>
+          <Typography>{new Date(call.started_at).toLocaleString()}{call.event_id ? `・ラウンド ${call.round}` : "・随時通話"}</Typography>
+          <Button onClick={() => navigate(`/sessionrecord?conversation=${call.id}`)}>振り返りを開く</Button>
+        </Paper>)}
+      </Stack>
+    </Container>
+  </BottomNavigationTemplate>;
 };

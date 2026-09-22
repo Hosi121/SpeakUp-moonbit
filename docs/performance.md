@@ -1,18 +1,18 @@
 # 性能測定
 
-今回の測定では、MoonBit JS が Go より高速である根拠は得られなかった。中継 throughput の中央値は Go に対して **0.993 倍**でほぼ同程度。RSS は **7.0 倍**で、Node/V8 の常駐コストが目立つ。この比較で移植の利点として確認できたのは型と状態管理の統合であり、言語変更だけによる高速化ではない。
+MoonBit JS の中継 throughput の中央値は、Go 比較用実装に対して **0.898 倍**。RSS は **6.9 倍**で、Node/V8 の常駐コストが目立つ。これは中継実装と runtime を含む比較であり、言語単体の性能差を示すものではない。
 
 | 指標（5 trial の中央値） | Go 比較用実装 | MoonBit → JS / Node |
 | --- | ---: | ---: |
-| forwarded messages/sec | 64,911 | 64,483 |
-| throughput の trial 間範囲 | 39,808–70,869 | 63,996–67,829 |
-| p50 中継 latency (ms) | 0.436 | 0.446 |
-| p95 中継 latency (ms) | 0.828 | 0.805 |
-| p99 中継 latency (ms) | 1.073 | 1.047 |
-| server RSS (MiB) | 12.32 | 86.68 |
-| server CPU time / 96,000 messages (s) | 1.21 | 1.30 |
+| forwarded messages/sec | 31,737 | 28,489 |
+| throughput の trial 間範囲 | 26,883–34,378 | 20,401–30,772 |
+| p50 中継 latency (ms) | 0.910 | 1.042 |
+| p95 中継 latency (ms) | 1.591 | 1.708 |
+| p99 中継 latency (ms) | 2.095 | 2.407 |
+| server RSS (MiB) | 12.38 | 85.14 |
+| server CPU time / 96,000 messages (s) | 2.51 | 2.97 |
 
-測定時刻: 2026-09-21T17:43:40.757Z。Intel(R) Core(TM) Ultra 7 255H、linux 6.6.87.2-microsoft-standard-WSL2、v24.13.0、go version go1.23.5 linux/amd64、moon 0.1.20260920 (914d7da 2026-09-20)。
+測定時刻: 2026-09-22T02:57:27.624Z。Intel(R) Core(TM) Ultra 7 255H、linux 6.6.87.2-microsoft-standard-WSL2、v24.13.0、go version go1.23.5 linux/amd64、moon 0.1.20260920 (914d7da 2026-09-20)。
 
 ## 方法と比較の限界
 
@@ -26,6 +26,8 @@
 - 負荷 payload は ASCII。検証処理は両方にあるが、MoonBit/Go の Unicode 長、細かな parse allocation まで完全に同一ではない。実装・ライブラリ・runtime を含む比較であり、コンパイラだけの差を分離していない。
 - RSS は trial 最後の標本であり peak ではない。CPU は /proc の user+system tick の差分。allocator ごとの allocation 数や GC pause は未測定。
 - trial 間の揺らぎは大きく、1% 程度の差から優劣は判断できない。これは最大同時接続数や production capacity の認定ではない。
+
+初回の [測定記録](https://github.com/Hosi121/SpeakUp-moonbit/blob/9a2aa3d6707416a33699fdef2de33677b330843b/docs/performance.md) では throughput 比は 0.993 倍だった。今回とは Go 側の絶対値も大きく異なるため、時点をまたぐ数値を今回の再設計の効果とみなさない。会話の DB 処理削減や JSON 再生成の除去はコード上の変更として確認できるが、変更別の性能寄与を分離した測定は未実施。
 
 元 Go は無同期 map と複数 writer を含むため、そのままの throughput を「正しく動く baseline」として使わない。DB を接続時に全件読む設計の改善効果と、言語/runtime 変更の効果を分けた。認証・DB・接続 churn を含む production-shaped replay は未実施。
 
