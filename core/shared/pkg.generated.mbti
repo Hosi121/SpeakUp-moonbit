@@ -8,7 +8,37 @@ import {
 // Values
 pub fn activity_token(String) -> String raise
 
+pub fn checked_avatar_response(String) -> String raise
+
+pub fn checked_chat_response(String) -> String raise
+
+pub fn checked_event_response(String) -> Event raise
+
+pub fn checked_events(String) -> Array[EventOverviewDto] raise
+
+pub fn checked_ice_servers(String) -> Array[IceServerDto] raise
+
+pub fn checked_inbox(String) -> InboxDto raise
+
+pub fn checked_learning(String) -> LearningDto raise
+
+pub fn checked_memo_response(String) -> UserNotes raise
+
+pub fn checked_profile_response(String) -> UserProfile raise
+
+pub fn checked_roster(String) -> EventRosterDto raise
+
+pub fn checked_signup_response(String) -> SignUpResult raise
+
+pub fn checked_social(String) -> SocialDto raise
+
+pub fn checked_stats(String) -> StatsDto raise
+
 pub fn checked_thread(String) -> ThreadDto raise
+
+pub fn checked_token_response(String) -> String raise
+
+pub fn checked_users_response(String) -> Array[User] raise
 
 pub fn conversation_clock(ConversationDto, Double) -> ConversationClock raise
 
@@ -21,6 +51,8 @@ pub fn decode_avatar_response(String) -> String
 pub fn decode_chat_response(String) -> String
 
 pub fn decode_conversation(String) -> ConversationDto
+
+pub fn decode_conversation_value(Json) -> ConversationDto raise
 
 pub fn decode_conversations(String) -> Array[ConversationDto]
 

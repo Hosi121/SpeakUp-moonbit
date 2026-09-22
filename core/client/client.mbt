@@ -168,3 +168,113 @@ pub fn create_controller(p0 : Double, p1 : @thread.ThreadPorts) -> @thread.Threa
 pub fn create_browser(p0 : String) -> @thread.ThreadController {
   @thread.create_browser(p0)
 }
+
+///|
+pub fn create_auth_request(p0 : @presenter.AppPorts) -> @presenter.AuthRequest {
+  @presenter.create_auth_request(p0)
+}
+
+///|
+pub fn notification_view(p0 : @shared.NotificationDto) -> @presenter.NotificationView {
+  @presenter.notification_view(p0)
+}
+
+///|
+pub fn microphone_levels(p0 : Array[Double]) -> Array[Double] {
+  @presenter.microphone_levels(p0)
+}
+
+///|
+pub fn sound_is_speaking(p0 : Array[Double]) -> Bool {
+  @presenter.sound_is_speaking(p0)
+}
+
+///|
+pub fn http_error(p0 : Double, p1 : String) -> String {
+  @presenter.http_error(p0, p1)
+}
+
+///|
+pub fn create_social(p0 : @presenter.AppPorts, p1 : Bool) -> @presenter.SocialController {
+  @presenter.create_social(p0, p1)
+}
+
+///|
+pub fn create_calls(p0 : @presenter.AppPorts) -> @presenter.CallsController {
+  @presenter.create_calls(p0)
+}
+
+///|
+pub fn create_events(p0 : @presenter.AppPorts) -> @presenter.EventsController {
+  @presenter.create_events(p0)
+}
+
+///|
+pub fn create_event_card(p0 : @presenter.AppPorts, p1 : @shared.EventOverviewDto, p2 : Bool, p3 : @presenter.EventsController) -> @presenter.EventCardController {
+  @presenter.create_event_card(p0, p1, p2, p3)
+}
+
+///|
+pub fn create_admin(p0 : @presenter.AppPorts) -> @presenter.AdminController {
+  @presenter.create_admin(p0)
+}
+
+///|
+pub fn create_settings(p0 : @presenter.AppPorts) -> @presenter.SettingsController {
+  @presenter.create_settings(p0)
+}
+
+///|
+pub fn create_reflection(p0 : @presenter.AppPorts, p1 : String) -> @presenter.ReflectionController {
+  @presenter.create_reflection(p0, p1)
+}
+
+///|
+pub fn create_learning(p0 : @presenter.AppPorts, p1 : String, p2 : Bool) -> @presenter.LearningController {
+  @presenter.create_learning(p0, p1, p2)
+}
+
+///|
+pub fn create_activity(p0 : @presenter.AppPorts, p1 : @presenter.RealtimePorts) -> @presenter.ActivityController {
+  @presenter.create_activity(p0, p1)
+}
+
+///|
+pub fn create_voice(p0 : @presenter.AppPorts, p1 : @presenter.RealtimePorts, p2 : @presenter.MediaPorts, p3 : Int, p4 : @presenter.VoiceObserver) -> @presenter.VoiceController {
+  @presenter.create_voice(p0, p1, p2, p3, p4)
+}
+
+///|
+pub fn create_session(p0 : @presenter.AppPorts, p1 : @presenter.RealtimePorts, p2 : @presenter.MediaPorts, p3 : String) -> @presenter.SessionController {
+  @presenter.create_session(p0, p1, p2, p3)
+}
+
+///|
+pub fn create_microphone(p0 : @presenter.MediaPorts, p1 : @presenter.RealtimePorts) -> @presenter.MicrophoneController {
+  @presenter.create_microphone(p0, p1)
+}
+
+///|
+pub fn create_memo(p0 : @presenter.AppPorts) -> @presenter.MemoController {
+  @presenter.create_memo(p0)
+}
+
+///|
+pub fn create_home(p0 : @presenter.AppPorts) -> @presenter.HomeController {
+  @presenter.create_home(p0)
+}
+
+///|
+pub fn create_history(p0 : @presenter.AppPorts) -> @presenter.HistoryController {
+  @presenter.create_history(p0)
+}
+
+///|
+pub fn create_stats(p0 : @presenter.AppPorts) -> @presenter.StatsController {
+  @presenter.create_stats(p0)
+}
+
+///|
+pub fn browser_ports() -> @presenter.AppPorts {
+  @presenter.browser_ports()
+}

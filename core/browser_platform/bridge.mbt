@@ -4,7 +4,28 @@
 // Load the generated bridge JS before calling these externs.
 
 #module("#speakup/browser")
+pub extern "js" fn go(path : String, replace : Bool) -> Unit = "go"
+
+#module("#speakup/browser")
+pub extern "js" fn now() -> Double = "now"
+
+#module("#speakup/browser")
+pub extern "js" fn token() -> String = "token"
+
+#module("#speakup/browser")
+pub extern "js" fn encode(value : String) -> String = "encode"
+
+#module("#speakup/browser")
+extern "js" fn iso_date(value : String) -> String = "isoDate"
+
+#module("#speakup/browser")
+pub extern "js" fn timeout(delay : Double, callback : TimeoutCallbackCallback) -> () -> Unit = "timeout"
+
+#module("#speakup/browser")
 extern "js" fn random_id() -> String = "randomId"
+
+#module("#speakup/browser")
+extern "js" fn date_value(value : String) -> Double = "dateValue"
 
 #module("#speakup/browser")
 extern "js" fn is_visible() -> Bool = "isVisible"
@@ -14,6 +35,9 @@ extern "js" fn format_time(value : String) -> String = "formatTime"
 
 #module("#speakup/browser")
 extern "js" fn on_activity(listener : OnActivityListenerCallback) -> () -> Unit = "onActivity"
+
+#module("#speakup/browser")
+extern "js" fn store_token(value : String) -> Unit = "storeToken"
 
 #module("#speakup/browser")
 extern "js" fn number_value(value : String) -> Double = "numberValue"
@@ -26,10 +50,22 @@ extern "js" fn on_visibility(listener : (Bool) -> Unit) -> () -> Unit = "onVisib
 
 #warnings("-3")
 #external
+pub type TimeoutCallbackCallback
+
+#warnings("-3")
+#external
 pub type OnActivityListenerCallback
+
+pub fn isoDate(value : String) -> String {
+  iso_date(value)
+}
 
 pub fn randomId() -> String {
   random_id()
+}
+
+pub fn dateValue(value : String) -> Double {
+  date_value(value)
 }
 
 pub fn isVisible() -> Bool {
@@ -42,6 +78,10 @@ pub fn formatTime(value : String) -> String {
 
 pub fn onActivity(listener : OnActivityListenerCallback) -> () -> Unit {
   on_activity(listener)
+}
+
+pub fn storeToken(value : String) -> Unit {
+  store_token(value)
 }
 
 pub fn numberValue(value : String) -> Double {

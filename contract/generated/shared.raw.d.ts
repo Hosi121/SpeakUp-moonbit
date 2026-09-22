@@ -10,7 +10,37 @@ export interface ToJson {
 
 export function activity_token(s: string): Result<string, Error>;
 
+export function checked_avatar_response(s: string): Result<string, Error>;
+
+export function checked_chat_response(s: string): Result<string, Error>;
+
+export function checked_event_response(s: string): Result<Event, Error>;
+
+export function checked_events(s: string): Result<Array<EventOverviewDto>, Error>;
+
+export function checked_ice_servers(s: string): Result<Array<IceServerDto>, Error>;
+
+export function checked_inbox(s: string): Result<InboxDto, Error>;
+
+export function checked_learning(s: string): Result<LearningDto, Error>;
+
+export function checked_memo_response(s: string): Result<UserNotes, Error>;
+
+export function checked_profile_response(s: string): Result<UserProfile, Error>;
+
+export function checked_roster(s: string): Result<EventRosterDto, Error>;
+
+export function checked_signup_response(s: string): Result<SignUpResult, Error>;
+
+export function checked_social(s: string): Result<SocialDto, Error>;
+
+export function checked_stats(s: string): Result<StatsDto, Error>;
+
 export function checked_thread(s: string): Result<ThreadDto, Error>;
+
+export function checked_token_response(s: string): Result<string, Error>;
+
+export function checked_users_response(s: string): Result<Array<User>, Error>;
 
 export function conversation_clock(arg0: ConversationDto, n: number): Result<ConversationClock, Error>;
 
@@ -23,6 +53,8 @@ export function decode_avatar_response(s: string): string;
 export function decode_chat_response(s: string): string;
 
 export function decode_conversation(s: string): ConversationDto;
+
+export function decode_conversation_value(value: Json): Result<ConversationDto, Error>;
 
 export function decode_conversations(s: string): Array<ConversationDto>;
 

@@ -1,39 +1,21 @@
-import { useState } from "react";
+import { useMemo } from "react";
+import { createAuth } from "../../../../dist/shell.js";
+import { authPorts } from "../../services/authLoader";
+import { useController } from "../../services/controller";
 import { Link } from "../../navigation/links";
-import { navigate } from "../../navigation/location";
 import { Input } from "../ui/Field";
-import { loadAuth, preloadAuth } from "../../services/authLoader";
 import Logo from "../../assets/logo";
 
 export default function SignUp() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const submit = async (form: HTMLFormElement) => {
-    setBusy(true);
-    setError("");
-    try {
-      const { signUp } = await loadAuth();
-      if (!form.isConnected) return;
-      await signUp(username, email, password);
-      navigate("/login");
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "登録できませんでした。",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const controller = useMemo(() => createAuth(true, authPorts()), []);
+  const { username, email, password, error, busy } = useController(controller);
   return (
     <main className="auth-page">
       <form
         className="auth-form stack"
         onSubmit={(event) => {
           event.preventDefault();
-          void submit(event.currentTarget);
+          controller.submit();
         }}
       >
         <div className="brand-mark">
@@ -43,29 +25,35 @@ export default function SignUp() {
         <Input
           label="ユーザー名(セッション時の表示名)"
           autoComplete="nickname"
-          onFocus={preloadAuth}
+          onFocus={controller.preload}
           required
           value={username}
-          onChange={(event) => setUsername(event.target.value)}
+          onChange={(event) =>
+            controller.set_field("username", event.target.value)
+          }
         />
         <Input
           label="Email"
           type="email"
           autoComplete="email"
-          onFocus={preloadAuth}
+          onFocus={controller.preload}
           required
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(event) =>
+            controller.set_field("email", event.target.value)
+          }
         />
         <Input
           label="パスワード"
           type="password"
           autoComplete="new-password"
-          onFocus={preloadAuth}
+          onFocus={controller.preload}
           required
           minLength={8}
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) =>
+            controller.set_field("password", event.target.value)
+          }
         />
         <small>パスワードは8文字以上で入力してください。</small>
         {error && (

@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
           outDir: "../_build/message-views",
           emptyOutDir: true,
           rollupOptions: {
+            treeshake: { moduleSideEffects: (id) => !/\/dist\/client(?:\/|\.js$)/.test(id) },
             input: {
               message: new URL("./message-dom.html", import.meta.url).pathname,
               messageReact: new URL("./message-react.html", import.meta.url)
@@ -23,7 +24,7 @@ export default defineConfig(({ mode }) => ({
             },
           },
         }
-      : {},
+      : { rollupOptions: { treeshake: { moduleSideEffects: (id) => !/\/dist\/client(?:\/|\.js$)/.test(id) } } },
   server: {
     host: "127.0.0.1",
     proxy: {

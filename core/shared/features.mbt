@@ -168,7 +168,7 @@ fn json_array(v : Json, name : String) -> Array[Json] raise {
 }
 
 ///|
-fn checked_social(text : String) -> SocialDto raise {
+pub fn checked_social(text : String) -> SocialDto raise {
   let v = @json.parse(text)
   for key in ["friends", "incoming", "outgoing"] {
     for f in json_array(v, key) {
@@ -179,7 +179,7 @@ fn checked_social(text : String) -> SocialDto raise {
 }
 
 ///|
-fn checked_inbox(text : String) -> InboxDto raise {
+pub fn checked_inbox(text : String) -> InboxDto raise {
   let v = @json.parse(text)
   integer_field(v, "unread", 0, 2147483647)
   integer_field(v, "now", 1, 9007199254740991)
@@ -218,7 +218,7 @@ pub fn checked_thread(text : String) -> ThreadDto raise {
 }
 
 ///|
-fn checked_stats(text : String) -> StatsDto raise {
+pub fn checked_stats(text : String) -> StatsDto raise {
   let v = @json.parse(text)
   for
     key in [
@@ -234,7 +234,7 @@ fn checked_stats(text : String) -> StatsDto raise {
 }
 
 ///|
-fn checked_events(text : String) -> Array[EventOverviewDto] raise {
+pub fn checked_events(text : String) -> Array[EventOverviewDto] raise {
   guard @json.parse(text) is Array(xs) else { fail("Expected events") }
   for v in xs {
     integer_field(v, "participates_bit", 0, 7)
@@ -252,7 +252,7 @@ fn checked_events(text : String) -> Array[EventOverviewDto] raise {
 }
 
 ///|
-fn checked_roster(text : String) -> EventRosterDto raise {
+pub fn checked_roster(text : String) -> EventRosterDto raise {
   let v = @json.parse(text)
   for m in json_array(v, "members") {
     integer_field(m, "participates_bit", 0, 7)
@@ -264,7 +264,7 @@ fn checked_roster(text : String) -> EventRosterDto raise {
 }
 
 ///|
-fn checked_learning(text : String) -> LearningDto raise {
+pub fn checked_learning(text : String) -> LearningDto raise {
   let v = @json.parse(text)
   let answers = json_array(v, "answers")
   guard answers.is_empty() || answers.length() == 6 else {

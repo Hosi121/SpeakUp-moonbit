@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import type { LearningDto } from "../../../../dist/shared.js";
-import { fetchLearning, generateFeedback } from "../../services/features";
+import { useMemo, useEffect } from "react";
+import { createLearning, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 export function LearningFeedback({
   id,
   saved,
@@ -8,35 +8,14 @@ export function LearningFeedback({
   id: number;
   saved: boolean;
 }) {
-  const [learning, setLearning] = useState<LearningDto | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let disposed = false;
-    void fetchLearning(id)
-      .then((data) => {
-        if (!disposed) setLearning(data);
-      })
-      .catch(() => {
-        if (!disposed) setError("学習アドバイスを取得できませんでした。");
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [id, saved]);
-  const generate = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      setLearning(await generateFeedback(id));
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "アドバイスを作成できませんでした。",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const controller = useMemo(
+    () => createLearning(browserPorts(), String(id), false),
+    [id],
+  );
+  const learning = useController(controller);
+  const { busy, error, can_generate } = learning;
+  useEffect(() => controller.set_saved(saved), [controller, saved]);
+  const generate = controller.generate;
   return (
     <section className="panel stack" aria-label="学習アドバイス">
       <h2>書いた内容への学習アドバイス</h2>
@@ -53,10 +32,7 @@ export function LearningFeedback({
           )}
         </>
       )}
-      <button
-        disabled={!saved || busy || learning?.feedback_current}
-        onClick={() => void generate()}
-      >
+      <button disabled={!can_generate} onClick={() => void generate()}>
         {busy
           ? "作成中…"
           : learning?.feedback_current

@@ -31,14 +31,14 @@ fn http_optional_text(value : Json, key : String) -> String raise {
 }
 
 ///|
-fn checked_profile_response(text : String) -> UserProfile raise {
+pub fn checked_profile_response(text : String) -> UserProfile raise {
   let value = @json.parse(text)
   integer_field(value, "id", 1, 2147483647)
   map_profile(@json.from_json(value))
 }
 
 ///|
-fn checked_users_response(text : String) -> Array[User] raise {
+pub fn checked_users_response(text : String) -> Array[User] raise {
   guard @json.parse(text) is Array(values) else { fail("Expected users") }
   values.map(fn(value) raise {
     integer_field(value, "id", 1, 2147483647)
@@ -47,7 +47,7 @@ fn checked_users_response(text : String) -> Array[User] raise {
 }
 
 ///|
-fn checked_event_response(text : String) -> Event raise {
+pub fn checked_event_response(text : String) -> Event raise {
   let value = @json.parse(text)
   integer_field(value, "id", 1, 2147483647)
   integer_field(value, "theme_id", 1, 2147483647)
@@ -55,7 +55,7 @@ fn checked_event_response(text : String) -> Event raise {
 }
 
 ///|
-fn checked_memo_response(text : String) -> UserNotes raise {
+pub fn checked_memo_response(text : String) -> UserNotes raise {
   guard @json.parse(text) is Object(fields) else { fail("Expected a memo") }
   let field = fn(key : String) -> String raise {
     match fields.get(key) {
@@ -68,14 +68,14 @@ fn checked_memo_response(text : String) -> UserNotes raise {
 }
 
 ///|
-fn checked_token_response(text : String) -> String raise {
+pub fn checked_token_response(text : String) -> String raise {
   let token = http_text(@json.parse(text), "token")
   guard !token.is_empty() else { fail("Expected a token") }
   token
 }
 
 ///|
-fn checked_signup_response(text : String) -> SignUpResult raise {
+pub fn checked_signup_response(text : String) -> SignUpResult raise {
   guard @json.parse(text) is { "success": True, "message": String(message), .. } else {
     fail("Invalid sign-up response")
   }
@@ -83,14 +83,14 @@ fn checked_signup_response(text : String) -> SignUpResult raise {
 }
 
 ///|
-fn checked_avatar_response(text : String) -> String raise {
+pub fn checked_avatar_response(text : String) -> String raise {
   let url = http_text(@json.parse(text), "avatar_url")
   guard !url.is_empty() else { fail("Expected an avatar URL") }
   url
 }
 
 ///|
-fn checked_chat_response(text : String) -> String raise {
+pub fn checked_chat_response(text : String) -> String raise {
   guard @json.parse(text)
     is {
       "choices": Array(
@@ -105,7 +105,7 @@ fn checked_chat_response(text : String) -> String raise {
 }
 
 ///|
-fn checked_ice_servers(text : String) -> Array[IceServerDto] raise {
+pub fn checked_ice_servers(text : String) -> Array[IceServerDto] raise {
   let value = @json.parse(text)
   json_array(value, "iceServers").map(fn(server) raise {
     guard server is { "urls": raw, .. } else { fail("Expected ICE URLs") }

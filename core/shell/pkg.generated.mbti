@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/shell"
+
+import {
+  "hosi121/speakup/presenter",
+}
+
+// Values
+pub fn create_activity_loader(ActivityLoaderPorts) -> @presenter.ActivityController
+
+pub fn create_auth(Bool, AuthPorts) -> AuthController
+
+pub fn route(String) -> RouteView
+
+// Errors
+
+// Types and methods
+pub(all) struct ActivityLoaderPorts {
+  load : ((@presenter.ActivityController) -> Unit, (String) -> Unit) -> Unit
+  enabled : Bool
+}
+
+pub(all) struct AuthController {
+  get_snapshot : () -> AuthView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  preload : () -> Unit
+  set_field : (String, String) -> Unit
+  show_password : (Bool) -> Unit
+  submit : () -> Unit
+}
+
+pub(all) struct AuthPorts {
+  load : (((Bool, String, String, String, (String, String) -> Unit) -> () -> Unit) -> Unit, (String) -> Unit) -> Unit
+  store_token : (String) -> Unit
+  navigate : (String, Bool) -> Unit
+}
+
+pub(all) struct AuthView {
+  username : String
+  email : String
+  password : String
+  showPassword : Bool
+  error : String
+  busy : Bool
+}
+
+pub(all) struct RouteView {
+  page : String
+  redirect : String
+  peer : String
+}
+
+// Type aliases
+
+// Traits

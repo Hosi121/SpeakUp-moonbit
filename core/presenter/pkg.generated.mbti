@@ -1,0 +1,480 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/presenter"
+
+import {
+  "hosi121/speakup/shared",
+}
+
+// Values
+pub fn browser_ports() -> AppPorts
+
+pub fn create_activity(AppPorts, RealtimePorts) -> ActivityController
+
+pub fn create_admin(AppPorts) -> AdminController
+
+pub fn create_auth_request(AppPorts) -> AuthRequest
+
+pub fn create_calls(AppPorts) -> CallsController
+
+pub fn create_event_card(AppPorts, @shared.EventOverviewDto, Bool, EventsController) -> EventCardController
+
+pub fn create_events(AppPorts) -> EventsController
+
+pub fn create_history(AppPorts) -> HistoryController
+
+pub fn create_home(AppPorts) -> HomeController
+
+pub fn create_learning(AppPorts, String, Bool) -> LearningController
+
+pub fn create_memo(AppPorts) -> MemoController
+
+pub fn create_microphone(MediaPorts, RealtimePorts) -> MicrophoneController
+
+pub fn create_reflection(AppPorts, String) -> ReflectionController
+
+pub fn create_session(AppPorts, RealtimePorts, MediaPorts, String) -> SessionController
+
+pub fn create_settings(AppPorts) -> SettingsController
+
+pub fn create_social(AppPorts, Bool) -> SocialController
+
+pub fn create_stats(AppPorts) -> StatsController
+
+pub fn create_voice(AppPorts, RealtimePorts, MediaPorts, Int, VoiceObserver) -> VoiceController
+
+pub fn http_error(Double, String) -> String
+
+pub fn microphone_levels(Array[Double]) -> Array[Double]
+
+pub fn notification_view(@shared.NotificationDto) -> NotificationView
+
+pub fn sound_is_speaking(Array[Double]) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) struct ActivityController {
+  get_snapshot : () -> ActivityView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  refresh : () -> Unit
+  set_open : (Bool) -> Unit
+  read : () -> Unit
+}
+
+pub(all) struct ActivityView {
+  revision : Int
+  inbox : @shared.InboxDto
+  items : Array[NotificationView]
+  connected : Bool
+  clockOffset : Double
+  error : String
+  open : Bool
+  busy : Bool
+  read_error : String
+}
+
+pub(all) struct AdminController {
+  get_snapshot : () -> AdminView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  set_field : (String, String) -> Unit
+  set_topic : (Int, String) -> Unit
+  open : () -> Unit
+  close : () -> Unit
+  create : () -> Unit
+  generate : () -> Unit
+  search : () -> Unit
+}
+
+pub(all) struct AdminView {
+  open : Bool
+  dateTime : String
+  theme : String
+  topics : Array[String]
+  success : String
+  error : String
+  dialogError : String
+  created : Array[@shared.Event]
+  section : String
+  query : String
+  users : Array[@shared.User]
+  searched : Bool
+  busy : Bool
+}
+
+pub(all) struct AppPorts {
+  request : (String, String, String, (Double, String, Bool) -> Unit) -> () -> Unit
+  now : () -> Double
+  number : (String) -> Double
+  date : (String) -> Double
+  iso : (String) -> String
+  encode : (String) -> String
+  random_id : () -> String
+  navigate : (String, Bool) -> Unit
+  token : () -> String
+  store_token : (String) -> Unit
+  timeout : (Double, () -> Unit) -> () -> Unit
+  on_activity : (() -> Unit) -> () -> Unit
+}
+
+pub(all) struct AssistantLine {
+  body : String
+  own : Bool
+}
+
+pub(all) struct AuthRequest {
+  submit : (Bool, String, String, String, (String, String) -> Unit) -> () -> Unit
+}
+
+pub(all) struct CallRow {
+  call : @shared.ConversationDto
+  partner : String
+  can_join : Bool
+  active : Bool
+  path : String
+}
+
+pub(all) struct CallsController {
+  get_snapshot : () -> CallsView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  refresh : () -> Unit
+  set_query : (String) -> Unit
+  search : () -> Unit
+  invite : (Int) -> Unit
+}
+
+pub(all) struct CallsView {
+  calls : Array[CallRow]
+  query : String
+  users : Array[@shared.User]
+  busy : Bool
+  refreshing : Bool
+  loaded : Bool
+  can_search : Bool
+  error : String
+}
+
+pub(all) struct CandidateView {
+  person : @shared.FriendSummaryDto
+  accepted : Bool
+  known : Bool
+  can_request : Bool
+}
+
+pub(all) struct EventCardController {
+  get_snapshot : () -> EventCardView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  update : (@shared.EventOverviewDto) -> Unit
+  set_round : (Int, Bool) -> Unit
+  confirm : (Bool) -> Unit
+  act : (String) -> Unit
+}
+
+pub(all) struct EventCardView {
+  value : @shared.EventOverviewDto
+  rounds : Array[Bool]
+  roster : Array[RosterRow]
+  frozen : Bool
+  busy : Bool
+  error : String
+  success : String
+  confirm : Bool
+}
+
+pub(all) struct EventsController {
+  get_snapshot : () -> EventsView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  refresh : () -> Unit
+}
+
+pub(all) struct EventsView {
+  events : Array[@shared.EventOverviewDto]
+  loaded : Bool
+  error : String
+}
+
+pub(all) struct HistoryController {
+  get_snapshot : () -> HistoryView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  set_tab : (String) -> Unit
+}
+
+pub(all) struct HistoryView {
+  calls : Array[@shared.ConversationDto]
+  loaded : Bool
+  error : String
+  tab : String
+}
+
+pub(all) struct HomeController {
+  get_snapshot : () -> HomeView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+}
+
+pub(all) struct HomeView {
+  events : Array[@shared.Event]
+  loading : Bool
+  error : String
+}
+
+pub(all) struct IceCandidate {
+  candidate : String
+  mid : String
+  has_mid : Bool
+  line : Int
+  username : String
+  has_username : Bool
+}
+
+pub(all) struct LearningController {
+  get_snapshot : () -> LearningView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  set_saved : (Bool) -> Unit
+  answer : (Int, Int) -> Unit
+  save : () -> Unit
+  generate : () -> Unit
+}
+
+pub(all) struct LearningView {
+  id : Int
+  answers : Array[Int]
+  feedback : String
+  feedback_current : Bool
+  busy : Bool
+  error : String
+  saved : Bool
+  can_generate : Bool
+}
+
+pub(all) struct MediaPorts {
+  acquire : ((StreamPort) -> Unit, (String) -> Unit) -> Unit
+  frame : (() -> Unit) -> () -> Unit
+}
+
+pub(all) struct MemoController {
+  get_snapshot : () -> MemoView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  set_memo : (String) -> Unit
+  set_words : (String) -> Unit
+  save : () -> Unit
+}
+
+pub(all) struct MemoView {
+  carryInMemo : String
+  wordList : String
+  busy : Bool
+  error : String
+  saved : Bool
+}
+
+pub(all) struct MeterPort {
+  sample : () -> Array[Double]
+  close : () -> Unit
+}
+
+pub(all) struct MicrophoneController {
+  get_snapshot : () -> MicrophoneView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  finish : () -> Unit
+}
+
+pub(all) struct MicrophoneView {
+  levels : Array[Double]
+  error : String
+  ready : Bool
+  checked : Bool
+}
+
+pub(all) struct NotificationView {
+  value : @shared.NotificationDto
+  description : String
+  destination : String
+}
+
+pub(all) struct PeerPort {
+  describe : (Bool, (String, String) -> Unit) -> Unit
+  set_local : (String, String, (String, String) -> Unit) -> Unit
+  remote : (String, String, (String) -> Unit) -> Unit
+  ice : (IceCandidate, (String) -> Unit) -> Unit
+  close : () -> Unit
+}
+
+pub(all) struct RealtimePorts {
+  socket : (String, (String, String) -> Unit) -> SocketPort
+  visible : () -> Bool
+  on_focus : (() -> Unit) -> () -> Unit
+  notify : () -> Unit
+}
+
+pub(all) struct ReflectionController {
+  get_snapshot : () -> ReflectionView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  set_field : (String, String) -> Unit
+  save : () -> Unit
+}
+
+pub(all) struct ReflectionView {
+  id : Int
+  conversation : Array[@shared.ConversationDto]
+  satisfaction : String
+  comment : String
+  learned : String
+  busy : Bool
+  error : String
+  saved : Bool
+  complete : Bool
+}
+
+pub(all) struct RosterRow {
+  id : Int
+  username : String
+  status : String
+}
+
+pub(all) struct SessionController {
+  get_snapshot : () -> SessionView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  set_offset : (Double) -> Unit
+  toggle_mute : () -> Unit
+  set_open : (String, Bool) -> Unit
+  set_tab : (String) -> Unit
+  set_draft : (String) -> Unit
+  send : () -> Unit
+  retry : () -> Unit
+  finish : () -> Unit
+  cancel : () -> Unit
+}
+
+pub(all) struct SessionView {
+  id : Int
+  conversation : Array[@shared.ConversationDto]
+  me : @shared.UserProfile
+  partner : @shared.FriendSummaryDto
+  status : String
+  can_finish : Bool
+  can_cancel : Bool
+  can_retry : Bool
+  muted : Bool
+  speaking : Bool
+  remote_speaking : Bool
+  error : String
+  saving : Bool
+  memo_open : Bool
+  assistant_open : Bool
+  topic_open : Bool
+  memo_tab : String
+  carryInMemo : String
+  wordList : String
+  messages : Array[AssistantLine]
+  draft : String
+  sending : Bool
+}
+
+pub(all) struct SettingsController {
+  get_snapshot : () -> SettingsView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  edit : (String) -> Unit
+  set_draft : (String) -> Unit
+  save : () -> Unit
+  upload : (Upload) -> Unit
+  logout : () -> Unit
+}
+
+pub(all) struct SettingsView {
+  user : @shared.UserProfile
+  loaded : Bool
+  editing : String
+  draft : String
+  busy : Bool
+  error : String
+}
+
+pub(all) struct SocialController {
+  get_snapshot : () -> SocialView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+  set_query : (String) -> Unit
+  search : () -> Unit
+  change : (Int, String) -> Unit
+}
+
+pub(all) struct SocialView {
+  social : @shared.SocialDto
+  loaded : Bool
+  candidates : Array[CandidateView]
+  query : String
+  busy : Bool
+  error : String
+}
+
+pub(all) struct SocketPort {
+  send : (String) -> Bool
+  close : () -> Unit
+}
+
+pub(all) struct StatsController {
+  get_snapshot : () -> StatsView
+  subscribe : (() -> Unit) -> () -> Unit
+  start : () -> Unit
+  stop : () -> Unit
+}
+
+pub(all) struct StatsView {
+  items : Array[@shared.StatsDto]
+  error : String
+}
+
+pub(all) struct StreamPort {
+  close : () -> Unit
+  mute : (Bool) -> Unit
+  meter : (Int) -> MeterPort
+  play : ((String) -> Unit) -> () -> Unit
+  peer : (Array[@shared.IceServerDto], (IceCandidate) -> Unit, (StreamPort) -> Unit, (String) -> Unit) -> PeerPort
+}
+
+pub(all) struct Upload {
+  send : (String, String, String, (Double, String, Bool) -> Unit) -> () -> Unit
+}
+
+pub(all) struct VoiceController {
+  start : () -> Unit
+  stop : () -> Unit
+  mute : (Bool) -> Unit
+}
+
+pub(all) struct VoiceObserver {
+  conversation : (@shared.ConversationDto) -> Unit
+  connection : (String) -> Unit
+  error : (String) -> Unit
+  speaking : (Bool, Bool) -> Unit
+}
+
+// Type aliases
+
+// Traits

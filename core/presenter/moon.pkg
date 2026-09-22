@@ -1,0 +1,38 @@
+import {
+  "hosi121/speakup/shared",
+  "hosi121/speakup/browser_platform" @browser,
+  "moonbitlang/core/json",
+}
+
+options(
+  targets: { "browser.mbt": [ "js" ] },
+  link: {
+    "js": {
+      "format": "esm",
+      "exports": [
+        "create_auth_request:createAuthRequest",
+        "notification_view:projectNotification",
+        "microphone_levels:projectLevels",
+        "sound_is_speaking:projectSpeaking",
+        "http_error:httpErrorMessage",
+        "create_social:createSocial",
+        "create_calls:createCalls",
+        "create_events:createEvents",
+        "create_event_card:createEventCard",
+        "create_admin:createAdmin",
+        "create_settings:createSettings",
+        "create_reflection:createReflection",
+        "create_learning:createLearning",
+        "create_activity:createActivity",
+        "create_voice:createVoice",
+        "create_session:createSession",
+        "create_microphone:createMicrophone",
+        "create_memo:createMemo",
+        "create_home:createHome",
+        "create_history:createHistory",
+        "create_stats:createStats",
+        "browser_ports:browserPorts",
+      ],
+    },
+  },
+)

@@ -1,0 +1,16 @@
+import {
+  "hosi121/speakup/presenter",
+}
+
+options(
+  link: {
+    "js": {
+      "format": "esm",
+      "exports": [
+        "create_auth:createAuth",
+        "create_activity_loader:createActivityLoader",
+        "route:route",
+      ],
+    },
+  },
+)

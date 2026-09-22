@@ -1,41 +1,13 @@
-import { useState } from "react";
 import { Link } from "../../navigation/links";
 import { Dialog } from "../ui/Dialog";
 import { Icon } from "../ui/Icon";
 import { Avatar } from "../ui/Avatar";
-import { useActivity } from "../../services/activity";
-import { readInbox } from "../../services/features";
-import type { NotificationDto } from "../../../../dist/shared.js";
-const descriptions: Record<string, string> = {
-  friend_request: "フレンド申請が届きました",
-  friend_accepted: "フレンド申請が承認されました",
-  call_invitation: "通話への招待が届きました",
-  message: "新しいメッセージがあります",
-  event_matched: "イベントの通話相手が決まりました",
-};
-function destination(n: NotificationDto) {
-  if (n.kind === "message") return `/message/${n.actor.id}`;
-  if (n.conversation_id) return "/sessionlist";
-  return "/friendrequest";
-}
+import { useActivity, useActivityController } from "../../services/activity";
 export default function NotificationModal() {
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const controller = useActivityController();
   const activity = useActivity();
-  const notifications = activity.inbox?.items ?? [];
-  const read = async () => {
-    if (!notifications[0]) return;
-    setBusy(true);
-    setError("");
-    try {
-      await readInbox(notifications[0].id);
-    } catch {
-      setError("既読にできませんでした。");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { open, busy, read_error: error, items: notifications } = activity;
+  const { set_open: setOpen, read } = controller;
   return (
     <>
       <button
@@ -71,18 +43,18 @@ export default function NotificationModal() {
           </button>
         )}
         <ul className="plain-list stack">
-          {notifications.map((n) => (
+          {notifications.map(({ value: n, description, destination }) => (
             <li key={n.id} className="panel row">
               <Avatar src={n.actor.avatar_url} name={n.actor.username} />
               <div className="grow">
                 <strong>{n.actor.username}</strong>
-                <p>{descriptions[n.kind]}</p>
+                <p>{description}</p>
                 <small>
                   {new Date(n.created_at).toLocaleString()}{" "}
                   {n.read ? "既読" : "未読"}
                 </small>
                 <p>
-                  <Link onClick={() => setOpen(false)} to={destination(n)}>
+                  <Link onClick={() => setOpen(false)} to={destination}>
                     確認する
                   </Link>
                 </p>

@@ -1,28 +1,15 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { createHistory, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import { Link } from "../../navigation/links";
-import type { ConversationDto } from "../../../../dist/shared.js";
-import { fetchConversations } from "../../services/conversationService";
 import TopSection from "../utils/TopSection";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import { ChoiceGroup } from "../ui/ChoiceGroup";
 import FriendList from "../utils/FriendList";
 export function SessionHistoryFriendlist() {
-  const [calls, setCalls] = useState<ConversationDto[] | null>(null);
-  const [value, setValue] = useState("history");
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let disposed = false;
-    void fetchConversations(true)
-      .then((data) => {
-        if (!disposed) setCalls(data);
-      })
-      .catch(() => {
-        if (!disposed) setError("履歴を取得できませんでした。");
-      });
-    return () => {
-      disposed = true;
-    };
-  }, []);
+  const controller = useMemo(() => createHistory(browserPorts()), []);
+  const { calls, loaded, error, tab: value } = useController(controller);
+  const setValue = controller.set_tab;
   return (
     <BottomNavigationTemplate value="record">
       <div className="page stack">
@@ -42,7 +29,9 @@ export function SessionHistoryFriendlist() {
         ) : (
           <>
             {error && <p role="alert">{error}</p>}
-            {calls?.length === 0 && <p>終了した会話はまだありません。</p>}
+            {loaded && calls.length === 0 && (
+              <p>終了した会話はまだありません。</p>
+            )}
             {calls?.map((call) => (
               <article key={call.id} className="panel stack">
                 <h2>{call.theme}</h2>

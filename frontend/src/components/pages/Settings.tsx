@@ -1,59 +1,17 @@
-import { useState, useEffect } from "react";
-import { navigate } from "../../navigation/location";
+import { useMemo } from "react";
+import { createSettings, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
+import { uploadFile } from "../../services/upload";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import TopSection from "../utils/TopSection";
 import { Avatar } from "../ui/Avatar";
 import { Input } from "../ui/Field";
-import type { UserProfile } from "../../types/types";
-import {
-  fetchUserProfile,
-  updateUserProfile,
-  uploadAvatar,
-} from "../../services/userService";
-
 export function Settings() {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [editing, setEditing] = useState<"username" | "email" | null>(null);
-  const [draft, setDraft] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    void fetchUserProfile()
-      .then(setUser)
-      .catch(() => setError("ユーザー情報を取得できませんでした。"));
-  }, []);
-  const save = async () => {
-    if (!editing || !user) return;
-    setBusy(true);
-    setError("");
-    try {
-      await updateUserProfile({ [editing]: draft });
-      setUser({ ...user, [editing]: draft });
-      setEditing(null);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "保存できませんでした。",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-  const upload = async (file: File) => {
-    setBusy(true);
-    setError("");
-    try {
-      const avatarUrl = await uploadAvatar(file);
-      setUser((user) => user && { ...user, avatarUrl });
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "画像をアップロードできませんでした。",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const controller = useMemo(() => createSettings(browserPorts()), []);
+  const view = useController(controller);
+  const { editing, draft, busy, error } = view;
+  const user = view.loaded ? view.user : null;
+  const { save, set_draft: setDraft } = controller;
   return (
     <BottomNavigationTemplate value="other">
       <div className="page stack">
@@ -76,7 +34,7 @@ export function Settings() {
                 disabled={busy}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
-                  if (file) void upload(file);
+                  if (file) controller.upload(uploadFile(file));
                   event.target.value = "";
                 }}
               />
@@ -109,7 +67,7 @@ export function Settings() {
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() => setEditing(null)}
+                        onClick={() => controller.edit("")}
                       >
                         キャンセル
                       </button>
@@ -132,8 +90,7 @@ export function Settings() {
                           : "メールアドレスを編集"
                       }
                       onClick={() => {
-                        setDraft(user[field]);
-                        setEditing(field);
+                        controller.edit(field);
                       }}
                     >
                       編集
@@ -147,8 +104,7 @@ export function Settings() {
         <button
           type="button"
           onClick={() => {
-            localStorage.removeItem("token");
-            navigate("/login", { replace: true });
+            controller.logout();
           }}
         >
           ログアウト

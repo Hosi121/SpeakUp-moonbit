@@ -1,10 +1,10 @@
-import { createContext, useContext } from "react";
-import type { InboxDto } from "../../../dist/shared.js";
-export const Activity = createContext({
-  revision: 0,
-  inbox: null as InboxDto | null,
-  error: "",
-  connected: false,
-  clockOffset: 0,
-});
-export const useActivity = () => useContext(Activity);
+import { createContext, useContext, useSyncExternalStore } from "react";
+import { createActivityLoader } from "../../../dist/shell.js";
+export const Activity = createContext(
+  createActivityLoader({ enabled: false, load() {} }),
+);
+export const useActivityController = () => useContext(Activity);
+export function useActivity() {
+  const controller = useActivityController();
+  return useSyncExternalStore(controller.subscribe, controller.get_snapshot);
+}

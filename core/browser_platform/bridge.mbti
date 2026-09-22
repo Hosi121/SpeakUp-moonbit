@@ -4,10 +4,34 @@
 /// Complex or unsupported TypeScript types are widened to JSValue.
 
 ///|
+declare pub type TimeoutCallbackCallback
+
+///|
 declare pub type OnActivityListenerCallback
 
 ///|
+declare pub fn go(path : String, replace : Bool) -> Unit
+
+///|
+declare pub fn now() -> Double
+
+///|
+declare pub fn token() -> String
+
+///|
+declare pub fn encode(value : String) -> String
+
+///|
+declare pub fn isoDate(value : String) -> String
+
+///|
+declare pub fn timeout(delay : Double, callback : TimeoutCallbackCallback) -> () -> Unit
+
+///|
 declare pub fn randomId() -> String
+
+///|
+declare pub fn dateValue(value : String) -> Double
 
 ///|
 declare pub fn isVisible() -> Bool
@@ -17,6 +41,9 @@ declare pub fn formatTime(value : String) -> String
 
 ///|
 declare pub fn onActivity(listener : OnActivityListenerCallback) -> () -> Unit
+
+///|
+declare pub fn storeToken(value : String) -> Unit
 
 ///|
 declare pub fn numberValue(value : String) -> Double

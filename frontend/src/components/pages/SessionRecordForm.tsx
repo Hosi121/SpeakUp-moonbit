@@ -1,94 +1,26 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { createReflection, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import { Input, Textarea } from "../ui/Field";
 import { Redirect, Link } from "../../navigation/links";
 import { navigate, useLocation } from "../../navigation/location";
-import {
-  conversationClock,
-  type ConversationDto,
-} from "../../../../dist/shared.js";
-import {
-  fetchConversation,
-  fetchReflection,
-  saveReflection,
-} from "../../services/conversationService";
 import { LearningFeedback } from "../utils/LearningFeedback";
 import TopSection from "../utils/TopSection";
-
 export default function SessionRecordForm() {
-  const query = useLocation().searchParams;
-  const id = Number(query.get("conversation"));
-  return Number.isInteger(id) && id > 0 && id <= 2147483647 ? (
-    <RecordForm key={id} id={id} />
-  ) : (
-    <Redirect to="/conversation_history" />
-  );
+  const raw = useLocation().searchParams.get("conversation") ?? "";
+  return <RecordForm key={raw} raw={raw} />;
 }
-function RecordForm({ id }: { id: number }) {
-  const [conversation, setConversation] = useState<ConversationDto | null>(
-    null,
+function RecordForm({ raw }: { raw: string }) {
+  const controller = useMemo(
+    () => createReflection(browserPorts(), raw),
+    [raw],
   );
-  const [satisfaction, setSatisfaction] = useState("50");
-  const [comment, setComment] = useState("");
-  const [learned, setLearned] = useState("");
-  const [busy, setBusy] = useState(true);
-  const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    let disposed = false;
-    void Promise.all([fetchConversation(id), fetchReflection(id)])
-      .then(([call, reflection]) => {
-        if (disposed) return;
-        setConversation(call);
-        setSatisfaction(String(reflection.satisfaction));
-        setComment(reflection.comment);
-        setLearned(reflection.learned_expressions);
-        setSaved(reflection.saved);
-      })
-      .catch((error) => {
-        if (!disposed)
-          setError(
-            error instanceof Error
-              ? error.message
-              : "記録を読み込めませんでした",
-          );
-      })
-      .finally(() => {
-        if (!disposed) setBusy(false);
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [id]);
-  const complete =
-    conversation &&
-    conversationClock(conversation, Date.now()).phase === "completed";
-  const save = async () => {
-    const rating = Number(satisfaction);
-    if (
-      satisfaction.trim() === "" ||
-      !Number.isInteger(rating) ||
-      rating < 0 ||
-      rating > 100
-    ) {
-      setError("満足度は 0〜100 の整数で入力してください");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    setSaved(false);
-    try {
-      await saveReflection(id, {
-        satisfaction: rating,
-        comment,
-        learned_expressions: learned,
-      });
-      setSaved(true);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "保存できませんでした");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const view = useController(controller);
+  const { id, satisfaction, comment, learned, busy, error, saved, complete } =
+    view;
+  const conversation = view.conversation[0];
+  const save = controller.save;
+  if (!id) return <Redirect to="/conversation_history" />;
   return (
     <main className="page stack">
       <TopSection />
@@ -135,8 +67,7 @@ function RecordForm({ id }: { id: number }) {
           required
           value={satisfaction}
           onChange={(event) => {
-            setSatisfaction(event.target.value);
-            setSaved(false);
+            controller.set_field("satisfaction", event.target.value);
           }}
           disabled={busy || !complete}
         />
@@ -146,8 +77,7 @@ function RecordForm({ id }: { id: number }) {
           maxLength={4000}
           value={comment}
           onChange={(event) => {
-            setComment(event.target.value);
-            setSaved(false);
+            controller.set_field("comment", event.target.value);
           }}
           disabled={busy || !complete}
         />
@@ -157,8 +87,7 @@ function RecordForm({ id }: { id: number }) {
           maxLength={8000}
           value={learned}
           onChange={(event) => {
-            setLearned(event.target.value);
-            setSaved(false);
+            controller.set_field("learned", event.target.value);
           }}
           disabled={busy || !complete}
         />

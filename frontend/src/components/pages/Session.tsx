@@ -1,239 +1,86 @@
-import {
-  startVoiceCall,
-  type VoiceConnectionState,
-} from "../../services/voiceCall";
+import { useMemo, useRef, useEffect } from "react";
+import { createSession, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
+import { mediaPorts } from "../../services/media";
+import { realtimePorts } from "../../services/realtime";
+import { useActivity } from "../../services/activity";
 import { HalfModal } from "../utils/HalfModal";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "../ui/Field";
 import { Avatar } from "../ui/Avatar";
 import { ChoiceGroup } from "../ui/ChoiceGroup";
 import { SessionBottomNavigationTemplate } from "../templates/SessionBottomNavigationTemplate";
 import SessionContainer from "../utils/SessionContainer";
-import { fetchMemo } from "../../services/memoService"; // Import the fetchMemo function
 import { Redirect } from "../../navigation/links";
 import { navigate, useLocation } from "../../navigation/location";
 import { TopicPopup } from "../utils/TopicPopup";
-import { AudioVolumeAnalyzer } from "../utils/AudioVolumeAnalyzer";
-import { fetchUserProfile } from "../../services/userService";
-import { askAssistant } from "../../services/chatService";
-import {
-  conversationClock,
-  conversationPartner,
-  type ConversationDto,
-} from "../../../../dist/shared.js";
-import {
-  finishConversation,
-  cancelConversation,
-} from "../../services/conversationService";
-import { useActivity } from "../../services/activity";
-import type { UserProfile } from "../../types/types";
 
 export const Session = () => {
-  const query = useLocation().searchParams;
-  const id = Number(query.get("conversation"));
-  return Number.isInteger(id) && id > 0 && id <= 2147483647 ? (
-    <ConversationSession key={id} id={id} />
-  ) : (
-    <Redirect to="/sessionlist" />
-  );
+  const raw = useLocation().searchParams.get("conversation") ?? "";
+  return <ConversationSession key={raw} raw={raw} />;
 };
-
-const ConversationSession = ({ id }: { id: number }) => {
-  const { clockOffset } = useActivity();
-  const [memoOpen, setMemoOpen] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
-  const [messages, setMessages] = useState<string[]>([]);
-  const [inputMessage, setInputMessage] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false); // ローディング状態を管理
-  const [carryInMemo, setCarryInMemo] = useState("");
-  const [wordList, setWordList] = useState("");
-  const [value, setValue] = useState("1");
-  const [isMuted, setIsMuted] = useState(false);
-  const mutedRef = useRef(false);
-  const [conversation, setConversation] = useState<ConversationDto | null>(
-    null,
+const ConversationSession = ({ raw }: { raw: string }) => {
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const controller = useMemo(
+    () =>
+      createSession(
+        browserPorts(),
+        realtimePorts(),
+        mediaPorts(() => remoteAudioRef.current),
+        raw,
+      ),
+    [raw],
   );
-  const [now, setNow] = useState(Date.now);
-  const [retry, setRetry] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const ending = useRef(false);
-  const [showTopicPopup, setShowTopicPopup] = useState(false);
-  const clock = conversation
-    ? conversationClock(conversation, now + clockOffset)
-    : null;
-
-  useEffect(() => {
-    if (clock?.phase !== "active") return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [clock?.phase]);
-
-  useEffect(() => {
-    // コンポーネント読み込み時にメモを取得
-    const getMemo = async () => {
-      try {
-        const data = await fetchMemo();
-        setCarryInMemo(data.carryInMemo);
-        setWordList(data.wordList);
-      } catch (error) {
-        console.error("Failed to fetch memo", error);
-      }
-    };
-    getMemo();
-  }, []);
-
+  const view = useController(controller);
+  const { clockOffset } = useActivity();
+  useEffect(
+    () => controller.set_offset(clockOffset),
+    [controller, clockOffset],
+  );
+  const {
+    muted: isMuted,
+    speaking: isSpeak,
+    remote_speaking: isOpponentSpeak,
+    error: callError,
+    saving,
+    memo_open: memoOpen,
+    assistant_open: assistantOpen,
+    topic_open: showTopicPopup,
+    memo_tab: value,
+    carryInMemo,
+    wordList,
+    messages,
+    draft: inputMessage,
+    sending: isLoading,
+    me,
+    partner,
+  } = view;
+  const conversation = view.conversation[0];
+  const {
+    toggle_mute: toggleMute,
+    set_tab: setValue,
+    set_draft: setInputMessage,
+    send: handleSendMessage,
+    finish,
+    cancel,
+  } = controller;
+  const setMemoOpen = (open: boolean) => controller.set_open("memo", open);
+  const setAssistantOpen = (open: boolean) =>
+    controller.set_open("assistant", open);
   const handleMemoClose = () => setMemoOpen(false);
   const handleAssistantClose = () => setAssistantOpen(false);
-
-  const handleCloseTopicPopup = () => {
-    setShowTopicPopup(false);
-  };
-  const handlePriorityHighClick = () => {
-    setShowTopicPopup(true);
-  };
-  const handleSendMessage = async () => {
-    if (inputMessage.trim() === "") return;
-
-    setIsLoading(true); // ローディング状態を開始
-    setMessages([...messages, `You: ${inputMessage}`]); // ユーザーのメッセージを表示
-    const userMessage = inputMessage;
-    setInputMessage(""); // 送信後に入力フィールドをクリア
-
-    try {
-      const assistantMessage = await askAssistant(userMessage);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        `Assistant: ${assistantMessage}`,
-      ]);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to get response";
-      setMessages((prevMessages) => [...prevMessages, `Error: ${message}`]);
-    } finally {
-      setIsLoading(false); // ローディング状態を終了
-    }
-  };
-
-  const remoteAudioRef = useRef<HTMLAudioElement>(null);
-  const callRef = useRef<ReturnType<typeof startVoiceCall> | null>(null);
-  const [callError, setCallError] = useState("");
-  const [connection, setConnection] =
-    useState<VoiceConnectionState>("connecting");
-  useEffect(() => {
-    const audio = remoteAudioRef.current;
-    if (!audio) return;
-    setCallError("");
-    const call = startVoiceCall({
-      audio,
-      conversationId: id,
-      onConnection: setConnection,
-      onState: (next) =>
-        setConversation((current) =>
-          !current || next.revision >= current.revision ? next : current,
-        ),
-      onError: (message) => {
-        setCallError(message);
-        volumeAnalyzerRef.current?.stop();
-        opponentVolumeAnalyzerRef.current?.stop();
-      },
-      onLocal: (stream) => {
-        volumeAnalyzerRef.current = new AudioVolumeAnalyzer(setisSpeak);
-        volumeAnalyzerRef.current.start(stream);
-      },
-      onRemote: (stream) => {
-        opponentVolumeAnalyzerRef.current = new AudioVolumeAnalyzer(
-          setIsOpponentSpeak,
-        );
-        opponentVolumeAnalyzerRef.current.start(stream);
-      },
-    });
-    callRef.current = call;
-    call.mute(mutedRef.current);
-    return () => {
-      call.stop();
-      volumeAnalyzerRef.current?.stop();
-      opponentVolumeAnalyzerRef.current?.stop();
-    };
-  }, [id, retry]);
-  const toggleMute = () => {
-    const muted = !isMuted;
-    mutedRef.current = muted;
-    setIsMuted(muted);
-    callRef.current?.mute(muted);
-  };
-
-  // visualize speaker
-  const volumeAnalyzerRef = useRef<AudioVolumeAnalyzer | null>(null);
-  const opponentVolumeAnalyzerRef = useRef<AudioVolumeAnalyzer | null>(null);
-  const [isSpeak, setisSpeak] = useState(false);
-  const [isOpponentSpeak, setIsOpponentSpeak] = useState(false);
-
-  const [me, setMe] = useState<UserProfile | null>(null);
-  useEffect(() => {
-    let disposed = false;
-    void fetchUserProfile()
-      .then((value) => {
-        if (!disposed) setMe(value);
-      })
-      .catch(() => {
-        if (!disposed) setCallError("ユーザー情報を取得できませんでした");
-      });
-    return () => {
-      disposed = true;
-    };
-  }, []);
-  const partner =
-    conversation && me ? conversationPartner(conversation, me.id) : null;
+  const handleCloseTopicPopup = () => controller.set_open("topic", false);
+  const handlePriorityHighClick = () => controller.set_open("topic", true);
   const users = [
     {
-      name: me?.username ?? "",
-      icon: <Avatar src={me?.avatarUrl} name={me?.username ?? ""} large />,
+      name: me.username,
+      icon: <Avatar src={me.avatarUrl} name={me.username} large />,
     },
     {
-      name: partner?.username ?? "",
-      icon: (
-        <Avatar
-          src={partner?.avatar_url}
-          name={partner?.username ?? ""}
-          large
-        />
-      ),
+      name: partner.username,
+      icon: <Avatar src={partner.avatar_url} name={partner.username} large />,
     },
   ];
-  const finish = useCallback(async () => {
-    if (ending.current) return;
-    ending.current = true;
-    setSaving(true);
-    try {
-      setConversation(await finishConversation(id));
-    } catch (error) {
-      setCallError(
-        error instanceof Error
-          ? error.message
-          : "終了を保存できませんでした。もう一度お試しください",
-      );
-    } finally {
-      ending.current = false;
-      setSaving(false);
-    }
-  }, [id]);
-  useEffect(() => {
-    if (clock?.phase === "completed")
-      navigate(`/sessionrecord?conversation=${id}`, { replace: true });
-  }, [clock?.phase, id]);
-  const cancel = async () => {
-    setSaving(true);
-    try {
-      setConversation(await cancelConversation(id));
-    } catch (error) {
-      setCallError(
-        error instanceof Error ? error.message : "取り消せませんでした",
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  if (!view.id) return <Redirect to="/sessionlist" />;
   return (
     <SessionBottomNavigationTemplate
       isMute={isMuted}
@@ -250,19 +97,9 @@ const ConversationSession = ({ id }: { id: number }) => {
       />
       <section className="stack compact center">
         <p role="status" className="numeric">
-          {clock?.phase === "active"
-            ? callError
-              ? "通話は中断しています"
-              : connection !== "connected"
-                ? "再接続しています"
-                : clock.has_deadline
-                  ? `通話中：残り ${clock.remaining_seconds} 秒`
-                  : "通話中"
-            : clock?.phase === "cancelled"
-              ? "通話はキャンセルされました"
-              : "相手の接続を待っています"}
+          {view.status}
         </p>
-        {clock?.can_finish && (
+        {view.can_finish && (
           <button
             type="button"
             className="primary"
@@ -272,13 +109,13 @@ const ConversationSession = ({ id }: { id: number }) => {
             通話を終了して記録する
           </button>
         )}
-        {clock?.phase === "planned" && (
+        {view.can_cancel && (
           <button type="button" disabled={saving} onClick={() => void cancel()}>
             通話の予定を取り消す
           </button>
         )}
-        {callError && clock?.can_join && (
-          <button type="button" onClick={() => setRetry((value) => value + 1)}>
+        {view.can_retry && (
+          <button type="button" onClick={controller.retry}>
             再接続
           </button>
         )}
@@ -320,12 +157,8 @@ const ConversationSession = ({ id }: { id: number }) => {
         >
           <p className="chat-bubble">何かお困りですか？</p>
           {messages.map((message, index) => (
-            <p
-              key={index}
-              className="chat-bubble"
-              data-own={message.startsWith("You:")}
-            >
-              {message}
+            <p key={index} className="chat-bubble" data-own={message.own}>
+              {message.body}
             </p>
           ))}
         </div>

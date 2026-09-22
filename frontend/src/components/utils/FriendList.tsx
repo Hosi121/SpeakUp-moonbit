@@ -1,24 +1,13 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { createSocial, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import { Link } from "../../navigation/links";
 import { Avatar } from "../ui/Avatar";
-import { fetchSocial } from "../../services/features";
-import { useActivity } from "../../services/activity";
-import { mapFriend } from "../../../../dist/shared.js";
-import type { FriendSummary } from "../../types/types";
 
 export default function FriendList() {
-  const { revision } = useActivity();
-  const [friends, setFriends] = useState<FriendSummary[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    void fetchSocial()
-      .then((data) => {
-        setFriends(data.friends.map(mapFriend));
-        setLoaded(true);
-      })
-      .catch(() => setError("フレンドを取得できませんでした。"));
-  }, [revision]);
+  const controller = useMemo(() => createSocial(browserPorts(), false), []);
+  const { social, loaded, error } = useController(controller);
+  const friends = social.friends;
   return (
     <section className="stack" aria-label="フレンド一覧">
       <Link to="/friendrequest">フレンド申請を確認・送信</Link>
@@ -35,7 +24,7 @@ export default function FriendList() {
       <ul className="plain-list stack">
         {friends.map((friend) => (
           <li key={friend.id} className="panel row">
-            <Avatar src={friend.avatarUrl} name={friend.username} />
+            <Avatar src={friend.avatar_url} name={friend.username} />
             <strong className="grow">{friend.username}</strong>
             <Link className="button" to={`/message/${friend.id}`}>
               メッセージ

@@ -2,14 +2,51 @@
 package "hosi121/speakup/client"
 
 import {
+  "hosi121/speakup/presenter",
   "hosi121/speakup/shared",
   "hosi121/speakup/thread",
 }
 
 // Values
+pub fn browser_ports() -> @presenter.AppPorts
+
+pub fn create_activity(@presenter.AppPorts, @presenter.RealtimePorts) -> @presenter.ActivityController
+
+pub fn create_admin(@presenter.AppPorts) -> @presenter.AdminController
+
+pub fn create_auth_request(@presenter.AppPorts) -> @presenter.AuthRequest
+
 pub fn create_browser(String) -> @thread.ThreadController
 
+pub fn create_calls(@presenter.AppPorts) -> @presenter.CallsController
+
 pub fn create_controller(Double, @thread.ThreadPorts) -> @thread.ThreadController
+
+pub fn create_event_card(@presenter.AppPorts, @shared.EventOverviewDto, Bool, @presenter.EventsController) -> @presenter.EventCardController
+
+pub fn create_events(@presenter.AppPorts) -> @presenter.EventsController
+
+pub fn create_history(@presenter.AppPorts) -> @presenter.HistoryController
+
+pub fn create_home(@presenter.AppPorts) -> @presenter.HomeController
+
+pub fn create_learning(@presenter.AppPorts, String, Bool) -> @presenter.LearningController
+
+pub fn create_memo(@presenter.AppPorts) -> @presenter.MemoController
+
+pub fn create_microphone(@presenter.MediaPorts, @presenter.RealtimePorts) -> @presenter.MicrophoneController
+
+pub fn create_reflection(@presenter.AppPorts, String) -> @presenter.ReflectionController
+
+pub fn create_session(@presenter.AppPorts, @presenter.RealtimePorts, @presenter.MediaPorts, String) -> @presenter.SessionController
+
+pub fn create_settings(@presenter.AppPorts) -> @presenter.SettingsController
+
+pub fn create_social(@presenter.AppPorts, Bool) -> @presenter.SocialController
+
+pub fn create_stats(@presenter.AppPorts) -> @presenter.StatsController
+
+pub fn create_voice(@presenter.AppPorts, @presenter.RealtimePorts, @presenter.MediaPorts, Int, @presenter.VoiceObserver) -> @presenter.VoiceController
 
 pub fn decode_activity_token(String) -> String
 
@@ -53,6 +90,8 @@ pub fn decode_users_response(String) -> Array[@shared.User]
 
 pub fn from_memo(@shared.MemoDto) -> @shared.UserNotes
 
+pub fn http_error(Double, String) -> String
+
 pub fn map_conversation(@shared.ConversationHistoryDto) -> @shared.ConversationHistoryItem
 
 pub fn map_event(@shared.EventDto) -> @shared.Event
@@ -65,9 +104,15 @@ pub fn map_session(@shared.SessionDto) -> @shared.SessionData
 
 pub fn map_user(@shared.UserDto) -> @shared.User
 
+pub fn microphone_levels(Array[Double]) -> Array[Double]
+
 pub fn normalize_avatar(String, String) -> String
 
+pub fn notification_view(@shared.NotificationDto) -> @presenter.NotificationView
+
 pub fn parse_signal(String) -> @shared.ParsedSignal
+
+pub fn sound_is_speaking(Array[Double]) -> Bool
 
 pub fn to_memo(@shared.UserNotes) -> @shared.MemoDto
 

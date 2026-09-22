@@ -2,9 +2,19 @@
 package "hosi121/speakup/browser_platform"
 
 // Values
+pub fn dateValue(String) -> Double
+
+pub fn encode(String) -> String
+
 pub fn formatTime(String) -> String
 
+pub fn go(String, Bool) -> Unit
+
 pub fn isVisible() -> Bool
+
+pub fn isoDate(String) -> String
+
+pub fn now() -> Double
 
 pub fn numberValue(String) -> Double
 
@@ -16,11 +26,20 @@ pub fn randomId() -> String
 
 pub fn requestText(String, String, String, (Double, String, Bool) -> Unit) -> () -> Unit
 
+pub fn storeToken(String) -> Unit
+
+pub fn timeout(Double, TimeoutCallbackCallback) -> () -> Unit
+
+pub fn token() -> String
+
 // Errors
 
 // Types and methods
 #external
 pub type OnActivityListenerCallback
+
+#external
+pub type TimeoutCallbackCallback
 
 // Type aliases
 

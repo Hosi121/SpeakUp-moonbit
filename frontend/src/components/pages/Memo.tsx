@@ -1,46 +1,15 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
+import { createMemo, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import TopSection from "../utils/TopSection";
 import { MemoInputField } from "../utils/MemoInputField";
-import { fetchMemo, saveMemo } from "../../services/memoService";
 
 export function Memo() {
-  const [carryInMemo, setCarryInMemo] = useState("");
-  const [wordList, setWordList] = useState("");
-  const [busy, setBusy] = useState(true);
-  const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    const controller = new AbortController();
-    void fetchMemo({ signal: controller.signal })
-      .then((data) => {
-        if (controller.signal.aborted) return;
-        setCarryInMemo(data.carryInMemo);
-        setWordList(data.wordList);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setError("メモを取得できませんでした。");
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setBusy(false);
-      });
-    return () => controller.abort();
-  }, []);
-  const save = async () => {
-    setBusy(true);
-    setError("");
-    setSaved(false);
-    try {
-      await saveMemo({ carryInMemo, wordList });
-      setSaved(true);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "保存できませんでした。",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const controller = useMemo(() => createMemo(browserPorts()), []);
+  const { carryInMemo, wordList, busy, error, saved } =
+    useController(controller);
+  const save = controller.save;
   return (
     <BottomNavigationTemplate value="other">
       <div className="page stack">
@@ -57,18 +26,12 @@ export function Memo() {
             <MemoInputField
               label="持ち込みメモ"
               value={carryInMemo}
-              setValue={(value) => {
-                setCarryInMemo(value);
-                setSaved(false);
-              }}
+              setValue={controller.set_memo}
             />
             <MemoInputField
               label="ワードリスト"
               value={wordList}
-              setValue={(value) => {
-                setWordList(value);
-                setSaved(false);
-              }}
+              setValue={controller.set_words}
             />
             <button type="submit" className="primary">
               保存

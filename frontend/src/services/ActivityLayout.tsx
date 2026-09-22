@@ -1,120 +1,27 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { useLocation } from "../navigation/location";
-import type { InboxDto } from "../../../dist/shared.js";
+import { createActivityLoader } from "../../../dist/shell.js";
 import { Activity } from "./activity";
-import { notifyActivity } from "./activityEvents";
 
 export function ActivityLayout({ children }: { children: ReactNode }) {
-  useLocation(); // Login/logout navigation re-evaluates the local credential.
+  useLocation();
   const token = localStorage.getItem("token");
-  const [state, setState] = useState({
-    revision: 0,
-    inbox: null as InboxDto | null,
-    error: "",
-    connected: false,
-    clockOffset: 0,
-  });
+  const controller = useMemo(
+    () =>
+      createActivityLoader({
+        enabled: !!token,
+        load: (ready, failed) => {
+          void import("./features").then(
+            (module) => ready(module.activityController()),
+            () => failed("通知機能を読み込めませんでした。"),
+          );
+        },
+      }),
+    [token],
+  );
   useEffect(() => {
-    let disposed = false;
-    let socket: WebSocket | undefined;
-    let retry: ReturnType<typeof setTimeout> | undefined;
-    let debounce: ReturnType<typeof setTimeout> | undefined;
-    let attempts = 0;
-    let sequence = 0;
-    setState({
-      revision: 0,
-      inbox: null,
-      error: "",
-      connected: false,
-      clockOffset: 0,
-    });
-    if (!token) return;
-    const refresh = () => {
-      clearTimeout(debounce);
-      debounce = setTimeout(() => {
-        const current = ++sequence;
-        void (async () => {
-          const { fetchInbox } = await import("./features");
-          // Loading code can outlive logout or a newer refresh.
-          if (disposed || sequence !== current) return;
-          const started = Date.now();
-          const inbox = await fetchInbox();
-          if (!disposed && sequence === current) {
-            setState((s) => ({
-              ...s,
-              inbox,
-              error: "",
-              revision: s.revision + 1,
-              // The shared clock accepts integer epoch milliseconds.
-              clockOffset: Math.round(inbox.now - (started + Date.now()) / 2),
-            }));
-            notifyActivity();
-          }
-        })().catch(() => {
-          if (!disposed && sequence === current) {
-            setState((s) => ({
-              ...s,
-              error: "通知を取得できませんでした。",
-              revision: s.revision + 1,
-            }));
-            notifyActivity();
-          }
-        });
-      }, 100);
-    };
-    const connect = () => {
-      if (disposed) return;
-      const base = new URL(
-        import.meta.env.VITE_API_URL ?? "/",
-        location.origin,
-      );
-      base.protocol =
-        base.protocol === "https:" || base.protocol === "wss:" ? "wss:" : "ws:";
-      base.pathname = "/activity";
-      socket = new WebSocket(base);
-      socket.onopen = () =>
-        socket?.send(JSON.stringify({ token: `Bearer ${token}` }));
-      socket.onmessage = (event) => {
-        if (event.data !== '{"type":"refresh"}') return;
-        attempts = 0;
-        setState((s) => ({ ...s, connected: true }));
-        refresh();
-      };
-      socket.onclose = () => {
-        if (disposed) return;
-        setState((s) => ({ ...s, connected: false }));
-        retry = setTimeout(
-          connect,
-          Math.min(30000, 1000 * 2 ** Math.min(attempts++, 5)),
-        );
-      };
-      socket.onerror = () => socket?.close();
-    };
-    const focus = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
-    document.addEventListener("visibilitychange", focus);
-    window.addEventListener("focus", focus);
-    // Reconcile durable state after a missed post-commit hint, without polling the call path.
-    const recovery = setInterval(focus, 60000);
-    // StrictMode may mount and immediately dispose the effect.
-    retry = setTimeout(connect, 0);
-    refresh();
-    return () => {
-      disposed = true;
-      clearTimeout(retry);
-      clearTimeout(debounce);
-      clearInterval(recovery);
-      document.removeEventListener("visibilitychange", focus);
-      window.removeEventListener("focus", focus);
-      if (socket) {
-        socket.onclose = null;
-        socket.onerror = null;
-        socket.onmessage = null;
-        socket.onopen = null;
-        socket.close();
-      }
-    };
-  }, [token]);
-  return <Activity.Provider value={state}>{children}</Activity.Provider>;
+    controller.start();
+    return controller.stop;
+  }, [controller]);
+  return <Activity.Provider value={controller}>{children}</Activity.Provider>;
 }

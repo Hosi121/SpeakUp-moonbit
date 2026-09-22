@@ -1,90 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMemo } from "react";
+import { createCalls, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import { Input } from "../ui/Field";
 import { Link } from "../../navigation/links";
 import { navigate } from "../../navigation/location";
-import {
-  conversationClock,
-  conversationPartner,
-  type ConversationDto,
-} from "../../../../dist/shared.js";
-import {
-  createDirectConversation,
-  fetchConversations,
-} from "../../services/conversationService";
-import { fetchUserProfile, searchUsers } from "../../services/userService";
-import type { User, UserProfile } from "../../types/types";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
-import { useActivity } from "../../services/activity";
 import TopSection from "../utils/TopSection";
-
 export const SessionList = () => {
-  const { revision, clockOffset } = useActivity();
-  const [calls, setCalls] = useState<ConversationDto[]>([]);
-  const [me, setMe] = useState<UserProfile | null>(null);
-  const [query, setQuery] = useState("");
-  const [users, setUsers] = useState<User[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState("");
-  const requestIds = useRef(new Map<number, string>());
-  const refreshId = useRef(0);
-  const refresh = useCallback(async () => {
-    const id = ++refreshId.current;
-    setRefreshing(true);
-    try {
-      const [next, profile] = await Promise.all([
-        fetchConversations(),
-        fetchUserProfile(),
-      ]);
-      if (id === refreshId.current) {
-        setCalls(next);
-        setMe(profile);
-        setLoaded(true);
-      }
-    } catch (error) {
-      if (id === refreshId.current) {
-        setError(
-          error instanceof Error ? error.message : "一覧を取得できませんでした",
-        );
-      }
-    } finally {
-      if (id === refreshId.current) setRefreshing(false);
-    }
-  }, []);
-  useEffect(() => {
-    void refresh();
-  }, [refresh, revision]);
-  const search = async () => {
-    if (!query.trim()) return;
-    setBusy(true);
-    setError("");
-    try {
-      setUsers(
-        (await searchUsers(query.trim())).filter((user) => user.id !== me?.id),
-      );
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "検索できませんでした");
-    } finally {
-      setBusy(false);
-    }
-  };
-  const invite = async (user: User) => {
-    setBusy(true);
-    setError("");
-    const key = requestIds.current.get(user.id) ?? crypto.randomUUID();
-    requestIds.current.set(user.id, key);
-    try {
-      const conversation = await createDirectConversation(user.id, key);
-      navigate(`/session?conversation=${conversation.id}`);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "通話を作成できませんでした",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const controller = useMemo(() => createCalls(browserPorts()), []);
+  const { calls, query, users, busy, refreshing, loaded, error, can_search } =
+    useController(controller);
+  const { search, invite, refresh, set_query: setQuery } = controller;
   return (
     <BottomNavigationTemplate value="session">
       <div className="page stack">
@@ -111,7 +37,7 @@ export const SessionList = () => {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
-            <button type="submit" disabled={busy || !me || !query.trim()}>
+            <button type="submit" disabled={!can_search}>
               検索
             </button>
           </form>
@@ -122,7 +48,7 @@ export const SessionList = () => {
                 type="button"
                 disabled={busy}
                 className="primary"
-                onClick={() => void invite(user)}
+                onClick={() => void invite(user.id)}
               >
                 {user.username} と通話する
               </button>
@@ -144,9 +70,8 @@ export const SessionList = () => {
             参加できる通話はありません。上の検索から相手を選んで通話できます。
           </p>
         )}
-        {calls.map((call) => {
-          const clock = conversationClock(call, Date.now() + clockOffset);
-          const partner = me ? conversationPartner(call, me.id).username : "";
+        {calls.map((row) => {
+          const { call, partner } = row;
           return (
             <article key={call.id} className="panel stack compact">
               <h2>{call.theme}</h2>
@@ -159,10 +84,10 @@ export const SessionList = () => {
               <button
                 type="button"
                 className="primary"
-                disabled={!clock.can_join}
-                onClick={() => navigate(`/session?conversation=${call.id}`)}
+                disabled={!row.can_join}
+                onClick={() => navigate(row.path)}
               >
-                {clock.phase === "active" ? "再参加する" : "参加する"}
+                {row.active ? "再参加する" : "参加する"}
               </button>
             </article>
           );

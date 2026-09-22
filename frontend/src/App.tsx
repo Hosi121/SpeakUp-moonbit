@@ -1,3 +1,4 @@
+import { route } from "../../dist/shell.js";
 import { lazy, Suspense, type ComponentType } from "react";
 import { ActivityLayout } from "./services/ActivityLayout";
 import { useLocation } from "./navigation/location";
@@ -104,20 +105,12 @@ const pages = new Map<string, ComponentType>([
 const Message = lazy(() =>
   import("./components/pages/Message").then((m) => ({ default: m.Message })),
 );
-const redirects = new Map([
-  ["/", "/login"],
-  ["/waiting", "/sessionlist"],
-  ["/sessioninterval", "/sessionlist"],
-  ["/trophynotification", "/stats"],
-]);
-
 function Screen({ pathname }: { pathname: string }) {
-  const redirect = redirects.get(pathname);
+  const { redirect, peer } = route(pathname);
   if (redirect) return <Redirect to={redirect} />;
   const Page = pages.get(pathname);
   if (Page) return <Page />;
-  const match = /^\/message\/([^/]+)$/.exec(pathname);
-  if (match) return <Message friendId={match[1]} />;
+  if (peer) return <Message friendId={peer} />;
   return (
     <main className="page stack">
       <h1>ページが見つかりません</h1>
@@ -131,7 +124,7 @@ export default function App() {
   const url = useLocation();
   let pathname: string;
   try {
-    pathname = decodeURI(url.pathname).replace(/\/+$/, "").toLowerCase() || "/";
+    pathname = route(decodeURI(url.pathname)).page || "/";
   } catch {
     pathname = "";
   }

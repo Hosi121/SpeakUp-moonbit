@@ -83,7 +83,7 @@ fn integer_field(
 }
 
 ///|
-fn decode_conversation_value(value : Json) -> ConversationDto raise {
+pub fn decode_conversation_value(value : Json) -> ConversationDto raise {
   // FromJson for Int truncates fractional numbers on this compiler. Validate
   // the original JSON before any narrowing conversion can lose information.
   integer_field(value, "id", 1, 2147483647)

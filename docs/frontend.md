@@ -1,6 +1,6 @@
 # UI の構成
 
-フロントの状態・更新規則・通信制御を MoonBit に集め、表示層を交換できる構成へ移行している。メッセージ画面はその分離を実装済み。ほかの画面には React hooks や TS service が所有するロジックが残る。会話モデル・状態検査・共通 DTO は MoonBit から JS と型宣言を生成して利用する。native backend には React / MUI / Node のランタイム依存はない。
+フロントの状態・更新規則・通信制御を MoonBit に集めた。フォーム、一覧、通知、通話、マイク確認を `core/presenter` / `core/shell`、メッセージを `core/thread` が所有し、React は snapshot の描画と入力の転送を担当する。共通 DTO と公開 controller 型は MoonBit から生成する。native backend には React / MUI / Node のランタイム依存はない。[現在の構成・検証・性能の比較](frontend-controllers.md)。以下の依存削除の表は各変更時点の記録で、現在の bundle サイズではない。
 
 ## MUI の削除
 
@@ -77,15 +77,16 @@ JS gzip は 11.6% 減。ローカルの Chromium で実アプリの通知取得�
 | 場所 | 役割 | 判断 |
 | --- | --- | --- |
 | `frontend/src/message/react.tsx` / `dom.ts` | 同じ MoonBit snapshot の描画、操作の転送 | 表示層。取得・再送・既読・ページングの判断は持たない |
-| `frontend/src/components` のほかの画面 | React の画面・フォーム・UI 状態 | 状態と操作規則の MoonBit 移行は未完了。TS に恒久的に残す方針ではない |
-| `frontend/src/services/voiceCall.ts`、音量計 | WebRTC / WebSocket / マイク / AudioContext の制御 | 接続順序・再試行・寿命の判断は MoonBit へ移す対象。個々の Web API 呼び出しは型付き binding に残す |
-| `frontend/src/services/browser.ts` | fetch / UUID / 時刻表示 / visibility / 更新通知の具体的な操作 | TS2Mbt で型付き binding を生成。要求の開始・中止と応答の解釈は `core/thread` |
-| `ActivityLayout.tsx`、ほかの `services/*` | 通知接続・認証・通信・ブラウザ側の状態 | メッセージ以外の orchestration はまだ TS に残る。MoonBit 移行対象 |
-| `frontend/src/navigation`、`App.tsx` | History API、リンク、画面の読み込みと復帰 | 現在のアプリシェル。画面ごとの状態移行後に分離を進める |
+| `frontend/src/components` | snapshot に従う HTML / CSS / React の描画、入力の転送 | フォーム・選択・通信状態は MoonBit。locale による時刻表示や DOM の参照は表示層 |
+| `services/media.ts` / `realtime.ts` | WebRTC / WebSocket / AudioContext の個々の操作 | 接続順序・再試行・キュー・解放時期は MoonBit。native handle は closure 内に保持 |
+| `services/browser.ts` / `transport.ts` / `upload.ts` | fetch / UUID / 時刻 / visibility / storage / FormData | 具体型の port。要求の開始・中止と成功・失敗応答の解釈は MoonBit |
+| `services/controller.ts` / `ActivityLayout.tsx` / `activity.ts` | controller の mount/unmount、snapshot の購読、Context への受け渡し | アプリ状態の複製はない。通知の module 待ちと世代判定も `core/shell` |
+| `services/authLoader.ts` / `features.ts` / `voiceCall.ts` | dynamic import と controller 接続、従来 entry の互換ラッパー | 認証・通知・通話の操作規則を持たない |
+| `frontend/src/navigation` / `App.tsx` / `PageBoundary.tsx` | History API、リンク、React.lazy、描画失敗からの復帰 | route 判定は MoonBit。React 固有の描画・購読処理と DOM の履歴操作は残る |
 | `server/main.ts`、`server/host.ts` | 比較・互換検証用の Node backend | default の native backend では実行しない |
 | `server/migrate.ts`、`server/seed.ts`、scripts/tests | DB 準備、生成、ビルド、検証 | 開発用ツール。常駐サーバーの依存と分ける |
 
-frontend の直接 runtime 依存は React / React DOM の 2 つ。メッセージは `core/thread` が状態と I/O の寿命を所有し、React の `useSyncExternalStore` と素の DOM の両方から利用できる。DOM 単独ページの読み込みには React が含まれない。アプリ全体からの React 削除はまだ行っていない。[構成・検証・比較](message-controller.md)。
+frontend の直接 runtime 依存は React / React DOM の 2 つ。アプリの `useState` / `useReducer` はなく、controller を React の `useSyncExternalStore` から購読する。メッセージは素の DOM renderer でも同じ controller を使用し、DOM 単独ページには React が含まれない。ほかの画面の DOM renderer とアプリ全体からの React 削除は未実装。[全画面の移行](frontend-controllers.md)、[メッセージの描画交換](message-controller.md)。
 
 通知、フレンド申請の承認・見送り・取消、メッセージ、実績、AI アドバイス、選択式の振り返り、イベント参加・管理を共通 MoonBit API に接続した。固定候補や架空の実績を廃止し、会話履歴と保存済みデータを使う。[各機能のモデル・API・検証](features.md)を参照。
 

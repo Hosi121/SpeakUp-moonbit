@@ -1,89 +1,18 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
+import { createSocial, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
+import type { FriendSummaryDto } from "../../../../dist/shared.js";
 import { Link } from "../../navigation/links";
 import TopSection from "../utils/TopSection";
 import { Avatar } from "../ui/Avatar";
 import { Input } from "../ui/Field";
-import { fetchSocial, changeFriend } from "../../services/features";
-import { fetchConversations } from "../../services/conversationService";
-import { searchUsers, fetchUserProfile } from "../../services/userService";
-import { useActivity } from "../../services/activity";
-import type { FriendSummaryDto, SocialDto } from "../../../../dist/shared.js";
 
 export default function FriendRequest() {
-  const [social, setSocial] = useState<SocialDto | null>(null);
-  const [candidates, setCandidates] = useState<FriendSummaryDto[]>([]);
-  const [query, setQuery] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const { revision } = useActivity();
-  useEffect(() => {
-    let disposed = false;
-    void fetchSocial()
-      .then((value) => {
-        if (!disposed) setSocial(value);
-      })
-      .catch(() => {
-        if (!disposed) setError("フレンドを取得できませんでした。");
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [revision]);
-  useEffect(() => {
-    let disposed = false;
-    void Promise.all([fetchConversations(true), fetchUserProfile()])
-      .then(([history, me]) => {
-        const peers = new Map(
-          history
-            .flatMap((call) => call.participants.filter((p) => p.id !== me.id))
-            .map((p) => [p.id, p]),
-        );
-        if (!disposed) setCandidates([...peers.values()]);
-      })
-      .catch(() => {
-        if (!disposed) setError("通話相手を取得できませんでした。");
-      });
-    return () => {
-      disposed = true;
-    };
-  }, []);
-  const change = async (
-    id: number,
-    action: "request" | "accept" | "reject" | "cancel",
-  ) => {
-    setBusy(true);
-    setError("");
-    try {
-      setSocial(await changeFriend(id, action));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "申請を変更できませんでした。");
-    } finally {
-      setBusy(false);
-    }
-  };
-  const search = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      const [users, me] = await Promise.all([
-        searchUsers(query),
-        fetchUserProfile(),
-      ]);
-      setCandidates(
-        users
-          .filter((u) => u.id !== me.id)
-          .map((u) => ({
-            id: u.id,
-            username: u.username,
-            avatar_url: u.avatarUrl,
-          })),
-      );
-    } catch {
-      setError("検索できませんでした。");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const controller = useMemo(() => createSocial(browserPorts(), true), []);
+  const view = useController(controller);
+  const { candidates, query, error, busy } = view;
+  const social = view.loaded ? view.social : null;
+  const { set_query: setQuery, change, search } = controller;
   const person = (p: FriendSummaryDto) => (
     <div className="row">
       <Avatar src={p.avatar_url} name={p.username} />
@@ -155,13 +84,7 @@ export default function FriendRequest() {
           <button disabled={busy}>検索</button>
         </form>
         {candidates.length === 0 && <p>候補はいません。名前で検索できます。</p>}
-        {candidates.map((p) => {
-          const known =
-            social &&
-            [...social.friends, ...social.incoming, ...social.outgoing].some(
-              (f) => f.id === p.id,
-            );
-          const accepted = social?.friends.some((f) => f.id === p.id);
+        {candidates.map(({ person: p, known, accepted, can_request }) => {
           return (
             <article className="panel row" key={p.id}>
               {person(p)}
@@ -169,7 +92,7 @@ export default function FriendRequest() {
                 <Link to={`/message/${p.id}`}>メッセージ</Link>
               ) : (
                 <button
-                  disabled={busy || !social || !!known}
+                  disabled={!can_request}
                   onClick={() => void change(p.id, "request")}
                 >
                   {known ? "申請中" : "フレンド申請"}

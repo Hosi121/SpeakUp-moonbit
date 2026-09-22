@@ -1,6 +1,6 @@
 # SpeakUp MoonBit
 
-[SpeakUp](https://github.com/Hosi121/SpeakUp) の独立した実験的移植です。API の処理・通話の状態管理・マッチング・共通 DTO を MoonBit に移し、native の HTTP／WebSocket サーバと React の画面を組み合わせています。共通 MoonBit コードを backend は native、frontend は JS へビルドします。
+[SpeakUp](https://github.com/Hosi121/SpeakUp) の独立した実験的移植です。API の処理・通話の状態管理・マッチング・共通 DTO に加え、画面の状態と通信制御も MoonBit が所有します。backend は native、frontend は JS へビルドし、React は snapshot の描画と入力の転送を担当します。
 
 イベントのラウンド通話と、相手を選んで随時始める 1 対 1 通話を、同じ会話モデルで扱います。再接続しても会話の開始時刻を保ち、終了後は本人だけの振り返りを保存できます。[モデルと設計判断](docs/domain-model.md)にまとめています。
 
@@ -47,8 +47,11 @@ MySQL は `127.0.0.1:3308`、backend は `127.0.0.1:8081`。**移植用の新規
 ```text
 core/shared       DTO、画面向け変換、HTTP 応答・WebSocket 入力検証
 core/thread       メッセージ画面の状態・通信順序・再送・既読・キャンセル
+core/presenter    各画面のフォーム・取得・保存、通知と WebRTC の制御
+core/shell        初期表示用の認証フォーム・遅延読み込みの寿命・route 判定
 core/browser_platform  TS2Mbt で生成するブラウザ primitive の binding
-core/client       shared / thread を一度だけ JS にリンクする生成 entry
+core/client       shared / thread / presenter を一度だけ JS にリンクする生成 entry
+scripts/split-client.mjs  生成 JS の宣言を画面別 ESM と共通 runtime に分割
 core/conversation 開始・終了・取消、再送時の不変条件（I/O なし）
 core/signaling    部屋と negotiation の状態管理（I/O なし）
 core/matching     rank / round / 参加ビットによるペア生成
@@ -67,7 +70,7 @@ frontend          React + 標準 HTML/CSS、型付きブラウザアダプター
 
 TS2Mbt と Mbt2TS は `@mizchi/ts@0.6.0` を固定して使います。共通型を TS に手で二重定義せず、MoonBit interface から生成します。手書きコード、生成 bridge、公開型の `any` / `Any` / `JSValue` を CI で禁止しています。
 
-frontend の直接 runtime 依存は React / React DOM の 2 つです。HTTP は標準 `fetch` と共通 MoonBit decoder、画面遷移は History API を使います。未ログインの認証フォームが最初に読む JS は gzip 約 53 kB。入力時に認証処理を先読みします。[初回表示と送信後の待ち時間の比較](docs/auth-loading.md)、[画面遷移](docs/navigation.md)、[通信の契約](docs/http-client.md)を記録しています。
+frontend の直接 runtime 依存は React / React DOM の 2 つです。HTTP は標準 `fetch` と共通 MoonBit decoder、画面遷移は History API を使います。未ログインの認証フォームが最初に読む JS は gzip 約 58 kB。入力時に認証処理を先読みします。状態を MoonBit に集める変更で配信量は増えており、高速化とは扱っていません。[現在の構成・移行前後の測定](docs/frontend-controllers.md)、[画面遷移](docs/navigation.md)、[HTTP 置換時の記録](docs/http-client.md)を参照してください。
 
 ```bash
 npm run generate       # bindings/host.d.ts → MoonBit、strict mode
@@ -78,7 +81,7 @@ npm run check          # MoonBit / TS / frontend build / 動的型の検査
 
 標準 `.d.ts` の struct→any、Promise ABI、callback の opaque 型、JS prototype、数値範囲、JSON 境界については [移行記録](docs/migration.md#js-境界と-ts2mbt) に記載しています。
 
-メッセージ画面は MoonBit が状態と通信制御を所有し、React は snapshot の購読と描画を担当します。同じ controller を使う React 単独版と DOM 単独版もあり、後者は React を読み込みません。ほかの画面・通知接続・通話制御の TS 移行は残っています。[表示層を交換する構成と検証](docs/message-controller.md)
+フォーム、一覧、通知、WebRTC、マイク確認の状態・操作規則・非同期処理の寿命を MoonBit controller に集約しました。React 側にアプリの `useState` / `useReducer` はありません。TS に残るのは描画、DOM・History・fetch・media の具体的な操作、module 読み込みです。メッセージには同じ controller を使う React 単独版と DOM 単独版もあり、後者は React を読み込みません。アプリ全体の React 削除はまだ行っていません。[全画面の責務と検証](docs/frontend-controllers.md)、[描画を交換する例](docs/message-controller.md)
 
 ## 検証
 

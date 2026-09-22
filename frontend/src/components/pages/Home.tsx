@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
+import { createHome, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import { Link } from "../../navigation/links";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import TopSection from "../utils/TopSection";
@@ -6,27 +8,11 @@ import TopWaves from "../utils/TopWaves";
 import HomeLogo from "../../assets/homeLogo";
 import { IconButton } from "../utils/IconButton";
 import { Icon } from "../ui/Icon";
-import { mapEvent, type EventOverviewDto } from "../../../../dist/shared.js";
-import { fetchEventOverviews } from "../../services/features";
 
 export function Home() {
-  const [events, setEvents] = useState<EventOverviewDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    void fetchEventOverviews()
-      .then(setEvents)
-      .catch(() => setError("データの取得に失敗しました。"))
-      .finally(() => setLoading(false));
-  }, []);
-  const upcoming = events
-    .filter(
-      (item) =>
-        item.participates_bit > 0 &&
-        new Date(item.event.event_end).getTime() > Date.now(),
-    )
-    .sort((a, b) => a.event.event_start.localeCompare(b.event.event_start))[0];
-  const next = upcoming ? mapEvent(upcoming.event) : undefined;
+  const controller = useMemo(() => createHome(browserPorts()), []);
+  const { events, loading, error } = useController(controller);
+  const next = events[0];
   return (
     <BottomNavigationTemplate value="home">
       <div className="page stack">

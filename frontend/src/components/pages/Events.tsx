@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "../../navigation/links";
-import type {
-  EventOverviewDto,
-  EventRosterDto,
-} from "../../../../dist/shared.js";
+import { useEffect } from "react";
 import {
-  fetchEventOverviews,
-  fetchRoster,
-  registerEvent,
-  matchEvent,
-} from "../../services/features";
+  createEvents,
+  createEventCard,
+  browserPorts,
+  type EventsController,
+} from "../../../../dist/presenter.js";
+import { useController, useOwnedController } from "../../services/controller";
+import type { EventOverviewDto } from "../../../../dist/shared.js";
+import { Link } from "../../navigation/links";
 import TopSection from "../utils/TopSection";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 export function Events() {
@@ -34,21 +32,12 @@ export function EventList({
   admin?: boolean;
   refreshKey?: number;
 }) {
-  const [events, setEvents] = useState<EventOverviewDto[]>([]);
-  const [error, setError] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  const load = useCallback(async () => {
-    try {
-      setEvents(await fetchEventOverviews());
-      setLoaded(true);
-      setError("");
-    } catch {
-      setError("イベントを取得できませんでした。");
-    }
-  }, []);
+  const controller = useOwnedController(() => createEvents(browserPorts()));
+  const { events, error, loaded } = useController(controller);
   useEffect(() => {
-    void load();
-  }, [load, refreshKey]);
+    if (refreshKey) controller.refresh();
+  }, [controller, refreshKey]);
+  const load = controller.refresh;
   return (
     <section className="stack" aria-label="イベント一覧">
       <button onClick={() => void load()}>イベント一覧を更新</button>
@@ -59,7 +48,7 @@ export function EventList({
           key={event.event.id}
           value={event}
           admin={admin}
-          refresh={load}
+          owner={controller}
         />
       ))}
     </section>
@@ -68,44 +57,19 @@ export function EventList({
 function EventCard({
   value,
   admin,
-  refresh,
+  owner,
 }: {
   value: EventOverviewDto;
   admin: boolean;
-  refresh: () => Promise<void>;
+  owner: EventsController;
 }) {
-  const [bit, setBit] = useState(value.participates_bit);
-  const [roster, setRoster] = useState<EventRosterDto | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [confirm, setConfirm] = useState(false);
-  useEffect(() => {
-    setBit(value.participates_bit);
-  }, [value.participates_bit]);
-  const act = async (action: "register" | "roster" | "match") => {
-    setBusy(true);
-    setError("");
-    setSuccess("");
-    try {
-      if (action === "register") {
-        await registerEvent(value.event.id, bit);
-        setSuccess("参加予定を保存しました。");
-      }
-      if (action === "match") {
-        await matchEvent(value.event.id);
-        setConfirm(false);
-        setSuccess("通話相手を公開しました。");
-      }
-      if (action !== "register") setRoster(await fetchRoster(value.event.id));
-      if (action !== "roster") await refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "更新できませんでした。");
-    } finally {
-      setBusy(false);
-    }
-  };
-  const frozen = value.matching_state !== "open";
+  const controller = useOwnedController(() =>
+    createEventCard(browserPorts(), value, admin, owner),
+  );
+  const { rounds, roster, busy, error, success, confirm, frozen } =
+    useController(controller);
+  useEffect(() => controller.update(value), [controller, value]);
+  const act = controller.act;
   return (
     <article className="panel stack" aria-label={value.event.theme.theme_text}>
       <h2>{value.event.theme.theme_text}</h2>
@@ -136,13 +100,9 @@ function EventCard({
           <label className="radio-option" key={round}>
             <input
               type="checkbox"
-              checked={!!(bit & (1 << (round - 1)))}
+              checked={rounds[round - 1]}
               onChange={(e) =>
-                setBit((current) =>
-                  e.target.checked
-                    ? current | (1 << (round - 1))
-                    : current & ~(1 << (round - 1)),
-                )
+                controller.set_round(round - 1, e.target.checked)
               }
             />
             ラウンド {round}
@@ -173,28 +133,24 @@ function EventCard({
                   <button disabled={busy} onClick={() => void act("match")}>
                     確定して公開
                   </button>
-                  <button disabled={busy} onClick={() => setConfirm(false)}>
+                  <button
+                    disabled={busy}
+                    onClick={() => controller.confirm(false)}
+                  >
                     戻る
                   </button>
                 </div>
               </div>
             ) : (
-              <button disabled={busy} onClick={() => setConfirm(true)}>
+              <button disabled={busy} onClick={() => controller.confirm(true)}>
                 マッチングする
               </button>
             ))}
-          {roster && (
+          {roster.length > 0 && (
             <ul className="plain-list stack">
-              {roster.members.map((m) => (
-                <li key={m.user.id}>
-                  <strong>{m.user.username}</strong>：
-                  {[1, 2, 3]
-                    .filter((r) => m.participates_bit & (1 << (r - 1)))
-                    .map(
-                      (r) =>
-                        `R${r} ${m.matched_bit & (1 << (r - 1)) ? "相手決定" : value.matching_state === "published" ? "待機" : "登録"}`,
-                    )
-                    .join(" / ") || "参加なし"}
+              {roster.map((m) => (
+                <li key={m.id}>
+                  <strong>{m.username}</strong>：{m.status}
                 </li>
               ))}
             </ul>

@@ -1,30 +1,13 @@
-import { useEffect, useState } from "react";
-import type { StatsDto } from "../../../../dist/shared.js";
-import { fetchStats } from "../../services/features";
-import { useActivity } from "../../services/activity";
+import { useMemo } from "react";
+import { createStats, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import TopSection from "../utils/TopSection";
 import { BottomNavigationTemplate } from "../templates/BottomNavigationTemplate";
 import { Icon } from "../ui/Icon";
 export function Stats() {
-  const [stats, setStats] = useState<StatsDto | null>(null);
-  const [error, setError] = useState("");
-  const { revision } = useActivity();
-  useEffect(() => {
-    let disposed = false;
-    void fetchStats()
-      .then((value) => {
-        if (!disposed) {
-          setStats(value);
-          setError("");
-        }
-      })
-      .catch(() => {
-        if (!disposed) setError("参加データを取得できませんでした。");
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [revision]);
+  const controller = useMemo(() => createStats(browserPorts()), []);
+  const { items, error } = useController(controller);
+  const stats = items[0];
   return (
     <BottomNavigationTemplate value="other">
       <div className="page stack">

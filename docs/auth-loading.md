@@ -1,5 +1,9 @@
 # 認証フォームから共有コードの初期読み込みを分離
 
+この文書は `018634f` 時点の変更と測定の記録。現在はフォームの状態、module 待ち、
+送信と中止の判断も `core/shell` に移した。未ログイン時の先読み方式は維持するが、
+以下の bundle サイズと実装の説明は当時のもの。[現在の構成と再測定](frontend-controllers.md)。
+
 2026-09-23、未ログインのログイン／登録フォームで最初に読む JS を gzip 94,870 → 53,377 bytes（43.7% 減）にした。MoonBit の decoder、共有型、JSON の数値検査は変更していない。npm / Mooncakes の依存追加・削除・version 変更もない。
 
 ## 採用した構成
@@ -58,7 +62,7 @@ Node v24.13.0 / Vite 7.3.6、同じ lockfile と MoonBit toolchain で productio
 
 ## 再現と回帰試験
 
-旧 checkout を上記 commit に固定し、新旧で README の toolchain 準備、`npm run build:core`、`npm --prefix frontend run build` を実行する。新 checkout から以下を実行する。DB と `.env` は不要。
+旧 checkout を上記 commit、新 checkout を `018634f` に固定し、それぞれで README の toolchain 準備、`npm run build:core`、`npm --prefix frontend run build` を実行する。新 checkout から以下を実行する。DB と `.env` は不要。
 
 ```bash
 node bench/navigation.mjs capture auth-eager /path/to/old-checkout

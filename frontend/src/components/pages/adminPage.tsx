@@ -1,80 +1,32 @@
-import { useState } from "react";
+import { useMemo } from "react";
+import { createAdmin, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import { Dialog } from "../ui/Dialog";
 import { Input } from "../ui/Field";
 import { Avatar } from "../ui/Avatar";
 import { ChoiceGroup } from "../ui/ChoiceGroup";
 import { EventList } from "./Events";
 import TopSection from "../utils/TopSection";
-import type { Event, User } from "../../types/types";
-import * as eventService from "../../services/eventService";
-import { searchUsers } from "../../services/userService";
 
 export default function AdminPage() {
-  const [open, setOpen] = useState(false);
-  const [dateTime, setDateTime] = useState("");
-  const [theme, setTheme] = useState("");
-  const [topics, setTopics] = useState(["", "", ""]);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
-  const [dialogError, setDialogError] = useState("");
-  const [lastCreated, setLastCreated] = useState<Event | null>(null);
-  const [section, setSection] = useState("events");
-  const [query, setQuery] = useState("");
-  const [users, setUsers] = useState<User[]>([]);
-  const [searched, setSearched] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const close = () => {
-    setOpen(false);
-    setDateTime("");
-    setTheme("");
-    setTopics(["", "", ""]);
-    setDialogError("");
-  };
-  const create = async () => {
-    setBusy(true);
-    setDialogError("");
-    try {
-      const created = await eventService.createEvent({
-        eventStart: new Date(dateTime).toISOString(),
-        theme,
-        topics,
-      });
-      setLastCreated(created);
-      setSuccess("イベントが正常に作成されました");
-      close();
-    } catch (error) {
-      setDialogError(
-        error instanceof Error
-          ? error.message
-          : "イベントの作成に失敗しました。",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-  const generate = async () => {
-    setBusy(true);
-    setDialogError("");
-    try {
-      setTheme(await eventService.generateTheme());
-    } catch {
-      setDialogError("テーマの生成に失敗しました。");
-    } finally {
-      setBusy(false);
-    }
-  };
-  const search = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      setUsers(await searchUsers(query));
-      setSearched(true);
-    } catch {
-      setError("ユーザーの検索に失敗しました。");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const controller = useMemo(() => createAdmin(browserPorts()), []);
+  const {
+    open,
+    dateTime,
+    theme,
+    topics,
+    success,
+    error,
+    dialogError,
+    created,
+    section,
+    query,
+    users,
+    searched,
+    busy,
+  } = useController(controller);
+  const lastCreated = created[0];
+  const { close, create, generate, search } = controller;
   return (
     <main className="page stack">
       <TopSection />
@@ -82,7 +34,7 @@ export default function AdminPage() {
       <ChoiceGroup
         label="管理する項目"
         value={section}
-        onChange={setSection}
+        onChange={(value) => controller.set_field("section", value)}
         options={[
           { value: "events", label: "イベント管理" },
           { value: "users", label: "ユーザー情報" },
@@ -106,9 +58,7 @@ export default function AdminPage() {
             className="primary"
             aria-haspopup="dialog"
             onClick={() => {
-              setOpen(true);
-              setError("");
-              setSuccess("");
+              controller.open();
             }}
           >
             イベント作成
@@ -150,7 +100,9 @@ export default function AdminPage() {
             <Input
               label="ユーザー名で検索"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) =>
+                controller.set_field("query", event.target.value)
+              }
               required
             />
             <button type="submit" disabled={busy}>
@@ -198,14 +150,18 @@ export default function AdminPage() {
             required
             disabled={busy}
             value={dateTime}
-            onChange={(event) => setDateTime(event.target.value)}
+            onChange={(event) =>
+              controller.set_field("dateTime", event.target.value)
+            }
           />
           <Input
             label="テーマ"
             required
             disabled={busy}
             value={theme}
-            onChange={(event) => setTheme(event.target.value)}
+            onChange={(event) =>
+              controller.set_field("theme", event.target.value)
+            }
           />
           <button type="button" disabled={busy} onClick={() => void generate()}>
             AIによる生成
@@ -217,11 +173,7 @@ export default function AdminPage() {
               disabled={busy}
               value={topic}
               onChange={(event) =>
-                setTopics((topics) =>
-                  topics.map((topic, i) =>
-                    i === index ? event.target.value : topic,
-                  ),
-                )
+                controller.set_topic(index, event.target.value)
               }
             />
           ))}

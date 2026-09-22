@@ -1,7 +1,8 @@
+import { useMemo } from "react";
+import { createLearning, browserPorts } from "../../../../dist/presenter.js";
+import { useController } from "../../services/controller";
 import { Link, Redirect } from "../../navigation/links";
 import { useLocation } from "../../navigation/location";
-import { useEffect, useState } from "react";
-import { fetchLearning, saveSurvey } from "../../services/features";
 import TopSection from "../utils/TopSection";
 
 const questions = [
@@ -32,50 +33,17 @@ const questions = [
 ];
 
 export default function SessionFeedback() {
-  const query = useLocation().searchParams;
-  const id = Number(query.get("conversation"));
-  return Number.isInteger(id) && id > 0 && id <= 2147483647 ? (
-    <Survey key={id} id={id} />
-  ) : (
-    <Redirect to="/conversation_history" />
-  );
+  const raw = useLocation().searchParams.get("conversation") ?? "";
+  return <Survey key={raw} raw={raw} />;
 }
-function Survey({ id }: { id: number }) {
-  const [answers, setAnswers] = useState<number[]>([1, 1, 1, 1, 1, 1]);
-  const [busy, setBusy] = useState(true);
-  const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    let disposed = false;
-    void fetchLearning(id)
-      .then((data) => {
-        if (!disposed && data.answers.length) {
-          setAnswers(data.answers);
-          setSaved(true);
-        }
-      })
-      .catch(() => {
-        if (!disposed) setError("振り返りを取得できませんでした。");
-      })
-      .finally(() => {
-        if (!disposed) setBusy(false);
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [id]);
-  const save = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      await saveSurvey(id, answers);
-      setSaved(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "保存できませんでした。");
-    } finally {
-      setBusy(false);
-    }
-  };
+function Survey({ raw }: { raw: string }) {
+  const controller = useMemo(
+    () => createLearning(browserPorts(), raw, false),
+    [raw],
+  );
+  const { id, answers, busy, error, saved } = useController(controller);
+  const save = controller.save;
+  if (!id) return <Redirect to="/conversation_history" />;
   return (
     <main className="page stack">
       <TopSection />
@@ -100,10 +68,7 @@ function Survey({ id }: { id: number }) {
                   name={`feedback-${index}`}
                   checked={answers[index] === value}
                   onChange={() => {
-                    setAnswers((a) =>
-                      a.map((n, i) => (i === index ? value : n)),
-                    );
-                    setSaved(false);
+                    controller.answer(index, value);
                   }}
                 />
                 {option}

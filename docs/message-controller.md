@@ -1,8 +1,9 @@
 # MoonBit が所有するメッセージ画面
 
-目的は、表示層を React から DOM へ交換しても、状態遷移と通信制御を
-書き直さずに動かすこと。今回の範囲はメッセージ画面に限定する。
-アプリ全体の React 削除や、通知・通話コントローラーの移植は含まない。
+この文書は `3561429` までのメッセージ移行の記録。目的は、表示層を React から
+DOM へ交換しても、状態遷移と通信制御を書き直さずに動かすこと。
+続く変更で通知・通話・ほかの画面も移行した。[現在の構成と再測定](frontend-controllers.md)
+を参照。以下の比較値はメッセージだけを移行した時点のもので、現在のサイズではない。
 
 ## 責務と型
 
@@ -56,7 +57,7 @@ flowchart LR
 
 単独ページは通知 WebSocket を起動しない。更新通知は host が `on_activity` の
 入力として提供する責務であり、テストでは同じ `speakup:activity` event を
-両方へ与える。通常のアプリでは既存 `ActivityLayout` がこの通知を供給し、
+両方へ与える。通常のアプリでは `ActivityLayout` が接続する通知 controller が供給し、
 他ユーザーからの着信メッセージも従来どおり更新する。単独ページはアプリ全体の
 代替ではなく、描画の交換と性能比較のための entry。
 
@@ -89,6 +90,9 @@ shared と thread を別々に JS へリンクすると、JSON / 文字列処理
 `dist/shared.js` / `dist/thread.js` は公開名を保つ小さな ESM facade になる。
 生の compiler `.d.ts` の cross-package record は動的型になるため、公開型は
 各ソースパッケージの Mbt2TS 出力へ結び直し、従来の型監査も通す。
+
+現在は presenter も同じ entry に含め、リンクした宣言を画面別 ESM へ分割する。
+型の生成と runtime の共有は維持する。[分割の範囲と制約](frontend-controllers.md#js-の配信と型境界)。
 
 この生成処理はアプリの同期・具体型 export に限定する。MoonBit の全構文を
 扱う汎用 bundler ではない。新しい export を追加した際は `moon info` で

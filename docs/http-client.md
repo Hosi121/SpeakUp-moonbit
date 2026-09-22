@@ -2,9 +2,14 @@
 
 2026-09-23、frontend の Axios を標準 `fetch` に置き換えた。この比較時点の直接 runtime 依存は React / React DOM / React Router。続く [画面遷移の整理](navigation.md)で React Router も削除した。以下は Axios 削除時点の測定記録。
 
-## 通信と型の境界
+現在は [`transport.ts`](../frontend/src/services/transport.ts) が status・text・通信失敗を
+返し、MoonBit controller が JSON、HTTP エラー、キャンセルの世代を扱う。
+旧 `request<T>` / `ApiError` / TS service 群はアプリから削除した。
+[現在の責務と検証](frontend-controllers.md)を参照。以下の数値はこの再構成の性能を示さない。
 
-[`httpClient.ts`](../frontend/src/services/httpClient.ts) はブラウザ I/O を担当する。各 service は [`request.ts`](../frontend/src/services/request.ts) に HTTP method・パス・具体的な decoder を渡す。成功した body は text として一回読み、MoonBit が JSON 構造を検査して DTO / 画面用の型を返す。通知取得などの旧 `request` も text を受けていたため、比較結果を JSON の二重パース解消によるものとは扱わない。
+## 通信と型の境界（Axios 削除時）
+
+当時の [`httpClient.ts`](../contract/frontend/httpClient.ts) はブラウザ I/O を担当した。各 service は [`request.ts`](https://github.com/Hosi121/SpeakUp-moonbit/blob/4d4dd61bdd1adc17c1666770c5d909618c7fa165/frontend/src/services/request.ts) に HTTP method・パス・具体的な decoder を渡した。成功した body は text として一回読み、MoonBit が JSON 構造を検査して DTO / 画面用の型を返す。通知取得などの旧 `request` も text を受けていたため、比較結果を JSON の二重パース解消によるものとは扱わない。
 
 ```ts
 request("GET", "/user/info", parseProfile);
@@ -63,7 +68,7 @@ JS gzip は 17,184 bytes（11.6%）減。lockfile から 11 package を削除し
 
 ## 再現
 
-[README の toolchain 準備](../README.md#起動)を行った新旧二つの checkout を使う。旧 checkout は `7cf05a4b043b5ff1bd5c42ffb820912696a1fc6d` に固定する。それぞれで `npm ci`、`npm --prefix frontend ci`、MoonBit の install/update 後、次を実行する。DB や `.env` は不要。
+[README の toolchain 準備](../README.md#起動)を行った新旧二つの checkout を使う。旧 checkout は `7cf05a4b043b5ff1bd5c42ffb820912696a1fc6d`、fetch 版は `4d4dd61bdd1adc17c1666770c5d909618c7fa165` に固定する。現在の HEAD は測定対象だった `fetchInbox` を持たないため、この歴史的比較では両方の checkout を明示する。それぞれで `npm ci`、`npm --prefix frontend ci`、MoonBit の install/update 後、次を実行する。DB や `.env` は不要。
 
 ```bash
 npm run build:core
@@ -75,7 +80,7 @@ npm --prefix frontend run build
 ```bash
 npx playwright install chromium
 node bench/http-client.mjs capture axios-before /path/to/axios-checkout
-node bench/http-client.mjs capture fetch-after
+node bench/http-client.mjs capture fetch-after /path/to/fetch-checkout
 node bench/http-client.mjs compare axios-before fetch-after
 ```
 
@@ -83,7 +88,9 @@ node bench/http-client.mjs compare axios-before fetch-after
 
 ## 回帰試験
 
-- `tests/http-client.test.mjs`: 実 HTTP で base path / 認証 / JSON / multipart / 204 / HTTP エラー / 切断 / body 途中の abort を確認。
+- `tests/http-client.test.mjs`: 凍結した旧 HTTP adapter に対する source oracle の5件。現在の adapter の試験とは区別する。
+- `tests/transport.test.mjs`: 現在の adapter を実 HTTP で検証。base path / 認証 / JSON / multipart / 204 / status / 切断 / headers・body 途中の abort を確認。
+- `tests/frontend-projections.test.mjs`: 旧エラー本文の表示規則から生成した fixture を現在の MoonBit 関数へ適用する。
 - `tests/http-contracts.test.mjs`: 実際に生成された MoonBit JS に、不正な ID・ログイン token・メモ・AI 応答・ICE 設定を渡す。
 - `tests/browser/http.spec.mjs`: 401 の表示、公開ログインに Bearer を付けないこと、不正 token で保存済み認証を上書きしないこと、通話準備中の中止を Chromium で確認。
 - 既存の JS/native API とブラウザ試験: ログイン、プロフィール・画像保存、メモ、イベント作成、随時／イベントの実 RTP 通話、再接続、終了、振り返りを確認。
