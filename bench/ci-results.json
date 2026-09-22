@@ -1,0 +1,411 @@
+{
+  "measured_at": "2026-09-22T22:52:56.208184+00:00",
+  "scope": "GitHub Actions Verify migration on ubuntu-24.04; application sources unchanged from 69551579a4eca121a459f453bf97ec52abd9fed1. One native-cache miss and one exact-hit run per candidate layout, not a controlled runner benchmark.",
+  "definitions": {
+    "workflow_seconds": "Run createdAt to final updatedAt, including queue time and the verify gate. Not just the short gate job duration.",
+    "runner_seconds": "Sum of job completed_at minus started_at. Measures occupied runner time, not billing or CPU time.",
+    "cold": "Native executable cache miss only. Existing npm/Go caches may hit; MoonBit and Chromium are installed each run.",
+    "warm": "Native executable exact cache hit; API, browser and other verification still execute."
+  },
+  "environment": {
+    "node": "24.13.0",
+    "go": "1.23.5",
+    "moonbit": "0.10.14+7d59c7ec9",
+    "mysql": "8.4",
+    "browser_workers_per_job": 1
+  },
+  "baseline": {
+    "variant": "serial baseline",
+    "commit": "69551579a4eca121a459f453bf97ec52abd9fed1",
+    "native_cache": "not configured",
+    "run_id": 35790563433,
+    "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35790563433",
+    "created_at": "2026-09-22T22:06:47Z",
+    "completed_at": "2026-09-22T22:10:17Z",
+    "workflow_seconds": 210,
+    "runner_seconds": 206,
+    "jobs": {
+      "verify": {
+        "seconds": 206,
+        "step_seconds": {
+          "Set up job": 1,
+          "Initialize containers": 26,
+          "Run actions/checkout@v7.0.1": 1,
+          "Run actions/setup-node@v7.0.0": 4,
+          "Run actions/setup-go@v7.0.0": 7,
+          "Run sudo apt-get update && sudo apt-get install -y libmariadb-dev libssl-dev fonts-noto-cjk fonts-noto-color-emoji": 10,
+          "Run npm ci && npm --prefix frontend ci": 2,
+          "Run bash scripts/install-moon.sh && npm run moon -- update": 9,
+          "Run npm run generate && npm run check": 9,
+          "Run npm --prefix frontend run lint": 1,
+          "Run npm run fixtures && git diff --exit-code -- contract core/platform core/browser_platform core/client core/presenter/pkg.generated.mbti core/shell/pkg.generated.mbti examples/js-boundary/src/platform examples/js-boundary/generated": 1,
+          "Run npm run db:migrate && npm run db:seed": 0,
+          "Run npm run build:native && node scripts/build-bench.mjs": 54,
+          "Run npm test && npm run test:native": 10,
+          "Run npm run test:boundaries": 4,
+          "Run npm run test:integration:native": 1,
+          "Run npx playwright install --with-deps chromium": 11,
+          "Run npm run test:browser": 19,
+          "Run npm run test:browser:native": 18,
+          "Run npm run test:navigation": 10,
+          "Post Run actions/setup-go@v7.0.0": 0,
+          "Post Run actions/setup-node@v7.0.0": 1,
+          "Post Run actions/checkout@v7.0.1": 1,
+          "Stop containers": 3,
+          "Complete job": 0
+        },
+        "skipped_steps": []
+      }
+    }
+  },
+  "trials": [
+    {
+      "variant": "parallel checks; DOM after integration",
+      "commit": "9605904f8a35987d9877aa0e4bb07473bb0f6dcc",
+      "native_cache": "miss",
+      "run_id": 35792878960,
+      "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35792878960",
+      "created_at": "2026-09-22T22:31:56Z",
+      "completed_at": "2026-09-22T22:35:27Z",
+      "workflow_seconds": 211,
+      "runner_seconds": 309,
+      "jobs": {
+        "Types, contracts and unit tests": {
+          "seconds": 107,
+          "step_seconds": {
+            "Set up job": 2,
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 1,
+            "Run ./.github/actions/setup": 18,
+            "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e": 13,
+            "Native test headers": 9,
+            "Run npm run generate && npm run check": 8,
+            "Run npm --prefix frontend run lint": 2,
+            "Source oracles and generated contracts": 1,
+            "JS and native unit tests": 13,
+            "Run npm run test:boundaries -- --no-build": 1,
+            "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e": 0,
+            "Post Run ./.github/actions/setup": 1,
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        },
+        "API and browser integration": {
+          "seconds": 200,
+          "step_seconds": {
+            "Set up job": 1,
+            "Initialize containers": 19,
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 1,
+            "Run ./.github/actions/setup": 20,
+            "Browser and native dependencies": 24,
+            "Build JS and both DOM entries once": 10,
+            "Native build ABI": 0,
+            "Exact native build cache": 1,
+            "Build native release server": 61,
+            "Run npm run db:migrate && npm run db:seed": 1,
+            "Node API and database migration tests": 4,
+            "Run npm run test:integration:native": 2,
+            "All UI and call tests on the default native backend": 28,
+            "Node call transport parity": 10,
+            "Production DOM and navigation contracts": 11,
+            "Post Exact native build cache": 2,
+            "Post Run ./.github/actions/setup": 0,
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Stop containers": 1,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        },
+        "verify": {
+          "seconds": 2,
+          "step_seconds": {
+            "Set up job": 0,
+            "Require all validation jobs": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        }
+      }
+    },
+    {
+      "variant": "parallel checks; DOM after integration",
+      "commit": "9605904f8a35987d9877aa0e4bb07473bb0f6dcc",
+      "native_cache": "hit",
+      "run_id": 35793321126,
+      "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35793321126",
+      "created_at": "2026-09-22T22:36:59Z",
+      "completed_at": "2026-09-22T22:39:18Z",
+      "workflow_seconds": 139,
+      "runner_seconds": 205,
+      "jobs": {
+        "API and browser integration": {
+          "seconds": 128,
+          "step_seconds": {
+            "Set up job": 1,
+            "Initialize containers": 20,
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 1,
+            "Run ./.github/actions/setup": 19,
+            "Browser and native dependencies": 20,
+            "Build JS and both DOM entries once": 9,
+            "Native build ABI": 1,
+            "Exact native build cache": 0,
+            "Run npm run db:migrate && npm run db:seed": 1,
+            "Node API and database migration tests": 4,
+            "Run npm run test:integration:native": 2,
+            "All UI and call tests on the default native backend": 27,
+            "Node call transport parity": 9,
+            "Production DOM and navigation contracts": 10,
+            "Post Exact native build cache": 1,
+            "Post Run ./.github/actions/setup": 0,
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Stop containers": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": [
+            "Build native release server"
+          ]
+        },
+        "Types, contracts and unit tests": {
+          "seconds": 74,
+          "step_seconds": {
+            "Set up job": 1,
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Run ./.github/actions/setup": 21,
+            "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e": 8,
+            "Native test headers": 10,
+            "Run npm run generate && npm run check": 11,
+            "Run npm --prefix frontend run lint": 2,
+            "Source oracles and generated contracts": 2,
+            "JS and native unit tests": 14,
+            "Run npm run test:boundaries -- --no-build": 2,
+            "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e": 0,
+            "Post Run ./.github/actions/setup": 0,
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 1,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        },
+        "verify": {
+          "seconds": 3,
+          "step_seconds": {
+            "Set up job": 0,
+            "Require all validation jobs": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        }
+      }
+    },
+    {
+      "variant": "parallel types/contracts/DOM and API/browser",
+      "commit": "ea25fe7056e29e2d0e16f8b5d10070d444ff2892",
+      "native_cache": "miss",
+      "run_id": 35793676231,
+      "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35793676231",
+      "created_at": "2026-09-22T22:41:04Z",
+      "completed_at": "2026-09-22T22:44:22Z",
+      "workflow_seconds": 198,
+      "runner_seconds": 295,
+      "jobs": {
+        "API and browser integration": {
+          "seconds": 187,
+          "step_seconds": {
+            "Set up job": 1,
+            "Initialize containers": 36,
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 2,
+            "Run ./.github/actions/setup": 16,
+            "Browser and native dependencies": 26,
+            "Build shared JS once": 5,
+            "Native build ABI": 0,
+            "Exact native build cache": 0,
+            "Build native release server": 49,
+            "Run npm run db:migrate && npm run db:seed": 2,
+            "Node API and database migration tests": 10,
+            "Run npm run test:integration:native": 5,
+            "All UI and call tests on the default native backend": 22,
+            "Node call transport parity": 9,
+            "Post Exact native build cache": 1,
+            "Post Run ./.github/actions/setup": 0,
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Stop containers": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        },
+        "Types, contracts and DOM": {
+          "seconds": 104,
+          "step_seconds": {
+            "Set up job": 1,
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Run ./.github/actions/setup": 19,
+            "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e": 9,
+            "Browser and native test dependencies": 28,
+            "Run npm run generate && npm run check": 11,
+            "Run npm --prefix frontend run lint": 2,
+            "Source oracles and generated contracts": 1,
+            "JS and native unit tests": 15,
+            "Run npm run test:boundaries -- --no-build": 2,
+            "Production DOM and navigation contracts": 12,
+            "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e": 1,
+            "Post Run ./.github/actions/setup": 0,
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        },
+        "verify": {
+          "seconds": 4,
+          "step_seconds": {
+            "Set up job": 0,
+            "Require all validation jobs": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        }
+      }
+    },
+    {
+      "variant": "parallel types/contracts/DOM and API/browser",
+      "commit": "ea25fe7056e29e2d0e16f8b5d10070d444ff2892",
+      "native_cache": "hit",
+      "run_id": 35794150618,
+      "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35794150618",
+      "created_at": "2026-09-22T22:46:40Z",
+      "completed_at": "2026-09-22T22:49:00Z",
+      "workflow_seconds": 140,
+      "runner_seconds": 232,
+      "jobs": {
+        "API and browser integration": {
+          "seconds": 120,
+          "step_seconds": {
+            "Set up job": 1,
+            "Initialize containers": 19,
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 2,
+            "Run ./.github/actions/setup": 20,
+            "Browser and native dependencies": 21,
+            "Build shared JS once": 5,
+            "Native build ABI": 0,
+            "Exact native build cache": 2,
+            "Run npm run db:migrate && npm run db:seed": 1,
+            "Node API and database migration tests": 4,
+            "Run npm run test:integration:native": 3,
+            "All UI and call tests on the default native backend": 28,
+            "Node call transport parity": 10,
+            "Post Exact native build cache": 1,
+            "Post Run ./.github/actions/setup": 0,
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Stop containers": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": [
+            "Build native release server"
+          ]
+        },
+        "Types, contracts and DOM": {
+          "seconds": 108,
+          "step_seconds": {
+            "Set up job": 2,
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 1,
+            "Run ./.github/actions/setup": 19,
+            "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e": 10,
+            "Browser and native test dependencies": 28,
+            "Run npm run generate && npm run check": 11,
+            "Run npm --prefix frontend run lint": 1,
+            "Source oracles and generated contracts": 2,
+            "JS and native unit tests": 16,
+            "Run npm run test:boundaries -- --no-build": 2,
+            "Production DOM and navigation contracts": 12,
+            "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e": 0,
+            "Post Run ./.github/actions/setup": 1,
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1": 0,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        },
+        "verify": {
+          "seconds": 4,
+          "step_seconds": {
+            "Set up job": 0,
+            "Require all validation jobs": 1,
+            "Complete job": 0
+          },
+          "skipped_steps": []
+        }
+      }
+    }
+  ],
+  "preceding_runs_context_only": [
+    {
+      "variant": "older application commit; not paired baseline",
+      "commit": "7bf6ffc25bdb67152b4c87d1591eeb44fb386b48",
+      "native_cache": "not configured",
+      "run_id": 35753709952,
+      "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35753709952",
+      "created_at": "2026-09-22T16:22:44Z",
+      "completed_at": "2026-09-22T16:27:20Z",
+      "workflow_seconds": 276,
+      "runner_seconds": 271
+    },
+    {
+      "variant": "older application commit; not paired baseline",
+      "commit": "018634fda4bb1b006c0c6ca1d7f3cdcbaa9bba39",
+      "native_cache": "not configured",
+      "run_id": 35768074631,
+      "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35768074631",
+      "created_at": "2026-09-22T18:34:35Z",
+      "completed_at": "2026-09-22T18:39:12Z",
+      "workflow_seconds": 277,
+      "runner_seconds": 272
+    },
+    {
+      "variant": "older application commit; not paired baseline",
+      "commit": "3561429e55a22d400702bf5df694670c52f2e721",
+      "native_cache": "not configured",
+      "run_id": 35777251696,
+      "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35777251696",
+      "created_at": "2026-09-22T19:58:46Z",
+      "completed_at": "2026-09-22T20:03:55Z",
+      "workflow_seconds": 309,
+      "runner_seconds": 305
+    },
+    {
+      "variant": "older application commit; not paired baseline",
+      "commit": "e26c99471d60b4483630fee7f24dbc898b76da5c",
+      "native_cache": "not configured",
+      "run_id": 35785852668,
+      "url": "https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35785852668",
+      "created_at": "2026-09-22T21:18:46Z",
+      "completed_at": "2026-09-22T21:23:39Z",
+      "workflow_seconds": 293,
+      "runner_seconds": 288
+    }
+  ],
+  "coverage": {
+    "node_before": 135,
+    "node_after": {
+      "unit": 112,
+      "database": 23
+    },
+    "moonbit_js": 16,
+    "moonbit_native": 17,
+    "native_api": 19,
+    "browser_before": {
+      "node": 16,
+      "native": 16,
+      "production_dom": 29
+    },
+    "browser_after": {
+      "node_call_login_memo_parity": 3,
+      "native_full": 16,
+      "production_dom": 29
+    },
+    "removed_ci_executions": "13 shared frontend scenarios no longer run twice on Node and native; assertions remain in the suite and all 16 run on native. Full Node browser coverage remains available via npm run test:browser."
+  },
+  "interpretation": [
+    "The final measured layout took 198 s without the native cache and 140 s with it, versus 210 s for the latest serial baseline. The first candidate was 211 s cold and 139 s warm; all trials are included.",
+    "Runner totals rose from 206 s to 295 s cold and 232 s warm in the final layout because dependencies are prepared on two runners. This change optimizes waiting time, not minimum runner consumption.",
+    "Cold-run differences are too small relative to runner variability to claim a stable 6% speedup. Native compilation varied from 40 s in the baseline log to 61 s and 49 s in the candidates, and MySQL initialization ranged from 19 s to 36 s.",
+    "Core, compiler, dependency declarations, build scripts, build command, workflow and native ABI changes invalidate the executable cache. Cache eviction also requires a rebuild; the warm result is not the time for every source change.",
+    "After these measurements, package.json was added to the exact native cache key so changing the npm build entry invalidates it as well. This changes cache identity, not job scheduling, compilation or test coverage."
+  ]
+}

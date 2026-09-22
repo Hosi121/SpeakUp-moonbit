@@ -4,6 +4,36 @@
 既存の必須 status `verify` は両 job の成功を確認する。失敗・cancel・skip を成功として
 扱わない。同じ ref / PR の古い実行は新しい実行で取り消す。本番への配備は行わない。
 
+## 実測（2026-09-23 JST）
+
+アプリ本体が同じ `6955157` の直前 CI と比較した。時間は workflow の作成から完了までで、
+queue と最後の `verify` job も含む。cache の有無は native executable のことであり、
+npm / Go の既存 cache まで空にした比較ではない。
+
+| 構成 | native cache | 全体の待ち時間 | runner 稼働時間の合計 |
+| --- | --- | --- | --- |
+| [変更前](https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35790563433) | 未導入 | 3分30秒 | 3分26秒 |
+| [最初の並列化](https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35792878960) | なし | 3分31秒 | 5分09秒 |
+| [最初の並列化](https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35793321126) | あり | 2分19秒 | 3分25秒 |
+| [DOM も並行する最終構成](https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35793676231) | なし | 3分18秒 | 4分55秒 |
+| [DOM も並行する最終構成](https://github.com/Hosi121/SpeakUp-moonbit/actions/runs/35794150618) | あり | 2分20秒 | 3分52秒 |
+
+すべて成功。最終構成の cache ありでは約33%短縮した。なしの12秒差は各条件1回の
+計測なので、安定した改善率とは扱わない。同じアプリでも native compile は40〜61秒、
+MySQL の準備は19〜36秒と runner 間で揺れる。最初の並列化だけでは初回の待ち時間は
+改善しなかったため、production DOM の build と試験も独立側へ移した。
+
+Node の135試験そのものは変更前の実行で約3.7秒であり、件数が主因ではなかった。
+重複 build、使わない benchmark executable、直列の準備・ブラウザ試験を整理した。
+2 runner で準備するため合計稼働時間は増えている。今回は待ち時間の短縮を優先しており、
+計算資源の総量が減ったという結果ではない。ソース変更で cache が無効になれば再 compile が
+必要で、常に2分20秒になるわけではない。
+
+[計測記録](../bench/ci-results.json)に全試行の commit、step 時間と、参考として過去4 run も
+残した。過去4 run はアプリの版も異なるため改善率の分母には使わない。
+計測後の点検で npm の build entry (`package.json`) も cache key に加えた。
+job の配置・build・検証範囲は計測した最終構成と同じである。
+
 ## テストの分担
 
 | job | 実行内容 |
@@ -41,7 +71,7 @@ DB を共有する browser worker は1のまま。異なる job は別 runner �
   [Playwright の cache に関する説明](https://playwright.dev/docs/ci#caching-browsers)も参照。
 
 native release executable だけは完全一致の cache を使う。キーには全 core source、
-MoonBit / Mooncakes の宣言、生成・build script、binding、workflow、OS image、
+MoonBit / Mooncakes の宣言、npm の build entry、生成・build script、binding、workflow、OS image、
 C compiler と MariaDB / OpenSSL の package version を含める。prefix による古い
 実行ファイルの復元はしない。cache が空・消失・不一致なら通常の release build を行う。
 cache の有無で API / browser 試験を skip しない。成功した integration job だけが保存する。
