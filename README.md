@@ -4,7 +4,7 @@
 
 イベントのラウンド通話と、相手を選んで随時始める 1 対 1 通話を、同じ会話モデルで扱います。再接続しても会話の開始時刻を保ち、終了後は本人だけの振り返りを保存できます。[モデルと設計判断](docs/domain-model.md)にまとめています。
 
-SQL の接続・トランザクション管理、MySQL adapter、WebSocket の送信・終了処理は、別 repo の **[moonbit-sessions](https://github.com/Hosi121/moonbit-sessions)** を利用しています。`Hosi121/sql_session` が寿命管理を担い、ライブラリは既存の PostgreSQL client/pool と `moondb.AsyncDriver` を再利用します。SpeakUp が使うのは `Hosi121/mysql@0.3.0` と `Hosi121/ws_session@0.1.0` です。各 module は Apache-2.0 で個別配布します。現在は初回の Mooncakes 認証・公開待ちのため、`vendor/servicekit` の固定 commit を workspace 参照しています。registry 公開後に通常の依存解決へ切り替えます。[既存ライブラリとの役割分担](https://github.com/Hosi121/moonbit-sessions/blob/main/docs/ecosystem.md)
+SQL の接続・トランザクション管理、MySQL adapter、WebSocket の送信・終了処理は、別 repo の **[moonbit-sessions](https://github.com/Hosi121/moonbit-sessions)** を利用しています。`Hosi121/sql_session@0.1.0` が寿命管理を担い、ライブラリは既存の PostgreSQL client/pool と `moondb.AsyncDriver` を再利用します。SpeakUp は `Hosi121/mysql@0.3.0` と `Hosi121/ws_session@0.1.0` を含む3 module を、Apache-2.0 の公開版として Mooncakes から取得します。依存は `moon.mod` で宣言しており、submodule の初期化は不要です。[既存ライブラリとの役割分担](https://github.com/Hosi121/moonbit-sessions/blob/main/docs/ecosystem.md)
 
 共通 API は MySQL / PostgreSQL の両実 DB で同じ契約試験を実行しています。SpeakUp の native backend もその API を使いますが、アプリの SQL・schema・運用 DB は引き続き MySQL です。SQL 方言の自動変換やアプリ全体の PostgreSQL 対応を意味しません。[実装した抽象化と制約](https://github.com/Hosi121/moonbit-sessions/blob/main/docs/database-abstraction.md)
 
@@ -17,7 +17,6 @@ Linux x86_64、C compiler、MariaDB Connector/C・OpenSSL の開発ファイル�
 ```bash
 # Ubuntu: sudo apt-get install build-essential libmariadb-dev libssl-dev
 # sudo なしの Ubuntu 24.04: bash scripts/install-native-deps.sh
-git submodule update --init --recursive
 npm ci
 npm --prefix frontend ci
 bash scripts/install-moon.sh
@@ -55,7 +54,6 @@ core/native_server    native HTTP / 通話 controller
 core/native_transport connection ID 管理、signaling の判断と配送
 core/native_io        HTTP 入力制限、async 0.22.1 の close drain
 core/native_host      共通 SQL API の利用・MySQL 設定・DB 値変換 / JWT / 外部 API
-vendor/servicekit     外部 repo: sql_session / mysql / ws_session（公開までの開発用参照）
 core/wire, bridge     アプリの JSON 数値検査と JS callback 規約
 scripts/boundaries    固定版 TS2Mbt / Mbt2TS の生成・公開型検査
 examples/js-boundary  アプリの JS 境界を実行する契約 fixture
@@ -83,8 +81,6 @@ DB の起動・migration・seed 後に実行します。
 npm test
 npm run test:native
 npm run test:boundaries
-npm run test:infrastructure
-npm run test:infrastructure:mysql
 npm run test:integration:native
 npx playwright install chromium
 npm run test:browser
@@ -97,6 +93,8 @@ node bench/summarize.mjs
 テストは元 TS/Go を実行して作った fixture との比較、認証・API・WebSocket の MySQL 結合テスト、MoonBit native test を含みます。API/WS とブラウザ試験は JS/native の両サーバで実行します。native は jose との JWT 相互検証と、全 DB 接続のロック待ち中にも signaling が進む試験を含みます。DB 更新テストだけは Compose の開発用 root で一時 DB を作って削除します。別の隔離 MySQL を使う場合は `TEST_DATABASE_URL` / `TEST_MYSQL_ADMIN_URL` を設定してください。
 
 Playwright はイベント／随時通話の双方で audio RTP 受信、退出と再接続、開始時刻の維持、同時終了通知、振り返りの保存・非公開性、ログイン・メモ保存を確認します。
+
+ライブラリ単体の型境界・接続寿命・各 DB adapter・配布物の検証は `moonbit-sessions` の CI が担当します。この repo の CI は Mooncakes の公開版でアプリをビルドし、上記の結合試験と通話試験を実行します。
 
 ## 現在の範囲
 

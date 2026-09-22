@@ -118,7 +118,7 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 
 ## 検証と未実施範囲
 
-実行環境との境界を別 repo の [moonbit-sessions](https://github.com/Hosi121/moonbit-sessions) へ抽出した。初期の一括 `servicekit` module を見直し、`Hosi121/mysql` と `Hosi121/ws_session` の独立 module に分けた。`vendor/servicekit` の Git submodule で commit を固定し、`moon.work` は必要な `sql_session` / `mysql` / `ws_session` だけを登録する。ライブラリ側の CI は各 module と独立 consumer だけを一時 workspace に取り出してビルドする。Mooncakes / npm 登録は未実施。
+実行環境との境界を別 repo の [moonbit-sessions](https://github.com/Hosi121/moonbit-sessions) へ抽出した。初期の一括 `servicekit` module を見直し、SQL の寿命管理・DB adapter・WebSocket の独立 module に分けて Mooncakes へ公開した。SpeakUp は `moon.mod` に必要な `Hosi121/sql_session@0.1.0` / `Hosi121/mysql@0.3.0` / `Hosi121/ws_session@0.1.0` を宣言する。ライブラリの開発用 submodule は削除し、`moon.work` はアプリと JS 境界の fixture だけを登録する。ライブラリ側の CI は各 module と独立 consumer、配布 ZIP を検証する。npm へのライブラリ公開は行っていない。
 
 WebSocket の公開 API は ID を持たない `Session` と `with_session`。connection ID と signaling の登録・削除は `core/native_transport` が所有する。HTTP 入力制限と async 0.22.1 固有の close drain は `core/native_io` に置く。JSON 数値検査、空文字を成功とする callback、TS2Mbt / Mbt2TS の固定版と export 形式に依存する検査スクリプトは、一般的な bridge API と呼べる範囲ではないためアプリ内に残した。`examples/js-boundary` はその JS 実行・TypeScript consumer 契約を継続検証する。[mizchi のライブラリとの役割分担](https://github.com/Hosi121/moonbit-sessions/blob/main/docs/design.md)
 
@@ -151,7 +151,7 @@ PostgreSQL adapter は既存の `moonbit-community/postgres@0.0.8` の client/po
 変換せずに使用できる。第三者の `moonpostgres` でも共通の実 DB 試験を通した。
 SpeakUp は native MySQL adapter の combined result API を継続使用する。
 
-5 module を Apache-2.0 で個別配布する構成とし、実際の ZIP からの独立ビルドを
-検証した。Mooncakes の初回公開は認証待ちなので、アプリは更新した submodule を
-暫定参照する。公開確認後、registry から取得した状態で再ビルド・実 DB 試験を
-通してから submodule を外す。Frontend / npm / TS2Mbt の依存は変更していない。
+5 module を Apache-2.0 で2026-09-22に Mooncakes へ公開した。実際の ZIP と
+registry から取得した公開版の双方で独立 consumer をビルドした。SpeakUp も
+公開版で再ビルド・実 DB 試験を通し、暫定の submodule を削除した。
+Frontend / npm / TS2Mbt の依存は変更していない。

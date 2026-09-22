@@ -16,17 +16,19 @@ Axios 1.13.2 → 1.20.0、Vite 7.3.1 → 7.3.6、React Router 6.30.3 → 6.30.6 
 
 ## SQL 抽象化で追加した MoonBit 依存
 
-アプリの native module に `Hosi121/sql_session@0.1.0` を追加し、`Hosi121/mysql` を 0.3.0 に更新した。いずれも `vendor/servicekit` の固定 commit から workspace 解決する。`moonbitlang/async` は 0.22.1 のまま。npm / frontend / `@mizchi/ts` のバージョン変更はない。
+アプリの native module に `Hosi121/sql_session@0.1.0` を追加し、`Hosi121/mysql` を 0.3.0 に更新した。`Hosi121/ws_session@0.1.0` とともに Mooncakes の公開版から解決する。`moonbitlang/async` は 0.22.1 のまま。npm / frontend / `@mizchi/ts` のバージョン変更はない。
 
-`moonbit-sessions` の PostgreSQL adapter は `moonbit-community/postgres@0.0.8` を追加した。推移的依存は `moonbitlang/x@0.4.41` と `tonyfettes/unicode@0.3.0`。ライブラリ CI の実 DB 試験には PostgreSQL 17 の disposable container を追加した。SpeakUp の runtime は MySQL のままなので PostgreSQL module を登録しないが、`test:infrastructure` がライブラリの全 consumer をビルドするときにはこれらを取得する。
+`moonbit-sessions` の PostgreSQL adapter は `moonbit-community/postgres@0.0.8` を追加した。推移的依存は `moonbitlang/x@0.4.41` と `tonyfettes/unicode@0.3.0`。ライブラリ CI の実 DB 試験には PostgreSQL 17 の disposable container を追加した。これらの検証はライブラリ repo で実行する。SpeakUp の runtime と CI は MySQL を使い、PostgreSQL module を依存に含めない。
 
 ## Mooncakes 配布への整理
 
 ライブラリ repo は `Hosi121/moonbit-sessions` に改名した。公開 namespace は
 `Hosi121`、ライセンスは Apache-2.0。`sql` は責務を示す `sql_session` に改名し、
-SpeakUp の `moon.mod` / `moon.pkg` と submodule pin を更新した。
-Mooncakes への初回公開は GitHub 認証待ち。公開されていない package を通常の
-registry 依存として扱わず、それまでは開発用 workspace 解決を維持する。
+SpeakUp の `moon.mod` / `moon.pkg` を更新した。2026-09-22 に5 module を
+Mooncakes へ公開し、registry から取得した独立 consumer をビルドした。
+SpeakUp も公開版に切り替え、開発用 submodule とその専用テスト起動スクリプトを
+削除した。ライブラリ固有のテストはライブラリ CI、公開版との結合試験はアプリ CI
+で実行する。
 
 ライブラリ検証には `moonbitstack/moondb@0.1.8` と
 `moonbitstack/moonpostgres@0.6.0` を追加した。これらはライブラリの独立 consumer と

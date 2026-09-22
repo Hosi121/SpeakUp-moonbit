@@ -21,8 +21,6 @@ jobs:
       DATABASE_URL: mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit
     steps:
       - uses: actions/checkout@v7.0.1
-        with:
-          submodules: recursive
       - uses: actions/setup-node@v7.0.0
         with:
           node-version: 24.13.0
@@ -43,7 +41,7 @@ jobs:
       - run: npm run db:migrate && npm run db:seed
       - run: npm run build:native && node scripts/build-bench.mjs
       - run: npm test && npm run test:native
-      - run: npm run test:boundaries && npm run test:infrastructure && npm run test:infrastructure:mysql
+      - run: npm run test:boundaries
       - run: npm run test:integration:native
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
