@@ -140,3 +140,5 @@ MoonBit type check / JS test / native core / crypto test、TypeScript strict che
 PostgreSQL adapter は既存の `moonbit-community/postgres@0.0.8` の client/pool を利用し、MySQL と同じ契約試験を通す。SpeakUp 本体は PostgreSQL module を import しておらず、アプリの SQL/schema を PostgreSQL へ移植したものではない。ライブラリの独立 consumer 検査では PostgreSQL もビルドする。[追加された検証用依存](dependencies.md)。WebSocket と JS の export / TS2Mbt / Mbt2TS の型境界は従来の契約検査で確認する。
 
 セッション設定のリセットにはコストがある。今回の変更で Go や従来の pool より高速になったとは主張しない。SQLite adapter、sqlc によるクエリ型生成との統合、SQL 方言の変換は今回の実装範囲に含まない。
+
+通知一覧と未読件数は同じ SQL 文で取得し、同時着信によって既読対象の ID と件数が食い違わないようにした。通話一覧の自動更新中も招待ボタンを操作できる。native HTTP は応答を開始した後の書き込み失敗で追加のエラー応答を送らず、その接続を終了する。大きい応答の途中で TCP を切断してもサーバが稼働し続けることを JS/native 両方で検証する。

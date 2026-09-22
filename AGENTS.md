@@ -8,6 +8,8 @@ Domain code belongs in `core/`; React rendering and platform I/O stay in adapter
 Do not introduce `Any`, `JSValue`, generic unchecked casts, or TypeScript `any`
 into handwritten code. Parse untrusted JSON at ingress. Generated bindings are
 regenerated with `npm run generate`, never edited by hand. Inspect diagnostics.
+Once an HTTP response starts, propagate write failures to connection cleanup;
+never render a second error response. Cover client disconnects with real sockets.
 Do not access the original application's database or copy its `.env` files.
 Run `npm run check`, `npm test`, `npm run test:native`, and the isolated
 `npm run test:integration:native` tests. Changes to call transport also require

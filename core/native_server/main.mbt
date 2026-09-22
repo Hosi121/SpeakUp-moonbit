@@ -303,11 +303,17 @@ async fn upload(
 }
 
 ///|
+priv enum ConnectionAction {
+  Reuse
+  Close
+}
+
+///|
 async fn handle(
   request : @http.Request,
   conn : @http.ServerConnection,
   service : @async.TaskGroup[Unit],
-) -> Unit {
+) -> ConnectionAction {
   let origin = header(request, "Origin")
   let allowed = @host.env(
       "ALLOWED_ORIGINS",
@@ -317,8 +323,7 @@ async fn handle(
     .any(s => s == origin)
   if origin != "" && !allowed {
     respond(conn, 403, "", "")
-    conn.close()
-    return
+    return Close
   }
   if header(request, "Upgrade").to_lower() == "websocket" {
     if (request.path != "/ws" && request.path != "/activity") ||
@@ -326,19 +331,25 @@ async fn handle(
       origin == "" ||
       relay.size() + activity.size() >= 10000 {
       respond(conn, 403, "", "")
-      conn.close()
-      return
+      return Close
     }
     if request.path == "/activity" {
       activity_connection(request, conn)
     } else {
       connection(request, conn, service)
     }
-    return
+    return Close
   }
   if request.meth is Options {
     respond(conn, 204, "", origin)
-    return
+    return Reuse
+  }
+  let mut response_started = false
+  let send = async fn(status : Int, body : &@io.Data, content_type : String?) {
+    // A failed write may already have sent headers/body. Such a connection
+    // cannot carry a second response, even when the write raised an error.
+    response_started = true
+    respond(conn, status, body, origin, content_type?)
   }
   try {
     let url = request.path.split("?").to_array()
@@ -347,37 +358,32 @@ async fn handle(
     if segments.length() == 4 &&
       segments[1] == "conversations" &&
       segments[3] == "start" {
-      respond(
-        conn, 405, "{\"error\":\"Begin requires media negotiation\"}", origin,
-      )
-      return
+      send(405, "{\"error\":\"Begin requires media negotiation\"}", None)
+      return Reuse
     }
     if request.meth is Get && upload_name(path) is Some(name) {
       let data = @fs.read_file("uploads/" + name)
       let extension = name.split(".").to_array()[1].to_owned()
-      respond(
-        conn,
+      send(
         200,
         data,
-        origin,
-        content_type="image/" +
-          (if extension == "jpg" { "jpeg" } else { extension }),
+        Some("image/" + (if extension == "jpg" { "jpeg" } else { extension })),
       )
-      return
+      return Reuse
     }
     let uid = if path == "/health" || path == "/signin" || path == "/signup" {
       0
     } else {
       @host.verify_token(header(request, "Authorization")) catch {
         _ => {
-          respond(conn, 401, "{\"error\":\"Authentication required\"}", origin)
-          return
+          send(401, "{\"error\":\"Authentication required\"}", None)
+          return Reuse
         }
       }
     }
     if request.meth is Get && path == "/rtc-config" {
-      respond(conn, 200, @host.rtc_config(uid), origin)
-      return
+      send(200, @host.rtc_config(uid), None)
+      return Reuse
     }
     let input = if request.meth is Put && path == "/user/avatar" {
       upload(request, conn)
@@ -419,15 +425,16 @@ async fn handle(
     } else {
       run()
     }
-    respond(conn, result.status, result.body, origin)
+    send(result.status, result.body, None)
+    Reuse
   } catch {
-    @native_io.TooLarge => {
-      respond(conn, 413, "{\"error\":\"Invalid request\"}", origin)
-      conn.close()
-    }
-    _ => {
-      respond(conn, 400, "{\"error\":\"Invalid request\"}", origin)
-      conn.close()
+    error => {
+      if response_started {
+        raise error
+      }
+      let status = if error is @native_io.TooLarge { 413 } else { 400 }
+      respond(conn, status, "{\"error\":\"Invalid request\"}", origin)
+      Close
     }
   }
 }
@@ -486,11 +493,14 @@ async fn main {
             conn.read_request()
           })
           if header(request, "Upgrade").to_lower() == "websocket" {
-            handle(request, conn, group)
+            ignore(handle(request, conn, group))
             break
           }
-          @async.with_timeout(30000, async fn() { handle(request, conn, group) })
-          if header(request, "Connection").to_lower() == "close" {
+          let action = @async.with_timeout(30000, async fn() {
+            handle(request, conn, group)
+          })
+          if action is Close ||
+            header(request, "Connection").to_lower() == "close" {
             break
           }
         }

@@ -49,9 +49,11 @@ before(async () => {
   await eventually(async () => assert.equal((await request('/health')).status, 200));
 });
 after(async () => {
-  child?.kill('SIGTERM'); if (child && child.exitCode === null) await once(child, 'exit');
+  if (child && child.exitCode === null && child.signalCode === null) {
+    const exited = once(child, 'exit'); child.kill('SIGTERM'); await exited;
+  }
   await db?.end(); await new Promise(resolve => provider?.close(resolve));
-  assert.doesNotMatch(logs, /ERROR: AddressSanitizer|runtime error:/);
+  assert.doesNotMatch(logs, /PanicError|ERROR: AddressSanitizer|runtime error:/);
 });
 
 test('notification items and unread count use one snapshot during concurrent inserts', async () => {

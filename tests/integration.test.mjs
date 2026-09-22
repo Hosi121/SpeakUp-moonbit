@@ -2,6 +2,8 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import net from 'node:net';
+import { mkdir, writeFile, unlink } from 'node:fs/promises';
 import { WebSocket } from 'ws';
 import mysql from 'mysql2/promise';
 import { randomUUID, generateKeyPairSync } from 'node:crypto';
@@ -36,7 +38,35 @@ before(async () => {
   ]);
   alice = await login('alice@example.test'); bob = await login('bob@example.test');
 });
-after(async () => { child?.kill('SIGTERM'); if (child && child.exitCode === null) await once(child, 'exit'); await database?.end(); assert.doesNotMatch(logs, /ERROR: AddressSanitizer|runtime error:/); });
+after(async () => {
+  if (child && child.exitCode === null && child.signalCode === null) {
+    const exited = once(child, 'exit'); child.kill('SIGTERM'); await exited;
+  }
+  await database?.end();
+  assert.doesNotMatch(logs, /PanicError|ERROR: AddressSanitizer|runtime error:/);
+});
+
+test('disconnecting during an HTTP response leaves the server available', { timeout: 15000 }, async () => {
+  const name = `${randomUUID()}.png`;
+  const path = `uploads/${name}`;
+  await mkdir('uploads', { recursive: true });
+  // Exceed the socket send buffer so resetting the reader interrupts a write.
+  await writeFile(path, Buffer.alloc(8 * 1024 * 1024));
+  try {
+    for (let i = 0; i < 4; i++) {
+      await new Promise((resolve, reject) => {
+        const socket = net.connect(18081, '127.0.0.1');
+        let received = false;
+        socket.setTimeout(5000, () => { socket.destroy(); reject(new Error('response timeout')); });
+        socket.on('error', reject);
+        socket.on('connect', () => socket.write(`GET /upload/${name} HTTP/1.1\r\nHost: localhost\r\n\r\n`));
+        socket.once('data', () => { received = true; socket.resetAndDestroy(); });
+        socket.on('close', () => received ? resolve() : reject(new Error(`server closed before responding: ${logs}`)));
+      });
+      assert.equal((await request('/health')).status, 200, logs);
+    }
+  } finally { await unlink(path); }
+});
 
 test('authentication, memo isolation and concurrent upsert', async () => {
   assert.equal((await request('/memo')).status, 401);
