@@ -107,6 +107,8 @@ Playwright はイベント／随時通話の双方で audio RTP 受信、退出�
 
 ライブラリ単体の型境界・接続寿命・各 DB adapter・配布物の検証は `moonbit-sessions` の CI が担当します。この repo の CI は Mooncakes の公開版でアプリをビルドし、上記の結合試験と通話試験を実行します。
 
+CI は型・単体試験と実 DB・ブラウザ試験を並行実行します。UI 全体は native backend、Node は同じ API 契約と通話経路で検証し、共有 UI の二重実行を減らしています。`verify` は両 job の成功を必須にします。[検証範囲と実行時間](docs/ci.md)
+
 ## 現在の範囲
 
 Go backend の主要 route と通話を移植し、会話のライフサイクル・随時通話・振り返り・履歴を新モデルで実装しました。画面は TypeScript の DOM renderer と標準 HTML/CSS。React・MUI・Emotion は削除し、別の UI framework は追加していません。[UI の構成と残る TypeScript](docs/frontend.md)を参照してください。backend I/O は MoonBit async と Connector/C・OpenSSL binding です。フレンド申請と承認、保存されるメッセージ、アプリ内通知、実績、本人の選択回答・AI アドバイス、イベント参加・管理、サーバーによる期限終了も実装しています。[機能の詳細](docs/features.md)を参照してください。OS Web Push、元の Ent DB の移行、production rollout は未実施です。[機能別の対応表と変更点](docs/migration.md)で区別しています。

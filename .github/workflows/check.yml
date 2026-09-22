@@ -1,11 +1,41 @@
 name: Verify migration
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+env:
+  CI: true
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+  checks:
+    name: Types, contracts and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.23.5
+          cache-dependency-path: bench/go/go.sum
+      - name: Native test headers
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmariadb-dev libssl-dev
+      - run: npm run generate && npm run check
+      - run: npm --prefix frontend run lint
+      - name: Source oracles and generated contracts
+        run: npm run fixtures && git diff --exit-code -- contract core/platform core/browser_platform core/client core/presenter/pkg.generated.mbti core/shell/pkg.generated.mbti examples/js-boundary/src/platform examples/js-boundary/generated
+      - name: JS and native unit tests
+        run: npm run test:unit && npm run test:native
+      - run: npm run test:boundaries -- --no-build
+
+  integration:
+    name: API and browser integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     services:
       mysql:
         image: mysql:8.4
@@ -20,32 +50,57 @@ jobs:
       AUTH_MODE: development
       DATABASE_URL: mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Browser and native dependencies
+        run: |
+          npx playwright install --with-deps --only-shell chromium
+          sudo apt-get install -y --no-install-recommends libmariadb-dev libssl-dev fonts-noto-cjk fonts-noto-color-emoji
+      - name: Build JS and both DOM entries once
+        run: npm run build:core && npm --prefix frontend run build && npm --prefix frontend run build:message-views
+      - name: Native build ABI
+        id: native-abi
+        shell: bash
+        run: |
+          {
+            printf '%s\n' "$ImageOS" "$ImageVersion"
+            cc --version
+            dpkg-query -W libmariadb-dev libmariadb3 libssl-dev libssl3t64
+          } > "$RUNNER_TEMP/native-abi.txt"
+          native_abi=$(sha256sum "$RUNNER_TEMP/native-abi.txt" | cut -d ' ' -f 1)
+          echo "hash=$native_abi" >> "$GITHUB_OUTPUT"
+      - name: Exact native build cache
+        id: native-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          node-version: 24.13.0
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            frontend/package-lock.json
-      - uses: actions/setup-go@v7.0.0
-        with:
-          go-version: 1.23.5
-          cache-dependency-path: bench/go/go.sum
-      - run: sudo apt-get update && sudo apt-get install -y libmariadb-dev libssl-dev fonts-noto-cjk fonts-noto-color-emoji
-      - run: npm ci && npm --prefix frontend ci
-      - run: bash scripts/install-moon.sh && npm run moon -- update
-      - run: npm run generate && npm run check
-      - run: npm --prefix frontend run lint
-      - run: npm run fixtures && git diff --exit-code -- contract core/platform core/browser_platform core/client core/presenter/pkg.generated.mbti core/shell/pkg.generated.mbti examples/js-boundary/src/platform examples/js-boundary/generated
+          path: dist/native/speakup
+          # No restore prefix: source, pinned compiler/dependencies, flags and ABI must match.
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.native-abi.outputs.hash }}-${{ hashFiles('core/**', 'moon.mod', 'moon.work', 'scripts/**', 'bindings/**', '.github/workflows/check.yml', '.github/actions/setup/action.yml') }}
+      - name: Build native release server
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        run: npm run build:native
       - run: npm run db:migrate && npm run db:seed
-      - run: npm run build:native && node scripts/build-bench.mjs
-      - run: npm test && npm run test:native
-      - run: npm run test:boundaries
+      - name: Node API and database migration tests
+        run: npm run test:database
       - run: npm run test:integration:native
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
-        id: browser-node
-      - run: npm run test:browser:native
-        if: success() || (failure() && steps.browser-node.conclusion == 'failure')
-      - run: npm run test:navigation
+      - name: All UI and call tests on the default native backend
+        id: browser-native
+        run: npm run test:browser:native
+      - name: Node call transport parity
+        if: success() || (failure() && steps.browser-native.conclusion == 'failure')
+        run: npm run test:browser:node-parity
+      - name: Production DOM and navigation contracts
+        run: npm run test:navigation:built
+
+  # Preserve the existing required status: neither a failed nor a skipped job is green.
+  verify:
+    if: always()
+    needs: [checks, integration]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Require all validation jobs
+        env:
+          CHECKS_RESULT: ${{ needs.checks.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+        run: test "$CHECKS_RESULT" = success && test "$INTEGRATION_RESULT" = success

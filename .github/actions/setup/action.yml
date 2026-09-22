@@ -1,0 +1,16 @@
+name: SpeakUp toolchain
+description: Install the locked npm dependencies and checksum-pinned MoonBit compiler.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: 24.13.0
+        cache: npm
+        cache-dependency-path: |
+          package-lock.json
+          frontend/package-lock.json
+    - run: npm ci && npm --prefix frontend ci
+      shell: bash
+    - run: bash scripts/install-moon.sh && npm run moon -- update
+      shell: bash
