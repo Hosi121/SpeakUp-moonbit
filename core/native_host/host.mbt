@@ -158,16 +158,7 @@ fn hex(c : Byte) -> Int raise {
 }
 
 ///|
-priv struct Connection {
-  db : Database
-  fd : @raw_fd.RawFd
-}
-
-///|
-let pool : @async.Queue[Connection] = @async.Queue(kind=Blocking(10))
-
-///|
-let connections : Array[Connection] = []
+let database_pool : Ref[@mysql.Pool?] = { val: None, }
 
 ///|
 let key_store : Ref[Keys?] = { val: None, }
@@ -213,26 +204,26 @@ pub async fn initialize() -> Unit {
   guard port > 0 && port <= 65535 else {
     raise @api.HostError("Invalid database port")
   }
-  let db_host = @utf8.encode(address[0])
-  let user = @utf8.encode(decode_url(credentials[0].to_owned()))
-  let password = @utf8.encode(decode_url(credentials[1].to_owned()))
-  let name = @utf8.encode(decode_url(location[1].to_owned()))
-  for _ in 0..<10 {
-    let db = c_db_new(db_host, user, password, name, port)
-    let connection = { db, fd: @raw_fd.RawFd(c_db_fd(db)), }
-    connections.push(connection)
-    pool.put(connection)
-  }
+  database_pool.val = Some(
+    @mysql.Pool::new(
+      host=address[0].to_owned(),
+      user=decode_url(credentials[0].to_owned()),
+      password=decode_url(credentials[1].to_owned()),
+      database=decode_url(location[1].to_owned()),
+      port~,
+      ssl_ca=env("MYSQL_SSL_CA"),
+      plugin_dir=env("MYSQL_PLUGIN_DIR"),
+    ),
+  )
   @api.configure_host({ invoke, now, now_millis, public_url, event_times, })
 }
 
 ///|
 pub fn close() -> Unit {
-  for conn in connections {
-    conn.fd.close()
-    c_db_close(conn.db)
+  if database_pool.val is Some(pool) {
+    pool.close()
+    database_pool.val = None
   }
-  connections.clear()
   if key_store.val is Some(k) {
     c_keys_close(k)
     key_store.val = None
@@ -240,75 +231,72 @@ pub fn close() -> Unit {
 }
 
 ///|
-async fn database(request : Json, transaction : Bool) -> Json {
-  let statements = if transaction {
-    array(request, "statements")
-  } else {
-    [request]
+fn sql_statement(request : Json) -> @mysql.Statement raise {
+  @mysql.statement(
+    string(request, "sql"),
+    params=array(request, "params").map(fn(value) raise {
+      match value {
+        Null => @mysql.Null
+        String(s) => @mysql.Text(s)
+        Number(n, ..) => @mysql.Float(n)
+        True => @mysql.Integer(1L)
+        False => @mysql.Integer(0L)
+        _ => raise @api.HostError("upstream")
+      }
+    }),
+  )
+}
+
+///|
+fn sql_number(n : Double) -> Json raise {
+  guard @wire.is_safe_integer(n) else { raise @api.HostError("upstream") }
+  n.to_json()
+}
+
+///|
+fn sql_json(value : @mysql.Value) -> Json raise {
+  match value {
+    Null => Json::null()
+    Text(s) | Decimal(s) => s.to_json()
+    Float(n) => n.to_json()
+    Integer(n) => sql_number(n.to_double())
+    Unsigned(n) => sql_number(n.to_double())
+    Blob(_) => raise @api.HostError("upstream")
   }
-  guard statements.length() > 0 else { raise @api.HostError("upstream") }
-  let conn = pool.get()
-  // A canceled HTTP task must still drain completion before returning the worker
-  // to the pool. The C thread never accesses a freed MoonBit object or job.
-  @async.protect_from_cancel(async fn() {
-    defer ignore(pool.try_put(conn) catch { _ => false })
-    let db = conn.db
-    c_db_reset(db, statements.length(), transaction)
-    for i, statement in statements {
-      let params = array(statement, "params")
-      c_db_statement(
-        db,
-        i,
-        @utf8.encode(string(statement, "sql")),
-        params.length(),
-      )
-      for j, p in params {
-        match p {
-          Null => c_db_param(db, i, j, 0, b"", 0)
-          Number(n, ..) => c_db_param(db, i, j, 1, b"", n)
-          True => c_db_param(db, i, j, 1, b"", 1)
-          False => c_db_param(db, i, j, 1, b"", 0)
-          String(s) => c_db_param(db, i, j, 2, @utf8.encode(s), 0)
-          _ => raise @api.HostError("upstream")
-        }
-      }
-    }
-    c_db_submit(db)
-    let done = FixedArray::make(1, b'\x00')
-    guard conn.fd.read(done) == 1 else { raise @api.HostError("upstream") }
-    let error = c_db_error(db)
-    guard error == 0 else {
-      raise @api.HostError(if error == 1062 { "conflict" } else { "upstream" })
-    }
-    if c_db_cols(db) == 0 {
-      {
-        "affectedRows": c_db_affected(db).to_json(),
-        "insertId": c_db_insert_id(db).to_json(),
-      }
+}
+
+///|
+async fn database(request : Json, transaction : Bool) -> Json {
+  guard database_pool.val is Some(pool) else {
+    raise @api.HostError("upstream")
+  }
+  let result = try {
+    if transaction {
+      pool.transaction(array(request, "statements").map(sql_statement))
     } else {
-      let cols = Array::makei(c_db_cols(db), i => {
-        (@utf8.decode_lossy(c_db_name(db, i)), c_db_numeric(db, i))
-      })
-      let rows : Array[Json] = []
-      for row in 0..<c_db_rows(db) {
-        let result : Map[String, Json] = Map([])
-        for col, (name, numeric) in cols {
-          result[name] = if c_db_null(db, row, col) {
-            Json::null()
-          } else {
-            let text = @utf8.decode(c_db_cell(db, row, col))
-            if numeric {
-              @json.parse(text)
-            } else {
-              text.to_json()
-            }
-          }
-        }
-        rows.push(result.to_json())
-      }
-      rows.to_json()
+      let statement = sql_statement(request)
+      pool.query(statement.sql, params=statement.params)
     }
-  })
+  } catch {
+    @mysql.ServerError(1062) => raise @api.HostError("conflict")
+    _ => raise @api.HostError("upstream")
+  }
+  if result.has_rows {
+    result.rows
+    .map(fn(row) raise {
+      let values : Map[String, Json] = Map([])
+      for name, value in row.values {
+        values[name] = sql_json(value)
+      }
+      values.to_json()
+    })
+    .to_json()
+  } else {
+    {
+      "affectedRows": sql_number(result.affected_rows.to_double()),
+      "insertId": sql_number(result.insert_id.to_double()),
+    }
+  }
 }
 
 ///|

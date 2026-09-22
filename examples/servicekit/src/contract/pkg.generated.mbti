@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/servicekit_example/contract"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn decode_note(String) -> Note
+
+pub fn echo(String, (String, String) -> Unit) -> Unit
+
+// Errors
+
+// Types and methods
+pub(all) struct Note {
+  id : Int
+  created_at : Double
+  text : String
+} derive(@json.FromJson)
+pub fn Note::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+
+// Type aliases
+
+// Traits

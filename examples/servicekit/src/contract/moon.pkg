@@ -1,0 +1,13 @@
+import {
+  "hosi121/servicekit/wire",
+  "moonbitlang/core/json",
+  "hosi121/servicekit/bridge",
+  "hosi121/servicekit_example/platform",
+}
+
+options(
+  targets: { "async_js.mbt": [ "js" ] },
+  link: {
+    "js": { "format": "esm", "exports": [ "decode_note:decodeNote", "echo" ] },
+  },
+)

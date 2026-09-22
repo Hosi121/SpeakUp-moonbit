@@ -7,7 +7,8 @@
     "node": ">=24.13.0"
   },
   "imports": {
-    "#speakup/host": "./server/host.ts"
+    "#speakup/host": "./server/host.ts",
+    "#servicekit-example/host": "./examples/servicekit/host.mjs"
   },
   "scripts": {
     "moon": "node scripts/moon.mjs",
@@ -29,7 +30,9 @@
     "start:native": "node scripts/start-native.mjs",
     "test:integration:native": "SERVER_RUNTIME=native node --test tests/integration.test.mjs tests/features.test.mjs",
     "test:browser:native": "SERVER_RUNTIME=native playwright test --global-timeout=120000",
-    "start:node": "node --env-file-if-exists=.env server/main.ts"
+    "start:node": "node --env-file-if-exists=.env server/main.ts",
+    "test:servicekit": "node scripts/test-servicekit.mjs",
+    "test:servicekit:mysql": "node scripts/test-servicekit.mjs --mysql"
   },
   "dependencies": {
     "jose": "6.2.12",

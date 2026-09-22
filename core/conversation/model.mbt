@@ -36,7 +36,7 @@ pub suberror StateError {
 
 ///|
 fn valid_time(time : Double) -> Bool {
-  time >= 0 && time <= 9007199254740991.0 && time.trunc() == time
+  time >= 0 && @wire.is_safe_integer(time)
 }
 
 ///|

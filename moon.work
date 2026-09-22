@@ -1,0 +1,5 @@
+members = [
+  ".",
+  "packages/servicekit",
+  "examples/servicekit",
+]

@@ -24,7 +24,7 @@ async fn activity_connection(
       let message = ws.recv()
       guard message.kind is Text else { raise BadRequest }
       let token = @shared.activity_token(
-        @utf8.decode(@transport.limited_body(message, 8192)),
+        @utf8.decode(@connections.limited_body(message, 8192)),
       )
       let uid = @host.verify_token(token)
       let result = @api.execute("GET", "/user/info", uid, "", "")
@@ -38,7 +38,7 @@ async fn activity_connection(
     ws.recv() |> ignore
     raise BadRequest
   })
-  @transport.drain_close(conn)
+  @connections.drain_close(conn)
 }
 
 ///|
@@ -87,7 +87,7 @@ async fn connection(
     let (uid, conversation_id) = @async.with_timeout(5000, async fn() {
       let message = ws.recv()
       guard message.kind is Text else { raise BadRequest }
-      let text = @utf8.decode(@transport.limited_body(message, 65536))
+      let text = @utf8.decode(@connections.limited_body(message, 65536))
       let auth = @shared.parse_signal(text)
       guard auth.kind == "Authorization" else { raise BadRequest }
       let uid = @host.verify_token(auth.token)
@@ -124,7 +124,7 @@ async fn connection(
       }
       count += 1
       guard count <= 100 else { raise BadRequest }
-      let text = @utf8.decode(@transport.limited_body(message, 65536))
+      let text = @utf8.decode(@connections.limited_body(message, 65536))
       if relay.receive(peer, text) {
         // Persist the command independently; subsequent ICE frames keep flowing.
         service.spawn_bg(allow_failure=true, async fn() {
@@ -149,7 +149,7 @@ async fn connection(
       }
     }
   })
-  @transport.drain_close(conn)
+  @connections.drain_close(conn)
 }
 
 ///|
@@ -244,7 +244,7 @@ async fn upload(
     boundary.iter().all(c => c >= ' ' && c <= '~') else {
     raise BadRequest
   }
-  let raw = @transport.limited_body(conn, 2 * 1024 * 1024)
+  let raw = @connections.limited_body(conn, 2 * 1024 * 1024)
   let delimiter = @utf8.encode("\r\n--" + boundary)
   let initial = @utf8.encode("--" + boundary + "\r\n")
   guard raw.length() >= initial.length() && raw[:initial.length()] == initial[:] else {
@@ -382,7 +382,7 @@ async fn handle(
     let input = if request.meth is Put && path == "/user/avatar" {
       upload(request, conn)
     } else if request.meth is (Post | Put) {
-      @utf8.decode(@transport.limited_body(conn, 65536))
+      @utf8.decode(@connections.limited_body(conn, 65536))
     } else {
       ""
     }
@@ -421,7 +421,7 @@ async fn handle(
     }
     respond(conn, result.status, result.body, origin)
   } catch {
-    @transport.TooLarge => {
+    @connections.TooLarge => {
       respond(conn, 413, "{\"error\":\"Invalid request\"}", origin)
       conn.close()
     }

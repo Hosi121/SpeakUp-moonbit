@@ -9,5 +9,6 @@ source = "core"
 repository = "https://github.com/Hosi121/SpeakUp-moonbit"
 
 import {
+  "hosi121/servicekit@0.1.0",
   "moonbitlang/async@0.22.1",
 }

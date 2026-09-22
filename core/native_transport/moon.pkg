@@ -1,11 +1,7 @@
 import {
   "hosi121/speakup/signaling",
-  "moonbitlang/async",
+  "hosi121/servicekit/websocket" @connections,
   "moonbitlang/async/websocket",
-  "moonbitlang/async/http",
-  "moonbitlang/async/io",
-  "moonbitlang/core/buffer",
-  "moonbitlang/core/encoding/utf8",
 }
 
 supported_targets = "native"

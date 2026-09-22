@@ -79,11 +79,7 @@ fn integer_field(
   minimum : Double,
   maximum : Double,
 ) -> Unit raise {
-  guard value is Object(fields) else { fail("Expected object") }
-  guard fields.get(key) is Some(Number(n, ..)) else { fail("Expected integer") }
-  guard n >= minimum && n <= maximum && n.trunc() == n else {
-    fail("Invalid integer")
-  }
+  @wire.integer_field(value, key, minimum, maximum)
 }
 
 ///|

@@ -37,10 +37,11 @@ jobs:
       - run: bash scripts/install-moon.sh && npm run moon -- update
       - run: npm run generate && npm run check
       - run: npm --prefix frontend run lint
-      - run: npm run fixtures && git diff --exit-code -- contract core/platform
+      - run: npm run fixtures && git diff --exit-code -- contract core/platform examples/servicekit/src/platform examples/servicekit/generated
       - run: npm run db:migrate && npm run db:seed
       - run: npm run build:native && node scripts/build-bench.mjs
       - run: npm test && npm run test:native
+      - run: npm run test:servicekit && npm run test:servicekit:mysql
       - run: npm run test:integration:native
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser

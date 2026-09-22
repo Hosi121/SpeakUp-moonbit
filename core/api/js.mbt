@@ -1,30 +1,15 @@
 ///|
-async fn suspend(
-  f : ((String) -> Unit, (HostError) -> Unit) -> Unit,
-) -> String raise HostError = "%async.suspend"
-
-///|
 fn completion(f : (String, String) -> Unit) -> @platform.DispatchDoneCallback = "%identity"
-
-///|
-fn run(f : async () -> Unit noraise) -> Unit = "%async.run"
 
 ///|
 fn init {
   configure_host({
     invoke: async fn(request) {
-      let text = suspend(fn(ok, err) {
-        @platform.dispatch(
-          request.stringify(),
-          completion(fn(error, value) {
-            if error == "" {
-              ok(value)
-            } else {
-              err(HostError(error))
-            }
-          }),
-        )
-      })
+      let text = @bridge.await_text(fn(done) {
+        @platform.dispatch(request.stringify(), completion(done))
+      }) catch {
+        @bridge.BridgeError(message) => raise HostError(message)
+      }
       @json.parse(text)
     },
     now: @platform.now,
@@ -43,7 +28,7 @@ pub fn handle(
   query_text : String,
   respond : (Int, String) -> Unit,
 ) -> Unit {
-  run(async fn() noraise {
+  @bridge.run(async fn() noraise {
     let result = execute(verb, path, uid, body, query_text) catch {
       _ => { status: 500, body: "{\"error\":\"Request failed\"}", }
     }
@@ -53,7 +38,7 @@ pub fn handle(
 
 ///|
 pub fn poll_expired(done : (Int, Array[Int]) -> Unit) -> Unit {
-  run(async fn() noraise {
+  @bridge.run(async fn() noraise {
     done(200, overdue_conversations()) catch {
       _ => done(500, [])
     }
@@ -62,7 +47,7 @@ pub fn poll_expired(done : (Int, Array[Int]) -> Unit) -> Unit {
 
 ///|
 pub fn expire(id : Int, done : (Int, String) -> Unit) -> Unit {
-  run(async fn() noraise {
+  @bridge.run(async fn() noraise {
     try {
       let result = expire_conversation(id)
       done(result.status, result.body)

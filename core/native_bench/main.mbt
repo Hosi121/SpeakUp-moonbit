@@ -38,11 +38,11 @@ async fn main {
         ignore(
           relay.receive(
             peer,
-            @utf8.decode(@transport.limited_body(message, 65536)),
+            @utf8.decode(@connections.limited_body(message, 65536)),
           ),
         )
       }
     })
-    @transport.drain_close(conn)
+    @connections.drain_close(conn)
   })
 }

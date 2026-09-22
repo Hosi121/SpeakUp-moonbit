@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/servicekit_example/platform"
+
+// Values
+pub fn echo(String, EchoDoneCallback) -> Unit
+
+// Errors
+
+// Types and methods
+#external
+pub type EchoDoneCallback
+
+// Type aliases
+
+// Traits

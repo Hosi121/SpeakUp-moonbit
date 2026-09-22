@@ -118,6 +118,10 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 
 ## 検証と未実施範囲
 
+実行環境との境界を [servicekit](../packages/servicekit/README.md) へ抽出した。`moon.work` に app / library / 独立 consumer を登録し、SpeakUp は公開された `Pool`, `Value`, `Connections`, `wire`, `bridge` API を利用する。ライブラリから SpeakUp への逆依存はなく、認証・会話・SQL schema はアプリに残す。TS2Mbt と Mbt2TS の検査ツールもパスを引数で渡す形へ移した。Mooncakes / npm 登録は未実施。
+
+DB pool はインスタンスごとに所有し、close 時に待機中の要求を拒否、実行中 worker は完了まで回収しない。ライブラリでは signed/unsigned 64 bit と Decimal / Blob を区別する。SpeakUp の JSON adapter は安全な整数範囲を確認して既存の number 契約へ戻す。WebSocket は従来の byte 上限に加え空 payload も数えるメッセージ数上限を持つ。外部依存の追加・更新はしていない。
+
 引き継いだ frontend の依存更新と残る監査項目の判断は [依存関係の確認](dependencies.md) に記載した。
 
 source oracle は `contract/source/` の元コード抜粋を実行して生成する。入力はケースとして定義するが expected は手書きしない。`npm run fixtures` で再生成でき、CI が差分を検査する。純粋変換と旧 Go の message/avatar シリアライズを対象にした structural parity であり、全 endpoint を旧稼働環境へ replay した比較ではない。

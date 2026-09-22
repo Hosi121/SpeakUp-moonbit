@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/servicekit/wire"
+
+// Values
+pub fn[T] decode(String, (Json) -> T raise) -> T raise
+
+pub fn[T] decode_or_throw(String, (Json) -> T raise) -> T
+
+pub fn field(Json, String) -> Json raise DecodeError
+
+pub fn int(Json, minimum? : Int, maximum? : Int) -> Int raise DecodeError
+
+pub fn integer(Json, minimum? : Double, maximum? : Double) -> Double raise DecodeError
+
+pub fn integer_field(Json, String, Double, Double) -> Unit raise DecodeError
+
+pub fn is_safe_integer(Double) -> Bool
+
+// Errors
+pub(all) suberror DecodeError {
+  InvalidField(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits

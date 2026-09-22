@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/servicekit/bridge"
+
+// Values
+pub async fn await_text(((String, String) -> Unit) -> Unit) -> String raise BridgeError
+
+pub fn run(async () -> Unit noraise) -> Unit
+
+// Errors
+pub(all) suberror BridgeError {
+  BridgeError(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits

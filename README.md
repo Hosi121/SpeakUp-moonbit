@@ -4,6 +4,8 @@
 
 イベントのラウンド通話と、相手を選んで随時始める 1 対 1 通話を、同じ会話モデルで扱います。再接続しても会話の開始時刻を保ち、終了後は本人だけの振り返りを保存できます。[モデルと設計判断](docs/domain-model.md)にまとめています。
 
+MySQL worker / pool、WebSocket の接続寿命、JSON 数値検証、JS callback と型生成は、独立 MoonBit module **[servicekit](packages/servicekit/README.md)** に切り出しています。SpeakUp への依存がない [小さな利用例](examples/servicekit) からも使い、別 workspace へ持ち出して検証します。
+
 **今回の測定では native 化による高速化は確認できませんでした。** signaling 中継の中央値は Go 比較用実装の約 0.95 倍。中継プログラムの RSS は JS/Node の約 85 MiB に対し native は約 10.5 MiB でした。[測定方法と結果](docs/performance.md)を参照してください。
 
 ## 起動
@@ -47,8 +49,10 @@ core/signaling    部屋と negotiation の状態管理（I/O なし）
 core/matching     rank / round / 参加ビットによるペア生成
 core/api          HTTP 入力検査、業務処理、SQL と応答構築
 core/native_server    native HTTP / 通話 controller
-core/native_transport native WebSocket・送信 queue
-core/native_host      DB worker / JWT / 外部 API の型付き FFI
+core/native_transport signaling の判断と配送
+core/native_host      servicekit の設定・DB 値変換 / JWT / 外部 API
+packages/servicekit   再利用できる native・JS 境界（独立 module）
+examples/servicekit   SpeakUp に依存しない利用例・契約試験
 core/platform     TS2Mbt で生成した JS host binding
 server            比較用 JS backend、DB migration / seed
 frontend          React + 標準 HTML/CSS、型付きブラウザアダプター
@@ -72,6 +76,8 @@ DB の起動・migration・seed 後に実行します。
 ```bash
 npm test
 npm run test:native
+npm run test:servicekit
+npm run test:servicekit:mysql
 npm run test:integration:native
 npx playwright install chromium
 npm run test:browser

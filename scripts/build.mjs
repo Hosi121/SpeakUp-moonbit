@@ -9,7 +9,8 @@ function copy(dir) {
     else if (/\.(js|d\.ts)$/.test(f.name)) copyFileSync(`${dir}/${f.name}`, `dist/${f.name}`);
   }
 }
-copy('_build/js/release/build');
+copy('_build/js/release/build/hosi121/speakup');
+copyFileSync('_build/js/release/build/hosi121/servicekit_example/contract/contract.js', 'dist/servicekit-example.js');
 for (const args of [['scripts/moon.mjs', 'info'], ['scripts/emit-types.mjs']]) {
   const step = spawnSync(process.execPath, args, { stdio: 'inherit' });
   if (step.status !== 0) process.exit(step.status ?? 1);

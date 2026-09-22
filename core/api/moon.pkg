@@ -1,6 +1,7 @@
 import {
   "hosi121/speakup/shared",
   "hosi121/speakup/platform",
+  "hosi121/servicekit/bridge",
   "hosi121/speakup/matching",
   "hosi121/speakup/conversation",
   "moonbitlang/core/json",
