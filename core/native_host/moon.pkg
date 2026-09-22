@@ -2,6 +2,7 @@ import {
   "hosi121/speakup/api",
   "moonbitlang/async",
   "hosi121/mysql",
+  "hosi121/sql",
   "hosi121/speakup/wire",
   "moonbitlang/async/http",
   "moonbitlang/core/env",

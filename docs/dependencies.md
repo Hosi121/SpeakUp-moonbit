@@ -12,3 +12,10 @@ Axios 1.13.2 → 1.20.0、Vite 7.3.1 → 7.3.6、React Router 6.30.3 → 6.30.6 
 監査結果がゼロという意味ではない。上記は現在の利用箇所に基づく判断であり、依存の脆弱性そのものを修正したものではない。
 
 更新後の TypeScript check、production build、API/WS 結合テスト、ブラウザの通話・ログイン・メモ保存を検証した。更新直後の JS bundle は約 698 kB → 713 kB、その後の会話モデル整理で約 708 kB。MUI 削除後は約 422 kB、lint の従来の hooks 警告 2 件と 500 kB を超える chunk の build 警告は解消した。MUI 削除による残存パッケージのバージョン変更はなく、Router の moderate 2 件は残る。
+
+
+## SQL 抽象化で追加した MoonBit 依存
+
+アプリの native module に `hosi121/sql@0.1.0` を追加し、`hosi121/mysql` を 0.2.0 に更新した。いずれも `vendor/servicekit` の固定 commit から workspace 解決する。`moonbitlang/async` は 0.22.1 のまま。npm / frontend / `@mizchi/ts` のバージョン変更はない。
+
+`servicekit.mbt` の PostgreSQL adapter は `moonbit-community/postgres@0.0.8` を追加した。推移的依存は `moonbitlang/x@0.4.41` と `tonyfettes/unicode@0.3.0`。ライブラリ CI の実 DB 試験には PostgreSQL 17 の disposable container を追加した。SpeakUp の runtime は MySQL のままなので PostgreSQL module を登録しないが、`test:infrastructure` がライブラリの全 consumer をビルドするときにはこれらを取得する。

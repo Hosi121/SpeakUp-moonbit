@@ -118,14 +118,25 @@ Mbt2TS の公開宣言には JS export から到達する型だけを抽出す�
 
 ## 検証と未実施範囲
 
-実行環境との境界を別 repo の [servicekit.mbt](https://github.com/Hosi121/servicekit.mbt) へ抽出した。初期の一括 `servicekit` module を見直し、`hosi121/mysql` と `hosi121/ws_session` の独立 module に分けた。`vendor/servicekit` の Git submodule で commit を固定し、`moon.work` は必要な二つの module だけを登録する。ライブラリ側の CI は各 module と独立 consumer だけを一時 workspace に取り出してビルドする。Mooncakes / npm 登録は未実施。
+実行環境との境界を別 repo の [servicekit.mbt](https://github.com/Hosi121/servicekit.mbt) へ抽出した。初期の一括 `servicekit` module を見直し、`hosi121/mysql` と `hosi121/ws_session` の独立 module に分けた。`vendor/servicekit` の Git submodule で commit を固定し、`moon.work` は必要な `sql` / `mysql` / `ws_session` だけを登録する。ライブラリ側の CI は各 module と独立 consumer だけを一時 workspace に取り出してビルドする。Mooncakes / npm 登録は未実施。
 
 WebSocket の公開 API は ID を持たない `Session` と `with_session`。connection ID と signaling の登録・削除は `core/native_transport` が所有する。HTTP 入力制限と async 0.22.1 固有の close drain は `core/native_io` に置く。JSON 数値検査、空文字を成功とする callback、TS2Mbt / Mbt2TS の固定版と export 形式に依存する検査スクリプトは、一般的な bridge API と呼べる範囲ではないためアプリ内に残した。`examples/js-boundary` はその JS 実行・TypeScript consumer 契約を継続検証する。[mizchi のライブラリとの役割分担](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/design.md)
 
-DB pool はインスタンスごとに所有し、close 時に待機中の要求を拒否、実行中 worker は完了まで回収しない。ライブラリでは signed/unsigned 64 bit と Decimal / Blob を区別する。SpeakUp の JSON adapter は安全な整数範囲を確認して既存の number 契約へ戻す。WebSocket は従来の byte 上限に加え空 payload も数えるメッセージ数上限を持つ。外部依存の追加・更新はしていない。
+DB pool はインスタンスごとに所有し、close 時に待機中の要求を拒否、実行中 worker は完了まで回収しない。ライブラリでは signed/unsigned 64 bit と Decimal / Blob を区別する。SpeakUp の JSON adapter は安全な整数範囲を確認して既存の number 契約へ戻す。WebSocket は従来の byte 上限に加え空 payload も数えるメッセージ数上限を持つ。この最初の抽出では外部依存の追加・更新をしていない。
 
 引き継いだ frontend の依存更新と残る監査項目の判断は [依存関係の確認](dependencies.md) に記載した。
 
 source oracle は `contract/source/` の元コード抜粋を実行して生成する。入力はケースとして定義するが expected は手書きしない。`npm run fixtures` で再生成でき、CI が差分を検査する。純粋変換と旧 Go の message/avatar シリアライズを対象にした structural parity であり、全 endpoint を旧稼働環境へ replay した比較ではない。
 
 MoonBit type check / JS test / native core / crypto test、TypeScript strict check、frontend production build、JS/native 両方の MySQL API/WS integration（全 DB 接続のロック待ち中の中継を含む）、初回移植 DB の更新、Playwright 二ブラウザの音声受信と再接続・終了・振り返りを検証する。AI アドバイスはローカル HTTP fixture で試験する。Supabase/OpenAI への実 API 呼び出し、TURN 実回線、production traffic の shadow/replay、canary は未実施。元の Ent DB のデータ移行は別作業。元 Go repo を変更せず残しており、今回の公開による本番切替はない。
+
+
+## 共通 SQL API への移行
+
+`servicekit.mbt` に `hosi121/sql@0.1.0` を追加し、MySQL adapter を 0.2.0 へ更新した。`core/native_host` は `Database[Value, Row, Command, TransactionOptions]` を保持し、query/transaction を共通の `run` / `with_transaction` で実行する。既存の host JSON 契約では引き続き最後の statement の結果を返すが、ライブラリの callback は途中の読み取り結果から次の処理を選べる。
+
+共通層は接続の貸出期間、同一接続の同時操作拒否、待機上限と timeout、commit/rollback、キャンセル時の `errdefer` による後始末を管理する。SQL 方言と codec は adapter 側に残る。MySQL の行は列順を保つ配列になり、JSON 化で同名の列を検出した場合は上書きせずエラーにする。utf8mb4・UTC・matched-row count は SpeakUp の設定として明示した。
+
+PostgreSQL adapter は既存の `moonbit-community/postgres@0.0.8` の client/pool を利用し、MySQL と同じ契約試験を通す。SpeakUp 本体は PostgreSQL module を import しておらず、アプリの SQL/schema を PostgreSQL へ移植したものではない。ライブラリの独立 consumer 検査では PostgreSQL もビルドする。[追加された検証用依存](dependencies.md)。WebSocket と JS の export / TS2Mbt / Mbt2TS の型境界は従来の契約検査で確認する。
+
+セッション設定のリセットにはコストがある。今回の変更で Go や従来の pool より高速になったとは主張しない。SQLite adapter、sqlc によるクエリ型生成との統合、SQL 方言の変換は今回の実装範囲に含まない。

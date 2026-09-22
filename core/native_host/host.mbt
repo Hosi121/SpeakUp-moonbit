@@ -158,7 +158,14 @@ fn hex(c : Byte) -> Int raise {
 }
 
 ///|
-let database_pool : Ref[@mysql.Pool?] = { val: None, }
+let database_pool : Ref[
+  @sql.Database[
+    @mysql.Value,
+    @mysql.Row,
+    @mysql.Command,
+    @mysql.TransactionOptions,
+  ]?,
+] = { val: None, }
 
 ///|
 let key_store : Ref[Keys?] = { val: None, }
@@ -213,7 +220,10 @@ pub async fn initialize() -> Unit {
       port~,
       ssl_ca=env("MYSQL_SSL_CA"),
       plugin_dir=env("MYSQL_PLUGIN_DIR"),
-    ),
+      charset="utf8mb4",
+      time_zone="+00:00",
+      found_rows=true,
+    ).database(),
   )
   @api.configure_host({ invoke, now, now_millis, public_url, event_times, })
 }
@@ -272,29 +282,39 @@ async fn database(request : Json, transaction : Bool) -> Json {
   }
   let result = try {
     if transaction {
-      pool.transaction(array(request, "statements").map(sql_statement))
+      let statements = array(request, "statements").map(sql_statement)
+      guard !statements.is_empty() else { raise @api.HostError("upstream") }
+      pool.with_transaction(@mysql.TransactionOptions::new(), async fn(tx) {
+        let mut result = tx.run(statements[0].sql, params=statements[0].params)
+        for i in 1..<statements.length() {
+          result = tx.run(statements[i].sql, params=statements[i].params)
+        }
+        result
+      })
     } else {
       let statement = sql_statement(request)
-      pool.query(statement.sql, params=statement.params)
+      pool.run(statement.sql, params=statement.params)
     }
   } catch {
     @mysql.ServerError(1062) => raise @api.HostError("conflict")
     _ => raise @api.HostError("upstream")
   }
-  if result.has_rows {
+  if result.metadata.has_rows {
     result.rows
     .map(fn(row) raise {
       let values : Map[String, Json] = Map([])
-      for name, value in row.values {
-        values[name] = sql_json(value)
+      for i, name in row.columns {
+        // The JSON API cannot represent duplicate keys. Reject them explicitly.
+        guard values.get(name) is None else { raise @api.HostError("upstream") }
+        values[name] = sql_json(row.values[i])
       }
       values.to_json()
     })
     .to_json()
   } else {
     {
-      "affectedRows": sql_number(result.affected_rows.to_double()),
-      "insertId": sql_number(result.insert_id.to_double()),
+      "affectedRows": sql_number(result.metadata.affected_rows.to_double()),
+      "insertId": sql_number(result.metadata.insert_id.to_double()),
     }
   }
 }

@@ -1,7 +1,7 @@
 # SpeakUp MoonBit
 
 Use the MoonBit migration and JS binding skills for MoonBit changes.
-Native MySQL and WebSocket session primitives live in the external
+Shared SQL sessions, the native MySQL adapter and WebSocket session primitives live in the external
 `vendor/servicekit` Git submodule. Make changes in its repository, verify there,
 then update the pinned submodule commit; do not restore an application-local copy.
 Domain code belongs in `core/`; React rendering and platform I/O stay in adapters.

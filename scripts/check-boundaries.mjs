@@ -16,7 +16,7 @@ function walk(path) {
     if (f.name.endsWith('.mbt') && /\bAny\b|\bJSValue\b|unsafeCast/.test(readFileSync(file, 'utf8'))) { console.error(`Dynamic MoonBit boundary: ${file}`); failed = true; }
   }
 }
-for (const path of ['core', 'vendor/servicekit/mysql/src', 'vendor/servicekit/ws_session/src', 'examples/js-boundary/src', 'server', 'frontend/src', 'dist']) walk(path);
+for (const path of ['core', 'vendor/servicekit/sql/src', 'vendor/servicekit/mysql/src', 'vendor/servicekit/ws_session/src', 'examples/js-boundary/src', 'server', 'frontend/src', 'dist']) walk(path);
 const diagnostics = readFileSync('core/platform/SCAFFOLD_DIAGNOSTICS.md', 'utf8');
 if (!diagnostics.includes('No unsupported exports were detected.')) { failed = true; console.error('TS2Mbt reported unsupported exports'); }
 if (failed) process.exit(1);

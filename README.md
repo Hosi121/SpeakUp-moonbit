@@ -4,9 +4,9 @@
 
 イベントのラウンド通話と、相手を選んで随時始める 1 対 1 通話を、同じ会話モデルで扱います。再接続しても会話の開始時刻を保ち、終了後は本人だけの振り返りを保存できます。[モデルと設計判断](docs/domain-model.md)にまとめています。
 
-MySQL worker / pool と WebSocket の送信・終了処理は、別 repo の **[servicekit.mbt](https://github.com/Hosi121/servicekit.mbt)** に切り出しています。`hosi121/mysql` と `hosi121/ws_session` は別々に利用でき、SpeakUp は `vendor/servicekit` の Git submodule で commit を固定して参照します。通話 ID、認証、JSON 検証、JS callback の規約と型生成の検査はアプリ側に置きます。[切り分けの理由](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/design.md)
+SQL の接続・トランザクション管理、MySQL adapter、WebSocket の送信・終了処理は、別 repo の **[servicekit.mbt](https://github.com/Hosi121/servicekit.mbt)** を利用しています。`hosi121/sql` に共通 API を置き、`hosi121/mysql` と `hosi121/postgres` がそれぞれのドライバを接続します。`hosi121/ws_session` は DB に依存しません。SpeakUp は `vendor/servicekit` の Git submodule で commit を固定して参照します。通話 ID、認証、JSON 検証、JS callback の規約と型生成の検査はアプリ側に置きます。[切り分けの理由](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/design.md)
 
-DB 部分は現状 MySQL 専用です。独立した repo / module にしたことと、RDBMS 間で共通の API を設計・検証したことは別です。後者は未実装であり、[共通 session / transaction と PostgreSQL adapter の設計案](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/database-abstraction.md)に整理しています。
+共通 API は MySQL / PostgreSQL の両実 DB で同じ契約試験を実行しています。SpeakUp の native backend もその API を使いますが、アプリの SQL・schema・運用 DB は引き続き MySQL です。SQL 方言の自動変換やアプリ全体の PostgreSQL 対応を意味しません。[実装した抽象化と制約](https://github.com/Hosi121/servicekit.mbt/blob/main/docs/database-abstraction.md)
 
 **今回の測定では native 化による高速化は確認できませんでした。** signaling 中継の中央値は Go 比較用実装の約 0.95 倍。中継プログラムの RSS は JS/Node の約 85 MiB に対し native は約 10.5 MiB でした。[測定方法と結果](docs/performance.md)を参照してください。
 
@@ -54,8 +54,8 @@ core/api          HTTP 入力検査、業務処理、SQL と応答構築
 core/native_server    native HTTP / 通話 controller
 core/native_transport connection ID 管理、signaling の判断と配送
 core/native_io        HTTP 入力制限、async 0.22.1 の close drain
-core/native_host      mysql pool の設定・DB 値変換 / JWT / 外部 API
-vendor/servicekit     外部 repo: mysql / ws_session の独立 module
+core/native_host      共通 SQL API の利用・MySQL 設定・DB 値変換 / JWT / 外部 API
+vendor/servicekit     外部 repo: sql / mysql / postgres / ws_session（利用する module だけ登録）
 core/wire, bridge     アプリの JSON 数値検査と JS callback 規約
 scripts/boundaries    固定版 TS2Mbt / Mbt2TS の生成・公開型検査
 examples/js-boundary  アプリの JS 境界を実行する契約 fixture
