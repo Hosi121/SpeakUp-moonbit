@@ -33,43 +33,88 @@ pub(all) struct ReflectionDto {
 } derive(ToJson, FromJson)
 
 ///|
-fn snapshot(d : ConversationDto) -> @conversation.Snapshot raise {
+/// Validated domain data is kept separately from the mutable JS-facing view.
+pub struct Call {
+  model : @conversation.Conversation
+  priv first : FriendSummaryDto
+  priv second : FriendSummaryDto
+  priv theme : String
+  priv topics : Array[String]
+  priv event_start : String
+}
+
+///|
+pub fn Call::from_dto(d : ConversationDto) -> Call raise {
   guard d.participants.length() == 2 else { fail("Expected two participants") }
+  let model = @conversation.restore(
+    {
+      id: d.id,
+      first: d.participants[0].id,
+      second: d.participants[1].id,
+      started_at: d.started_at,
+      ended_at: d.ended_at,
+      cancelled_at: d.cancelled_at,
+      revision: d.revision,
+    },
+    event_id=d.event_id,
+    round=d.round,
+  )
   {
-    id: d.id,
-    first: d.participants[0].id,
-    second: d.participants[1].id,
-    started_at: d.started_at,
-    ended_at: d.ended_at,
-    cancelled_at: d.cancelled_at,
-    revision: d.revision,
+    model,
+    first: { ..d.participants[0], },
+    second: { ..d.participants[1], },
+    theme: d.theme,
+    topics: d.topics.copy(),
+    event_start: d.event_start,
   }
 }
 
 ///|
-fn validate_conversation(d : ConversationDto) -> Unit raise {
-  @conversation.state(snapshot(d)) |> ignore
-  guard (d.event_id == 0 && d.round == 0) || (d.event_id > 0 && d.round > 0) else {
-    fail("Invalid origin")
+pub fn Call::dto(self : Call) -> ConversationDto {
+  let s = self.model.snapshot()
+  let (event_id, round) = match self.model.origin() {
+    Direct => (0, 0)
+    Event(event, round) => (event, round)
+  }
+  {
+    id: s.id,
+    event_id,
+    round,
+    started_at: s.started_at,
+    ended_at: s.ended_at,
+    cancelled_at: s.cancelled_at,
+    revision: s.revision,
+    theme: self.theme,
+    topics: self.topics.copy(),
+    participants: [{ ..self.first, }, { ..self.second, }],
+    event_start: self.event_start,
   }
 }
 
 ///|
-pub fn conversation_partner(
-  d : ConversationDto,
-  actor : Int,
-) -> FriendSummaryDto raise {
-  let other = @conversation.partner(snapshot(d), actor)
-  if d.participants[0].id == other {
-    d.participants[0]
+pub fn Call::partner(self : Call, actor : Int) -> FriendSummaryDto raise {
+  let other = self.model.partner(actor)
+  if self.first.id == other {
+    { ..self.first, }
   } else {
-    d.participants[1]
+    { ..self.second, }
   }
 }
 
 ///|
-pub fn parse_conversation(text : String) -> ConversationDto raise {
-  decode_conversation_value(@json.parse(text))
+pub fn Call::clock(self : Call, now : Double) -> ConversationClock raise {
+  {
+    phase: self.model.phase().label(),
+    remaining_seconds: self.model.remaining(now),
+    can_finish: self.model.phase() is Active(_),
+    can_join: self.model.can_join(),
+    has_deadline: self.model.has_deadline(),
+  }
+}
+
+///|
+pub fn parse_call(text : String) -> Call raise {
+  decode_call_value(@json.parse(text))
 }
 
 ///|
@@ -83,9 +128,8 @@ fn integer_field(
 }
 
 ///|
-pub fn decode_conversation_value(value : Json) -> ConversationDto raise {
-  // FromJson for Int truncates fractional numbers on this compiler. Validate
-  // the original JSON before any narrowing conversion can lose information.
+pub fn decode_call_value(value : Json) -> Call raise {
+  // Int decoding truncates fractions on this compiler; check before narrowing.
   integer_field(value, "id", 1, 2147483647)
   integer_field(value, "event_id", 0, 2147483647)
   integer_field(value, "round", 0, 2147483647)
@@ -96,17 +140,39 @@ pub fn decode_conversation_value(value : Json) -> ConversationDto raise {
   for participant in participants {
     integer_field(participant, "id", 1, 2147483647)
   }
-  let dto : ConversationDto = @json.from_json(value)
-  validate_conversation(dto)
-  dto
+  Call::from_dto(@json.from_json(value))
+}
+
+///|
+pub fn parse_calls(text : String) -> Array[Call] raise {
+  guard @json.parse(text) is Array(values) else {
+    fail("Expected conversations")
+  }
+  values.map(decode_call_value)
+}
+
+///|
+/// Wire compatibility adapters. MoonBit consumers use Call directly.
+pub fn parse_conversation(text : String) -> ConversationDto raise {
+  parse_call(text).dto()
+}
+
+///|
+pub fn decode_conversation_value(value : Json) -> ConversationDto raise {
+  decode_call_value(value).dto()
 }
 
 ///|
 pub fn parse_conversations(text : String) -> Array[ConversationDto] raise {
-  guard @json.parse(text) is Array(values) else {
-    fail("Expected conversations")
-  }
-  values.map(decode_conversation_value)
+  parse_calls(text).map(Call::dto)
+}
+
+///|
+pub fn conversation_partner(
+  d : ConversationDto,
+  actor : Int,
+) -> FriendSummaryDto raise {
+  Call::from_dto(d).partner(actor)
 }
 
 ///|
@@ -114,23 +180,7 @@ pub fn conversation_clock(
   d : ConversationDto,
   now : Double,
 ) -> ConversationClock raise {
-  let s = snapshot(d)
-  let phase = @conversation.state(s)
-  {
-    phase,
-    remaining_seconds: @conversation.remaining(
-      s,
-      now,
-      if d.event_id == 0 {
-        0
-      } else {
-        300
-      },
-    ),
-    can_finish: phase == "active",
-    can_join: phase == "planned" || phase == "active",
-    has_deadline: d.event_id != 0,
-  }
+  Call::from_dto(d).clock(now)
 }
 
 ///|

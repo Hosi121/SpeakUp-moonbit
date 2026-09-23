@@ -3,21 +3,52 @@
 priv struct Peer {
   user : Int
   room : Int
-  mut media_ready : Bool
+}
+
+///|
+priv enum MediaAcknowledgements {
+  Neither
+  One(@shared.Role)
+  Both
 }
 
 ///|
 priv enum Negotiation {
-  AwaitingPeer
   Ready
   OfferSent
-  Negotiated
-} derive(Eq)
+  Negotiated(MediaAcknowledgements)
+}
 
 ///|
-priv struct Room {
-  peers : Array[Int]
+priv struct Pair {
+  first : Int
+  second : Int
+  offerer : Int
   mut phase : Negotiation
+}
+
+///|
+/// A room with one member cannot carry negotiation or media acknowledgements.
+priv enum Room {
+  Waiting(Int)
+  Paired(Pair)
+}
+
+///|
+fn Room::connections(self : Room) -> Array[Int] {
+  match self {
+    Waiting(one) => [one]
+    Paired(pair) => [pair.first, pair.second]
+  }
+}
+
+///|
+fn Pair::role(self : Pair, connection : Int) -> @shared.Role {
+  if connection == self.offerer {
+    Offerer
+  } else {
+    Answerer
+  }
 }
 
 ///|
@@ -89,31 +120,41 @@ pub fn join(
     hub.peers.contains(connection) {
     return [reject(connection, "invalid join")]
   }
-  let room = hub.rooms.get_or_init(room_id, fn() {
-    { peers: [], phase: AwaitingPeer, }
-  })
-  if room.peers.length() >= 2 ||
-    room.peers.any(fn(c) { hub.peers[c].user == user }) {
-    return [reject(connection, "room already occupied")]
+  match hub.rooms.get(room_id) {
+    None => {
+      hub.peers[connection] = { user, room: room_id, }
+      hub.rooms[room_id] = Waiting(connection)
+      [send(connection, { "type": "waiting" })]
+    }
+    Some(Paired(_)) => [reject(connection, "room already occupied")]
+    Some(Waiting(first)) => {
+      if hub.peers[first].user == user {
+        return [reject(connection, "room already occupied")]
+      }
+      let offerer = if hub.peers[first].user > user {
+        first
+      } else {
+        connection
+      }
+      hub.peers[connection] = { user, room: room_id, }
+      hub.rooms[room_id] = Paired({
+        first,
+        second: connection,
+        offerer,
+        phase: Ready,
+      })
+      [
+        send(first, {
+          "type": "callType",
+          "isOffer": (first == offerer).to_json(),
+        }),
+        send(connection, {
+          "type": "callType",
+          "isOffer": (connection == offerer).to_json(),
+        }),
+      ]
+    }
   }
-  hub.peers[connection] = { user, room: room_id, media_ready: false, }
-  room.peers.push(connection)
-  if room.peers.length() == 1 {
-    return [send(connection, { "type": "waiting" })]
-  }
-  let a = room.peers[0]
-  let b = room.peers[1]
-  room.phase = Ready
-  [
-    send(a, {
-      "type": "callType",
-      "isOffer": (hub.peers[a].user > hub.peers[b].user).to_json(),
-    }),
-    send(b, {
-      "type": "callType",
-      "isOffer": (hub.peers[b].user > hub.peers[a].user).to_json(),
-    }),
-  ]
 }
 
 ///|
@@ -121,17 +162,22 @@ pub fn leave(id : Int, connection : Int) -> Array[Delivery] {
   guard hubs.get(id) is Some(hub) else { return [] }
   guard hub.peers.get(connection) is Some(peer) else { return [] }
   hub.peers.remove(connection)
-  guard hub.rooms.get(peer.room) is Some(room) else { return [] }
-  room.peers.retain(fn(c) { c != connection })
-  room.phase = AwaitingPeer
-  for c in room.peers {
-    hub.peers[c].media_ready = false
+  match hub.rooms.get(peer.room) {
+    None => []
+    Some(Waiting(_)) => {
+      hub.rooms.remove(peer.room)
+      []
+    }
+    Some(Paired(pair)) => {
+      let other = if pair.first == connection {
+        pair.second
+      } else {
+        pair.first
+      }
+      hub.rooms[peer.room] = Waiting(other)
+      [send(other, { "type": "peer-left" })]
+    }
   }
-  if room.peers.is_empty() {
-    hub.rooms.remove(peer.room)
-    return []
-  }
-  room.peers.map(fn(c) { send(c, { "type": "peer-left" }) })
 }
 
 ///|
@@ -139,7 +185,7 @@ fn relay_parsed(
   id : Int,
   connection : Int,
   text : String,
-  signal : @shared.ParsedSignal,
+  signal : @shared.ClientSignal?,
 ) -> Array[Delivery] {
   guard hubs.get(id) is Some(hub) else {
     return [reject(connection, "unknown hub")]
@@ -150,41 +196,27 @@ fn relay_parsed(
   guard hub.rooms.get(peer.room) is Some(room) else {
     return [reject(connection, "room missing")]
   }
-  if room.peers.length() != 2 {
+  guard room is Paired(pair) else {
     return [reject(connection, "peer not ready")]
   }
-  let other = if room.peers[0] == connection {
-    room.peers[1]
-  } else {
-    room.peers[0]
+  guard signal is Some(Peer(message)) else {
+    return [reject(connection, "invalid signal")]
   }
-  let is_offer = peer.user > hub.peers[other].user
-  match signal.kind {
-    "offer" => {
-      if !is_offer || room.phase != Ready {
-        return [reject(connection, "unexpected offer")]
-      }
-      room.phase = OfferSent
-    }
-    "answer" => {
-      if is_offer || room.phase != OfferSent {
-        return [reject(connection, "unexpected answer")]
-      }
-      room.phase = Negotiated
-    }
-    "ice-candidate" =>
-      if room.phase == AwaitingPeer {
-        return [reject(connection, "unexpected ICE")]
-      }
-    _ => return [reject(connection, "invalid signal")]
+  match (pair.phase, pair.role(connection), message) {
+    (Ready, Offerer, Offer(_)) => pair.phase = OfferSent
+    (OfferSent, Answerer, Answer(_)) => pair.phase = Negotiated(Neither)
+    (_, _, Ice(_)) => ()
+    (_, _, Offer(_)) => return [reject(connection, "unexpected offer")]
+    (_, _, Answer(_)) => return [reject(connection, "unexpected answer")]
   }
+  let other = if pair.first == connection { pair.second } else { pair.first }
   // Relay the original bytes after validation. No decode/encode copy of SDP.
   [{ connection: other, payload: text, close_code: 0, }]
 }
 
 ///|
 pub fn relay(id : Int, connection : Int, text : String) -> Array[Delivery] {
-  relay_parsed(id, connection, text, @shared.validate_signal(text))
+  relay_parsed(id, connection, text, @shared.parse_client_signal(text))
 }
 
 ///|
@@ -195,29 +227,37 @@ pub(all) struct Reception {
 
 ///|
 pub fn receive(id : Int, connection : Int, text : String) -> Reception {
-  let signal = @shared.validate_signal(text)
-  if signal.kind == "media-ready" {
-    { deliveries: [], media_ready: confirm_media(id, connection), }
-  } else {
-    {
-      deliveries: relay_parsed(id, connection, text, signal),
-      media_ready: false,
-    }
+  let signal = @shared.parse_client_signal(text)
+  match signal {
+    Some(MediaReady) =>
+      { deliveries: [], media_ready: confirm_media(id, connection), }
+    _ =>
+      {
+        deliveries: relay_parsed(id, connection, text, signal),
+        media_ready: false,
+      }
   }
 }
 
 ///|
 /// Only the second distinct acknowledgement triggers a durable begin command.
-/// These acknowledgements belong to this negotiation, not to a DB attendance row.
 pub fn confirm_media(id : Int, connection : Int) -> Bool {
   guard hubs.get(id) is Some(hub) else { return false }
   guard hub.peers.get(connection) is Some(peer) else { return false }
-  guard hub.rooms.get(peer.room) is Some(room) else { return false }
-  if room.phase != Negotiated || peer.media_ready {
-    return false
+  guard hub.rooms.get(peer.room) is Some(Paired(pair)) else { return false }
+  let role = pair.role(connection)
+  match (pair.phase, role) {
+    (Negotiated(Neither), _) => {
+      pair.phase = Negotiated(One(role))
+      false
+    }
+    (Negotiated(One(Offerer)), Answerer)
+    | (Negotiated(One(Answerer)), Offerer) => {
+      pair.phase = Negotiated(Both)
+      true
+    }
+    _ => false
   }
-  peer.media_ready = true
-  room.peers.all(fn(c) { hub.peers[c].media_ready })
 }
 
 ///|
@@ -229,11 +269,12 @@ pub fn publish(
 ) -> Array[Delivery] {
   guard hubs.get(id) is Some(hub) else { return [] }
   guard hub.rooms.get(room_id) is Some(room) else { return [] }
-  let messages = room.peers.map(fn(c) {
+  let connections = room.connections()
+  let messages = connections.map(fn(c) {
     { connection: c, payload, close_code: if completed { 1000 } else { 0 }, }
   })
   if completed {
-    for c in room.peers {
+    for c in connections {
       hub.peers.remove(c)
     }
     hub.rooms.remove(room_id)

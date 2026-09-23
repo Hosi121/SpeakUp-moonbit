@@ -45,6 +45,6 @@ pub async fn expire_conversation(id : Int) -> ApiResponse {
     "SELECT user_id FROM conversation_members WHERE conversation_id=? AND seat=0",
     [id.to_json()],
   )
-  let dto = change_conversation(id, number(owner, "user_id"), "expire")
+  let dto = change_conversation(id, number(owner, "user_id"), Expire)
   response(200, dto.to_json().stringify())
 }

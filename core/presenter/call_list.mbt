@@ -62,16 +62,16 @@ pub fn create_calls(ports : AppPorts) -> CallsController {
       "/user/info",
       "/conversations",
       @shared.checked_profile_response,
-      @shared.parse_conversations,
+      @shared.parse_calls,
       fn(profile, values) raise {
         let calls = values.map(fn(call) raise {
-          let clock = @shared.conversation_clock(call, (ports.now)())
+          let clock = call.clock((ports.now)())
           {
-            call,
-            partner: @shared.conversation_partner(call, profile.id).username,
+            call: call.dto(),
+            partner: call.partner(profile.id).username,
             can_join: clock.can_join,
-            active: clock.phase == "active",
-            path: "/session?conversation=\{call.id}",
+            active: call.model.phase() is Active(_),
+            path: "/session?conversation=\{call.model.id()}",
           }
         })
         me.val = profile

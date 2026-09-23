@@ -2,6 +2,7 @@
 package "hosi121/speakup/shared"
 
 import {
+  "hosi121/speakup/conversation",
   "moonbitlang/core/json",
 }
 
@@ -47,6 +48,8 @@ pub fn conversation_partner(ConversationDto, Int) -> FriendSummaryDto raise
 pub fn decode_activity_token(String) -> String
 
 pub fn decode_avatar_response(String) -> String
+
+pub fn decode_call_value(Json) -> Call raise
 
 pub fn decode_chat_response(String) -> String
 
@@ -102,11 +105,21 @@ pub fn map_user(UserDto) -> User
 
 pub fn normalize_avatar(String, String) -> String
 
+pub fn parse_authorization(String) -> Authorization?
+
+pub fn parse_call(String) -> Call raise
+
+pub fn parse_calls(String) -> Array[Call] raise
+
+pub fn parse_client_signal(String) -> ClientSignal?
+
 pub fn parse_conversation(String) -> ConversationDto raise
 
 pub fn parse_conversations(String) -> Array[ConversationDto] raise
 
 pub fn parse_reflection(String) -> ReflectionDto raise
+
+pub fn parse_server_signal(String) -> ServerSignal?
 
 pub fn parse_signal(String) -> ParsedSignal
 
@@ -130,6 +143,32 @@ pub(all) struct AchievementDto {
 } derive(ToJson, @json.FromJson)
 pub fn AchievementDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn AchievementDto::to_json(Self) -> Json
+
+pub struct Authorization {
+  token : String
+  room : Int
+}
+
+pub struct Call {
+  model : @conversation.Conversation
+  // private fields
+}
+pub fn Call::clock(Self, Double) -> ConversationClock raise
+pub fn Call::dto(Self) -> ConversationDto
+pub fn Call::from_dto(ConversationDto) -> Self raise
+pub fn Call::partner(Self, Int) -> FriendSummaryDto raise
+
+pub struct Candidate {
+  candidate : String
+  mid : String?
+  line : Int?
+  username : String?
+}
+
+pub(all) enum ClientSignal {
+  Peer(PeerSignal)
+  MediaReady
+}
 
 pub(all) struct ConversationClock {
   phase : String
@@ -315,6 +354,12 @@ pub(all) struct ParsedSignal {
   error : String
 }
 
+pub(all) enum PeerSignal {
+  Offer(String)
+  Answer(String)
+  Ice(Candidate)
+}
+
 pub(all) struct ReflectionDto {
   saved : Bool
   satisfaction : Int
@@ -324,6 +369,20 @@ pub(all) struct ReflectionDto {
 } derive(ToJson, @json.FromJson)
 pub fn ReflectionDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn ReflectionDto::to_json(Self) -> Json
+
+pub(all) enum Role {
+  Offerer
+  Answerer
+}
+
+pub(all) enum ServerSignal {
+  Peer(PeerSignal)
+  Conversation(Call)
+  Waiting
+  PeerLeft
+  Assigned(Role)
+  Failure(String)
+}
 
 pub(all) struct SessionData {
   theme : String

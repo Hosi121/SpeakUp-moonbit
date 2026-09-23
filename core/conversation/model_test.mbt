@@ -76,3 +76,19 @@ test "clock changes and repeated commands preserve lifecycle invariants" {
     assert_eq(@conversation.finish(ended, 20, start + 9999).revision, 2)
   }
 }
+
+///|
+test "event expiry and manual finish share a deadline; direct calls never expire" {
+  let direct = @conversation.restore(planned()).change(Start, 10, 1000)
+  assert_eq(direct.change(Expire, 20, 999999).revision(), 1)
+  assert_eq(direct.change(Finish, 20, 999999).snapshot().ended_at, 999999)
+  let invitation = @conversation.restore(planned(), event_id=7, round=1)
+  assert_eq(invitation.change(Expire, 10, 999999).revision(), 0)
+  let event = invitation.change(Start, 10, 1000)
+  assert_eq(event.change(Expire, 20, 300999).revision(), 1)
+  let expired = event.change(Expire, 20, 301000)
+  assert_eq(expired.snapshot().ended_at, 301000)
+  assert_eq(event.change(Finish, 20, 400000).snapshot().ended_at, 301000)
+  assert_eq(expired.change(Finish, 10, 999999).snapshot().ended_at, 301000)
+  assert_eq(event.change(Finish, 20, 1).snapshot().ended_at, 1000)
+}

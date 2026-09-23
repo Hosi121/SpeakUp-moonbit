@@ -1,4 +1,5 @@
 import type * as json from "moonbitlang/core/json";
+import type * as conversation from "hosi121/speakup/conversation";
 
 export type Result<T, E> = { $tag: "Ok"; _0: T } | { $tag: "Err"; _0: E };
 
@@ -49,6 +50,8 @@ export function conversation_partner(arg0: ConversationDto, n: number): Result<F
 export function decode_activity_token(s: string): string;
 
 export function decode_avatar_response(s: string): string;
+
+export function decode_call_value(value: Json): Result<Call, Error>;
 
 export function decode_chat_response(s: string): string;
 
@@ -104,11 +107,21 @@ export function map_user(value: UserDto): User;
 
 export function normalize_avatar(s: string, s2: string): string;
 
+export function parse_authorization(s: string): Authorization | undefined;
+
+export function parse_call(s: string): Result<Call, Error>;
+
+export function parse_calls(s: string): Result<Array<Call>, Error>;
+
+export function parse_client_signal(s: string): ClientSignal | undefined;
+
 export function parse_conversation(s: string): Result<ConversationDto, Error>;
 
 export function parse_conversations(s: string): Result<Array<ConversationDto>, Error>;
 
 export function parse_reflection(s: string): Result<ReflectionDto, Error>;
+
+export function parse_server_signal(s: string): ServerSignal | undefined;
 
 export function parse_signal(s: string): ParsedSignal;
 
@@ -131,6 +144,35 @@ export interface AchievementDto extends ToJson, json.FromJson {
 export function AchievementDto_to_json(self : AchievementDto): Json;
 
 export function AchievementDto_from_json(arg0: Json, arg1: json.JsonPath): Result<AchievementDto, json.JsonDecodeError>;
+
+export interface Authorization {
+  token: string;
+  room: number;
+}
+
+export interface Call {
+  model: conversation.Conversation;
+}
+
+export function Call_clock(self : Call, n: number): Result<ConversationClock, Error>;
+
+export function Call_dto(self : Call): ConversationDto;
+
+export function Call_partner(self : Call, n: number): Result<FriendSummaryDto, Error>;
+
+export function Call_from_dto(value: ConversationDto): Result<Call, Error>;
+
+export interface Candidate {
+  candidate: string;
+  mid: string | undefined;
+  line: number | undefined;
+  username: string | undefined;
+}
+
+export type ClientSignal = { $tag: "Peer"; _0: PeerSignal } | { $tag: "MediaReady" };
+
+export type ClientSignal_Peer = Extract<ClientSignal, { $tag: "Peer" }>;
+export type ClientSignal_MediaReady = Extract<ClientSignal, { $tag: "MediaReady" }>;
 
 export interface ConversationClock {
   phase: string;
@@ -344,6 +386,12 @@ export interface ParsedSignal {
   error: string;
 }
 
+export type PeerSignal = { $tag: "Offer"; _0: string } | { $tag: "Answer"; _0: string } | { $tag: "Ice"; _0: Candidate };
+
+export type PeerSignal_Offer = Extract<PeerSignal, { $tag: "Offer" }>;
+export type PeerSignal_Answer = Extract<PeerSignal, { $tag: "Answer" }>;
+export type PeerSignal_Ice = Extract<PeerSignal, { $tag: "Ice" }>;
+
 export interface ReflectionDto extends ToJson, json.FromJson {
   saved: boolean;
   satisfaction: number;
@@ -355,6 +403,20 @@ export interface ReflectionDto extends ToJson, json.FromJson {
 export function ReflectionDto_to_json(self : ReflectionDto): Json;
 
 export function ReflectionDto_from_json(arg0: Json, arg1: json.JsonPath): Result<ReflectionDto, json.JsonDecodeError>;
+
+export type Role = { $tag: "Offerer" } | { $tag: "Answerer" };
+
+export type Role_Offerer = Extract<Role, { $tag: "Offerer" }>;
+export type Role_Answerer = Extract<Role, { $tag: "Answerer" }>;
+
+export type ServerSignal = { $tag: "Peer"; _0: PeerSignal } | { $tag: "Conversation"; _0: Call } | { $tag: "Waiting" } | { $tag: "PeerLeft" } | { $tag: "Assigned"; _0: Role } | { $tag: "Failure"; _0: string };
+
+export type ServerSignal_Peer = Extract<ServerSignal, { $tag: "Peer" }>;
+export type ServerSignal_Conversation = Extract<ServerSignal, { $tag: "Conversation" }>;
+export type ServerSignal_Waiting = Extract<ServerSignal, { $tag: "Waiting" }>;
+export type ServerSignal_PeerLeft = Extract<ServerSignal, { $tag: "PeerLeft" }>;
+export type ServerSignal_Assigned = Extract<ServerSignal, { $tag: "Assigned" }>;
+export type ServerSignal_Failure = Extract<ServerSignal, { $tag: "Failure" }>;
 
 export interface SessionData {
   theme: string;

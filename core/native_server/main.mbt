@@ -67,11 +67,11 @@ async fn[T] with_conversation(id : Int, f : async () -> T) -> T {
 
 ///|
 fn publish_conversation(body : String) -> Unit raise {
-  let conversation = @shared.parse_conversation(body)
+  let conversation = @shared.parse_call(body)
   relay.publish(
-    conversation.id,
+    conversation.model.id(),
     "{\"type\":\"conversation\",\"value\":" + body + "}",
-    conversation.ended_at > 0 || conversation.cancelled_at > 0,
+    !conversation.model.can_join(),
   )
 }
 
@@ -88,8 +88,9 @@ async fn connection(
       let message = ws.recv()
       guard message.kind is Text else { raise BadRequest }
       let text = @utf8.decode(@native_io.limited_body(message, 65536))
-      let auth = @shared.parse_signal(text)
-      guard auth.kind == "Authorization" else { raise BadRequest }
+      guard @shared.parse_authorization(text) is Some(auth) else {
+        raise BadRequest
+      }
       let uid = @host.verify_token(auth.token)
       with_conversation(auth.room, async fn() {
         let result = @api.execute(
@@ -100,10 +101,8 @@ async fn connection(
           "",
         )
         guard result.status == 200 else { raise BadRequest }
-        let conversation = @shared.parse_conversation(result.body)
-        guard conversation.ended_at == 0 && conversation.cancelled_at == 0 else {
-          raise BadRequest
-        }
+        let conversation = @shared.parse_call(result.body)
+        guard conversation.model.can_join() else { raise BadRequest }
         relay.join(peer, uid, auth.room)
         relay.send(
           peer,

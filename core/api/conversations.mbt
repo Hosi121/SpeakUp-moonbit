@@ -4,8 +4,15 @@ let conversation_sql : String = "SELECT c.id,COALESCE(c.event_id,0) AS event_id,
 
 ///|
 fn conversation_dto(v : Json) -> @shared.ConversationDto raise {
-  let s : @conversation.Snapshot = @json.from_json(v)
-  @conversation.state(s) |> ignore
+  conversation_dto_for(v, conversation_model(v))
+}
+
+///|
+fn conversation_dto_for(
+  v : Json,
+  model : @conversation.Conversation,
+) -> @shared.ConversationDto raise {
+  let s = model.snapshot()
   {
     id: s.id,
     event_id: @json.from_json(field(v, "event_id")),
@@ -38,6 +45,15 @@ fn conversation_dto(v : Json) -> @shared.ConversationDto raise {
 }
 
 ///|
+fn conversation_model(row : Json) -> @conversation.Conversation raise {
+  @conversation.restore(
+    @json.from_json(row),
+    event_id=@json.from_json(field(row, "event_id")),
+    round=@json.from_json(field(row, "round")),
+  )
+}
+
+///|
 async fn conversation_row(id : Int, uid : Int) -> Json {
   one(conversation_sql + " AND c.id=?", [uid.to_json(), id.to_json()])
 }
@@ -59,42 +75,17 @@ async fn list_conversations(
 async fn change_conversation(
   id : Int,
   uid : Int,
-  action : String,
+  action : @conversation.Action,
 ) -> @shared.ConversationDto {
   // Optimistic concurrency: only an actual transition writes. Retries return
   // the original timestamps; simultaneous finish requests converge.
   for attempt in 0..<4 {
     let row = conversation_row(id, uid)
-    let before : @conversation.Snapshot = @json.from_json(row)
-    let dto = conversation_dto(row)
-    let now = (host().now_millis)()
-    let deadline = before.started_at + 300000
-    if action == "expire" &&
-      (
-        dto.event_id == 0 ||
-        before.started_at == 0 ||
-        now < deadline ||
-        before.ended_at > 0 ||
-        before.cancelled_at > 0
-      ) {
-      return dto
-    }
-    let after = if action == "start" {
-      @conversation.begin(before, uid, (host().now_millis)())
-    } else if action == "cancel" {
-      @conversation.cancel(before, uid, (host().now_millis)())
-    } else {
-      @conversation.finish(
-        before,
-        uid,
-        if dto.event_id > 0 && now > deadline {
-          deadline
-        } else {
-          now
-        },
-      )
-    }
-    if after.revision == before.revision {
+    let before = conversation_model(row)
+    let changed = before.change(action, uid, (host().now_millis)())
+    let dto = conversation_dto_for(row, before)
+    let after = changed.snapshot()
+    if after.revision == before.revision() {
       return dto
     }
     let result = query(
@@ -105,7 +96,7 @@ async fn change_conversation(
         after.cancelled_at.to_json(),
         after.revision.to_json(),
         id.to_json(),
-        before.revision.to_json(),
+        before.revision().to_json(),
       ],
     )
     if field(result, "affectedRows") == (1).to_json() {
@@ -227,8 +218,7 @@ async fn save_reflection(
   body : Json,
 ) -> @shared.ReflectionDto {
   let row = conversation_row(id, uid)
-  let s : @conversation.Snapshot = @json.from_json(row)
-  if @conversation.state(s) != "completed" {
+  guard conversation_model(row).phase() is Completed(_, _) else {
     raise Invalid(409, "Finish the conversation first")
   }
   let satisfaction = match field(body, "satisfaction") {

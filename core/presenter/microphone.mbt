@@ -16,6 +16,15 @@ pub(all) struct MicrophoneController {
 }
 
 ///|
+priv enum MicrophonePhase {
+  Stopped
+  Acquiring
+  Capturing(StreamPort)
+  Sampling(AudioInput)
+  Checked
+}
+
+///|
 pub fn create_microphone(
   media : MediaPorts,
   realtime : RealtimePorts,
@@ -27,67 +36,65 @@ pub fn create_microphone(
     checked: false,
   })
   let generation = Ref(0)
-  let active = Ref(false)
-  let stream : Ref[StreamPort?] = Ref(None)
-  let meter : Ref[MeterPort?] = Ref(None)
+  let phase : Ref[MicrophonePhase] = Ref(Stopped)
   let frame = Ref(noop)
   let unwatch = Ref(noop)
   let stop = fn() {
-    active.val = false
+    let previous = phase.val
+    phase.val = if previous is Checked { Checked } else { Stopped }
     generation.val += 1
     (frame.val)()
     frame.val = noop
     (unwatch.val)()
     unwatch.val = noop
-    if stream.val is Some(value) {
-      (value.close)()
+    match previous {
+      Capturing(stream) => (stream.close)()
+      Sampling(audio) => audio.close()
+      Stopped | Acquiring | Checked => ()
     }
-    stream.val = None
-    if meter.val is Some(value) {
-      (value.close)()
-    }
-    meter.val = None
   }
   fn sample() {
     (frame.val)()
     frame.val = noop
-    if !active.val || !(realtime.visible)() {
-      return
+    guard phase.val is Sampling(audio) && (realtime.visible)() else { return }
+    let current = generation.val
+    state.set({
+      ..state.value,
+      levels: microphone_levels((audio.meter.sample)()),
+    })
+    if current == generation.val && phase.val is Sampling(_) {
+      frame.val = (media.frame)(sample)
     }
-    guard meter.val is Some(meter) else { return }
-    let levels = microphone_levels((meter.sample)())
-    state.set({ ..state.value, levels, })
-    if !active.val {
-      return
-    }
-    frame.val = (media.frame)(sample)
   }
   {
     get_snapshot: fn() { state.value },
     subscribe: fn(listener) { state.subscribe(listener) },
     stop,
     start: fn() {
-      if active.val || state.value.checked {
-        return
-      }
-      active.val = true
+      guard phase.val is Stopped else { return }
+      phase.val = Acquiring
       generation.val += 1
       let current = generation.val
       state.set({ ..state.value, ready: false, error: "", })
       unwatch.val = (realtime.on_focus)(sample)
       (media.acquire)(
-        fn(value) {
-          if !active.val || current != generation.val {
-            (value.close)()
+        fn(stream) {
+          guard current == generation.val && phase.val is Acquiring else {
+            (stream.close)()
             return
           }
-          stream.val = Some(value)
-          meter.val = Some((value.meter)(2048))
+          phase.val = Capturing(stream)
+          let audio : AudioInput = { stream, meter: (stream.meter)(2048), }
+          if current != generation.val {
+            audio.close()
+            return
+          }
+          phase.val = Sampling(audio)
           state.set({ ..state.value, ready: true, })
           sample()
         },
         fn(_) {
-          if !active.val || current != generation.val {
+          if current != generation.val {
             return
           }
           stop()
@@ -102,6 +109,7 @@ pub fn create_microphone(
     finish: fn() {
       if state.value.ready {
         stop()
+        phase.val = Checked
         state.set({ ..state.value, checked: true, })
       }
     },

@@ -11,17 +11,36 @@ pub(all) struct Snapshot {
 } derive(ToJson, FromJson)
 
 ///|
-priv enum Phase {
+pub(all) enum Phase {
   Planned
   Active(Double)
-  Completed
-  Cancelled
+  Completed(Double, Double)
+  Cancelled(Double)
 }
 
 ///|
-priv struct Conversation {
-  snapshot : Snapshot
-  phase : Phase
+pub(all) enum Origin {
+  Direct
+  Event(Int, Int)
+}
+
+///|
+pub(all) enum Action {
+  Start
+  Finish
+  Cancel
+  Expire
+}
+
+///|
+/// Only restore and transitions can construct a validated conversation.
+/// Timestamps and revision are projections of the phase, not independent state.
+pub struct Conversation {
+  priv id : Int
+  priv first : Int
+  priv second : Int
+  priv phase : Phase
+  priv origin : Origin
 }
 
 ///|
@@ -40,65 +59,215 @@ fn valid_time(time : Double) -> Bool {
 }
 
 ///|
-fn restore(s : Snapshot) -> Conversation raise StateError {
+pub fn restore(
+  s : Snapshot,
+  event_id? : Int = 0,
+  round? : Int = 0,
+) -> Conversation raise StateError {
   guard s.id > 0 &&
     s.first > 0 &&
     s.second > s.first &&
-    s.revision >= 0 &&
-    s.revision <= 2 &&
     valid_time(s.started_at) &&
     valid_time(s.ended_at) &&
     valid_time(s.cancelled_at) else {
     raise InvalidSnapshot
   }
-  let phase = if s.cancelled_at > 0 {
-    if s.started_at != 0 || s.ended_at != 0 {
-      raise InvalidSnapshot
-    }
-    Cancelled
-  } else if s.started_at == 0 {
-    if s.ended_at != 0 {
-      raise InvalidSnapshot
-    }
-    Planned
-  } else if s.ended_at == 0 {
-    Active(s.started_at)
-  } else {
-    if s.ended_at < s.started_at {
-      raise InvalidSnapshot
-    }
-    Completed
+  let origin = match (event_id, round) {
+    (0, 0) => Direct
+    (event, round) if event > 0 && round > 0 => Event(event, round)
+    _ => raise InvalidSnapshot
   }
-  let expected_revision = match phase {
-    Planned => 0
-    Active(_) | Cancelled => 1
-    Completed => 2
+  let phase = match (s.started_at, s.ended_at, s.cancelled_at) {
+    (0, 0, 0) => Planned
+    (0, 0, cancelled) => Cancelled(cancelled)
+    (start, 0, 0) => Active(start)
+    (start, end, 0) if start > 0 && end >= start => Completed(start, end)
+    _ => raise InvalidSnapshot
   }
-  guard s.revision == expected_revision else { raise InvalidSnapshot }
-  { snapshot: s, phase, }
+  let c = Conversation::{
+    id: s.id,
+    first: s.first,
+    second: s.second,
+    phase,
+    origin,
+  }
+  guard s.revision == c.revision() else { raise InvalidSnapshot }
+  c
 }
 
 ///|
-fn authorize(c : Conversation, actor : Int) -> Unit raise StateError {
-  if actor != c.snapshot.first && actor != c.snapshot.second {
+pub fn Conversation::phase(self : Conversation) -> Phase {
+  self.phase
+}
+
+///|
+pub fn Conversation::origin(self : Conversation) -> Origin {
+  self.origin
+}
+
+///|
+pub fn Conversation::id(self : Conversation) -> Int {
+  self.id
+}
+
+///|
+pub fn Conversation::revision(self : Conversation) -> Int {
+  match self.phase {
+    Planned => 0
+    Active(_) | Cancelled(_) => 1
+    Completed(_, _) => 2
+  }
+}
+
+///|
+pub fn Conversation::snapshot(self : Conversation) -> Snapshot {
+  let (started_at, ended_at, cancelled_at) = match self.phase {
+    Planned => (0.0, 0.0, 0.0)
+    Active(start) => (start, 0.0, 0.0)
+    Completed(start, end) => (start, end, 0.0)
+    Cancelled(at) => (0.0, 0.0, at)
+  }
+  {
+    id: self.id,
+    first: self.first,
+    second: self.second,
+    started_at,
+    ended_at,
+    cancelled_at,
+    revision: self.revision(),
+  }
+}
+
+///|
+fn Conversation::authorize(
+  self : Conversation,
+  actor : Int,
+) -> Unit raise StateError {
+  if actor != self.first && actor != self.second {
     raise NotParticipant
   }
 }
 
 ///|
+pub fn Conversation::partner(
+  self : Conversation,
+  actor : Int,
+) -> Int raise StateError {
+  self.authorize(actor)
+  if actor == self.first {
+    self.second
+  } else {
+    self.first
+  }
+}
+
+///|
+pub fn Conversation::can_join(self : Conversation) -> Bool {
+  match self.phase {
+    Planned | Active(_) => true
+    Completed(_, _) | Cancelled(_) => false
+  }
+}
+
+///|
+pub fn Conversation::has_deadline(self : Conversation) -> Bool {
+  match self.origin {
+    Direct => false
+    Event(_, _) => true
+  }
+}
+
+///|
+/// The same lifecycle applies to direct and event calls. Only event calls expire.
+pub fn Conversation::change(
+  self : Conversation,
+  action : Action,
+  actor : Int,
+  now : Double,
+) -> Conversation raise StateError {
+  self.authorize(actor)
+  if action is Expire {
+    match (self.origin, self.phase) {
+      (Event(_, _), Active(start)) if now >= start + 300000 => ()
+      _ => return self
+    }
+  }
+  guard valid_time(now) && now > 0 else { raise InvalidClock }
+  let phase = match (action, self.phase) {
+    (Start, Planned) => Active(now)
+    (Start, Active(_)) => return self
+    (Start, Completed(_, _) | Cancelled(_)) => raise AlreadyCompleted
+    (Finish | Expire, Planned) => raise NotStarted
+    (Finish | Expire, Active(start)) => {
+      let end = if self.has_deadline() && now > start + 300000 {
+        start + 300000
+      } else {
+        now
+      }
+      Completed(start, if end < start { start } else { end })
+    }
+    (Finish | Expire, Completed(_, _)) => return self
+    (Finish | Expire, Cancelled(_)) => raise AlreadyCompleted
+    (Cancel, Planned) => Cancelled(now)
+    (Cancel, Cancelled(_)) => return self
+    (Cancel, Active(_)) => raise AlreadyStarted
+    (Cancel, Completed(_, _)) => raise AlreadyCompleted
+  }
+  { ..self, phase, }
+}
+
+///|
+pub fn Conversation::remaining(
+  self : Conversation,
+  now : Double,
+) -> Int raise StateError {
+  self.remaining_for(now, if self.has_deadline() { 300 } else { 0 })
+}
+
+///|
+fn Conversation::remaining_for(
+  self : Conversation,
+  now : Double,
+  duration : Int,
+) -> Int raise StateError {
+  guard valid_time(now) && duration >= 0 else { raise InvalidClock }
+  match self.phase {
+    Planned => if duration == 0 { -1 } else { duration }
+    Completed(_, _) | Cancelled(_) => 0
+    Active(start) => {
+      if duration == 0 {
+        return -1
+      }
+      let elapsed = (now - start) / 1000.0
+      if elapsed <= 0 {
+        duration
+      } else if elapsed >= duration.to_double() {
+        0
+      } else {
+        duration - elapsed.to_int()
+      }
+    }
+  }
+}
+
+///|
+pub fn Phase::label(self : Phase) -> String {
+  match self {
+    Planned => "planned"
+    Active(_) => "active"
+    Completed(_, _) => "completed"
+    Cancelled(_) => "cancelled"
+  }
+}
+
+///|
+/// Compatibility adapters for flat snapshots. Internal consumers retain Conversation.
 pub fn begin(
   s : Snapshot,
   actor : Int,
   now : Double,
 ) -> Snapshot raise StateError {
-  let c = restore(s)
-  authorize(c, actor)
-  guard valid_time(now) && now > 0 else { raise InvalidClock }
-  match c.phase {
-    Planned => { ..s, started_at: now, revision: s.revision + 1, }
-    Active(_) => s
-    Completed | Cancelled => raise AlreadyCompleted
-  }
+  restore(s).change(Start, actor, now).snapshot()
 }
 
 ///|
@@ -107,24 +276,7 @@ pub fn finish(
   actor : Int,
   now : Double,
 ) -> Snapshot raise StateError {
-  let c = restore(s)
-  authorize(c, actor)
-  guard valid_time(now) && now > 0 else { raise InvalidClock }
-  match c.phase {
-    Planned => raise NotStarted
-    Active(start) =>
-      {
-        ..s,
-        ended_at: if now < start {
-          start
-        } else {
-          now
-        },
-        revision: s.revision + 1,
-      }
-    Completed => s
-    Cancelled => raise AlreadyCompleted
-  }
+  restore(s).change(Finish, actor, now).snapshot()
 }
 
 ///|
@@ -133,36 +285,17 @@ pub fn cancel(
   actor : Int,
   now : Double,
 ) -> Snapshot raise StateError {
-  let c = restore(s)
-  authorize(c, actor)
-  guard valid_time(now) && now > 0 else { raise InvalidClock }
-  match c.phase {
-    Planned => { ..s, cancelled_at: now, revision: s.revision + 1, }
-    Cancelled => s
-    Active(_) => raise AlreadyStarted
-    Completed => raise AlreadyCompleted
-  }
+  restore(s).change(Cancel, actor, now).snapshot()
 }
 
 ///|
 pub fn state(s : Snapshot) -> String raise StateError {
-  match restore(s).phase {
-    Planned => "planned"
-    Active(_) => "active"
-    Completed => "completed"
-    Cancelled => "cancelled"
-  }
+  restore(s).phase().label()
 }
 
 ///|
 pub fn partner(s : Snapshot, actor : Int) -> Int raise StateError {
-  let c = restore(s)
-  authorize(c, actor)
-  if actor == s.first {
-    s.second
-  } else {
-    s.first
-  }
+  restore(s).partner(actor)
 }
 
 ///|
@@ -171,25 +304,7 @@ pub fn remaining(
   now : Double,
   duration_seconds : Int,
 ) -> Int raise StateError {
-  let c = restore(s)
-  guard valid_time(now) && duration_seconds >= 0 else { raise InvalidClock }
-  match c.phase {
-    Planned => if duration_seconds == 0 { -1 } else { duration_seconds }
-    Completed | Cancelled => 0
-    Active(start) => {
-      if duration_seconds == 0 {
-        return -1
-      }
-      let elapsed = (now - start) / 1000.0
-      if elapsed <= 0 {
-        duration_seconds
-      } else if elapsed >= duration_seconds.to_double() {
-        0
-      } else {
-        duration_seconds - elapsed.to_int()
-      }
-    }
-  }
+  restore(s).remaining_for(now, duration_seconds)
 }
 
 ///|

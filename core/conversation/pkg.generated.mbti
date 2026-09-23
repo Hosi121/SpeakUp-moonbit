@@ -17,6 +17,8 @@ pub fn partner(Snapshot, Int) -> Int raise StateError
 
 pub fn remaining(Snapshot, Double, Int) -> Int raise StateError
 
+pub fn restore(Snapshot, event_id? : Int, round? : Int) -> Conversation raise StateError
+
 pub fn state(Snapshot) -> String raise StateError
 
 // Errors
@@ -33,6 +35,40 @@ pub fn StateError::not_equal(Self, Self) -> Bool
 pub fn StateError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) enum Action {
+  Start
+  Finish
+  Cancel
+  Expire
+}
+
+pub struct Conversation {
+  // private fields
+}
+pub fn Conversation::can_join(Self) -> Bool
+pub fn Conversation::change(Self, Action, Int, Double) -> Self raise StateError
+pub fn Conversation::has_deadline(Self) -> Bool
+pub fn Conversation::id(Self) -> Int
+pub fn Conversation::origin(Self) -> Origin
+pub fn Conversation::partner(Self, Int) -> Int raise StateError
+pub fn Conversation::phase(Self) -> Phase
+pub fn Conversation::remaining(Self, Double) -> Int raise StateError
+pub fn Conversation::revision(Self) -> Int
+pub fn Conversation::snapshot(Self) -> Snapshot
+
+pub(all) enum Origin {
+  Direct
+  Event(Int, Int)
+}
+
+pub(all) enum Phase {
+  Planned
+  Active(Double)
+  Completed(Double, Double)
+  Cancelled(Double)
+}
+pub fn Phase::label(Self) -> String
+
 pub(all) struct Snapshot {
   id : Int
   first : Int

@@ -51,15 +51,14 @@ pub fn create_reflection(
       "record",
       "/conversations/\{id}",
       "/conversations/\{id}/reflection",
-      @shared.parse_conversation,
+      @shared.parse_call,
       @shared.parse_reflection,
       fn(call, reflection) raise {
-        guard call.id == id else { fail("Wrong conversation") }
-        let clock = @shared.conversation_clock(call, (ports.now)())
+        guard call.model.id() == id else { fail("Wrong conversation") }
         state.set({
           ..state.value,
-          conversation: [call],
-          complete: clock.phase == "completed",
+          conversation: [call.dto()],
+          complete: call.model.phase() is Completed(_, _),
           satisfaction: reflection.satisfaction.to_string(),
           comment: reflection.comment,
           learned: reflection.learned_expressions,

@@ -48,6 +48,12 @@ pub(all) struct SessionController {
 }
 
 ///|
+priv enum EndCall {
+  Finish
+  Cancel
+}
+
+///|
 pub fn create_session(
   ports : AppPorts,
   realtime : RealtimePorts,
@@ -80,32 +86,31 @@ pub fn create_session(
     sending: false,
   })
   let life = scope(ports)
+  let current : Ref[@shared.Call?] = Ref(None)
   let offset = Ref(0.0)
-  let connection = Ref("connecting")
+  let connection : Ref[CallConnection] = Ref(Connecting)
   let voice : Ref[VoiceController] = Ref({
     start: noop,
     stop: noop,
     mute: fn(_) { () },
   })
   fn derive_view() {
-    guard state.value.conversation.get(0) is Some(call) else { return }
-    let clock = @shared.conversation_clock(call, (ports.now)() + offset.val) catch {
-      _ => return
-    }
-    let partner = @shared.conversation_partner(call, state.value.me.id) catch {
+    guard current.val is Some(call) else { return }
+    let clock = call.clock((ports.now)() + offset.val) catch { _ => return }
+    let partner = call.partner(state.value.me.id) catch {
       _ => state.value.partner
     }
-    let status = if clock.phase == "active" {
+    let status = if call.model.phase() is Active(_) {
       if !state.value.error.is_empty() {
         "通話は中断しています"
-      } else if connection.val != "connected" {
+      } else if !(connection.val is Connected) {
         "再接続しています"
       } else if clock.has_deadline {
         "通話中：残り \{clock.remaining_seconds} 秒"
       } else {
         "通話中"
       }
-    } else if clock.phase == "cancelled" {
+    } else if call.model.phase() is Cancelled(_) {
       "通話はキャンセルされました"
     } else {
       "相手の接続を待っています"
@@ -115,36 +120,37 @@ pub fn create_session(
       status,
       partner,
       can_finish: clock.can_finish,
-      can_cancel: clock.phase == "planned",
+      can_cancel: call.model.phase() is Planned,
       can_retry: clock.can_join && !state.value.error.is_empty(),
     })
     life.cancel("clock")
-    if clock.phase == "active" {
+    if call.model.phase() is Active(_) {
       life.schedule("clock", 1000, derive_view)
     }
     if !clock.can_join {
       (voice.val.stop)()
     }
-    if clock.phase == "completed" && life.active {
+    if call.model.phase() is Completed(_, _) && life.active {
       (ports.navigate)("/sessionrecord?conversation=\{id}", true)
     }
   }
-  let receive = fn(call : @shared.ConversationDto) {
-    if !life.active || call.id != id {
+  let receive = fn(call : @shared.Call) {
+    if !life.active || call.model.id() != id {
       return
     }
-    if state.value.conversation.get(0) is Some(current) &&
-      current.revision > call.revision {
+    if current.val is Some(previous) &&
+      previous.model.revision() > call.model.revision() {
       return
     }
-    state.set({ ..state.value, conversation: [call], })
+    current.val = Some(call)
+    state.set({ ..state.value, conversation: [call.dto()], })
     derive_view()
   }
   let error = fn(message) {
     state.set({ ..state.value, error: message, saving: false, })
     derive_view()
   }
-  voice.val = create_voice(ports, realtime, media, id, {
+  voice.val = create_call_voice(ports, realtime, media, id, {
     conversation: receive,
     connection: fn(value) {
       connection.val = value
@@ -158,25 +164,26 @@ pub fn create_session(
       }
     },
   })
-  let end_call = fn(action : String) {
+  let end_call = fn(action : EndCall) {
     if !life.active || state.value.saving {
       return
     }
-    if action == "finish" && !state.value.can_finish {
-      return
-    }
-    if action == "cancel" && !state.value.can_cancel {
-      return
+    guard current.val is Some(call) else { return }
+    let path = match (action, call.model.phase()) {
+      (Finish, Active(_)) => "finish"
+      (Cancel, Planned) => "cancel"
+      (Finish, Planned | Completed(_, _) | Cancelled(_)) => return
+      (Cancel, Active(_) | Completed(_, _) | Cancelled(_)) => return
     }
     state.set({ ..state.value, saving: true, })
     life.request(
       "ending",
       "POST",
-      "/conversations/\{id}/\{action}",
+      "/conversations/\{id}/\{path}",
       {},
       fn(text) raise {
-        let call = @shared.parse_conversation(text)
-        guard call.id == id else { fail("Wrong conversation") }
+        let call = @shared.parse_call(text)
+        guard call.model.id() == id else { fail("Wrong conversation") }
         state.set({ ..state.value, saving: false, })
         receive(call)
       },
@@ -308,8 +315,8 @@ pub fn create_session(
       state.set({ ..state.value, error: "", can_retry: false, })
       (voice.val.start)()
     },
-    finish: fn() { end_call("finish") },
-    cancel: fn() { end_call("cancel") },
+    finish: fn() { end_call(Finish) },
+    cancel: fn() { end_call(Cancel) },
   }
 }
 

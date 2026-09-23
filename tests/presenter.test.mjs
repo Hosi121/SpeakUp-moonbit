@@ -806,6 +806,8 @@ test('voice bounds both pre-description ICE and the queue behind a pending SDP o
 test('voice refuses malformed signal/another conversation and releases remote playback on peer departure', () => {
   for (const input of [
     '{',
+    '{"type":"Authorization","token":"Bearer x","room":42}',
+    '{"type":"media-ready"}',
     JSON.stringify({ type: 'conversation', value: { ...call, id: 99 } }),
     '{"type":"peer-left"}',
   ]) {
@@ -820,6 +822,34 @@ test('voice refuses malformed signal/another conversation and releases remote pl
     );
     assert.equal(remote.resource.closed, true);
     assert.equal(remote.resource.detached, 1);
+    c.stop();
+  }
+});
+
+test('voice releases partially acquired media when meter, peer or playback initialization fails', () => {
+  for (const stage of ['local meter', 'peer', 'remote meter', 'playback']) {
+    const { h, m, c, events } = voice();
+    c.start();
+    h.respond('/conversations/42', call);
+    h.respond('/rtc-config', { iceServers: [] });
+    const local = m.stream();
+    const fail = () => { throw new Error(stage); };
+    if (stage === 'local meter') local.port.meter = fail;
+    if (stage === 'peer') local.port.peer = fail;
+    // Match the browser port's exception-to-error callback contract.
+    try { m.acquired[0].ready(local.port); }
+    catch (error) { m.acquired[0].failed(error.message); }
+    if (stage.startsWith('remote') || stage === 'playback') {
+      const remote = m.stream();
+      if (stage === 'remote meter') remote.port.meter = fail;
+      else remote.port.play = fail;
+      try { m.peers[0].remote(remote.port); }
+      catch { m.peers[0].connection('failed'); }
+    }
+    assert.equal(events.filter(([kind]) => kind === 'error').length, 1, stage);
+    assert.ok(m.streams.every((s) => s.closed && s.meters.every((meter) => meter.closed)), stage);
+    assert.ok(m.peers.every((p) => p.closed), stage);
+    assert.ok(h.sockets.every((s) => s.closed), stage);
     c.stop();
   }
 });
@@ -851,6 +881,13 @@ test('session ignores lower revisions, serializes ending, applies server time, a
   c.set_offset(1000);
   m.peers[0].connection('connected');
   assert.match(c.get_snapshot().status, /299/);
+  // JS receives a view, never the retained validated value used by the clock.
+  const exposed = c.get_snapshot().conversation[0];
+  exposed.started_at = 0;
+  exposed.participants[1].username = 'mutated view';
+  c.set_offset(2000);
+  assert.match(c.get_snapshot().status, /298/);
+  assert.notEqual(c.get_snapshot().partner.username, 'mutated view');
   ws.receive('text', JSON.stringify({ type: 'conversation', value: call }));
   assert.equal(c.get_snapshot().conversation[0].revision, 1);
   c.finish();

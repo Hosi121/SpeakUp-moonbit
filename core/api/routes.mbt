@@ -300,11 +300,11 @@ async fn route(
     ("GET", ["", "conversations", id]) =>
       return conversation_dto(conversation_row(path_id(id), uid)).to_json()
     ("POST", ["", "conversations", id, "start"]) =>
-      return change_conversation(path_id(id), uid, "start").to_json()
+      return change_conversation(path_id(id), uid, Start).to_json()
     ("POST", ["", "conversations", id, "finish"]) =>
-      return change_conversation(path_id(id), uid, "finish").to_json()
+      return change_conversation(path_id(id), uid, Finish).to_json()
     ("POST", ["", "conversations", id, "cancel"]) =>
-      return change_conversation(path_id(id), uid, "cancel").to_json()
+      return change_conversation(path_id(id), uid, Cancel).to_json()
     ("GET", ["", "conversations", id, "reflection"]) => {
       let id = path_id(id)
       conversation_row(id, uid) |> ignore
