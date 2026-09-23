@@ -21,6 +21,8 @@ pub(all) enum Action {
   Reject
   Cancel
 }
+pub fn Action::parse(String) -> Self?
+pub fn Action::path(Self) -> String
 
 pub struct Decision {
   next : State

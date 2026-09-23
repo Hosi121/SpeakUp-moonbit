@@ -6,12 +6,9 @@ priv struct FriendRecord {
 
 ///|
 fn friendship_action(value : String) -> @friendship.Action raise ApiError {
-  match value {
-    "request" => Request
-    "accept" => Accept
-    "reject" => Reject
-    "cancel" => Cancel
-    _ => raise Invalid(400, "Invalid friendship action")
+  match @friendship.Action::parse(value) {
+    Some(action) => action
+    None => raise Invalid(400, "Invalid friendship action")
   }
 }
 

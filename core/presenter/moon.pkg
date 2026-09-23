@@ -1,5 +1,6 @@
 import {
   "hosi121/speakup/shared",
+  "hosi121/speakup/friendship",
   "hosi121/speakup/browser_platform" @browser,
   "moonbitlang/core/json",
 }

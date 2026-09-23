@@ -129,3 +129,25 @@ pub extend Notice with Eq::{equal, not_equal}
 
 ///|
 pub extend Notice with @debug.Debug::{to_repr}
+
+///|
+/// Strings are confined to HTTP/legacy JS adapters; both use the same command vocabulary.
+pub fn Action::parse(value : String) -> Action? {
+  match value {
+    "request" => Some(Request)
+    "accept" => Some(Accept)
+    "reject" => Some(Reject)
+    "cancel" => Some(Cancel)
+    _ => None
+  }
+}
+
+///|
+pub fn Action::path(self : Action) -> String {
+  match self {
+    Request => "request"
+    Accept => "accept"
+    Reject => "reject"
+    Cancel => "cancel"
+  }
+}

@@ -32,17 +32,17 @@ export function mountAuth(
   );
   const username = input(
     "ユーザー名(セッション時の表示名)",
-    (v) => controller.set_field("username", v),
+    controller.set_username,
     { required: true, autocomplete: "nickname" },
   );
-  const email = input("Email", (v) => controller.set_field("email", v), {
+  const email = input("Email", controller.set_email, {
     type: "email",
     required: true,
     autocomplete: signup ? "email" : "username",
   });
   const password = input(
     "パスワード",
-    (v) => controller.set_field("password", v),
+    controller.set_password,
     {
       type: "password",
       required: true,

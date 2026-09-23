@@ -421,6 +421,10 @@ pub(all) struct SocialController {
   stop : () -> Unit
   set_query : (String) -> Unit
   search : () -> Unit
+  request : (Int) -> Unit
+  accept : (Int) -> Unit
+  reject : (Int) -> Unit
+  cancel : (Int) -> Unit
   change : (Int, String) -> Unit
 }
 

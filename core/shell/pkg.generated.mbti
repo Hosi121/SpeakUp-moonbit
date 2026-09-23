@@ -44,6 +44,9 @@ pub(all) struct AuthController {
   start : () -> Unit
   stop : () -> Unit
   preload : () -> Unit
+  set_username : (String) -> Unit
+  set_email : (String) -> Unit
+  set_password : (String) -> Unit
   set_field : (String, String) -> Unit
   show_password : (Bool) -> Unit
   submit : () -> Unit

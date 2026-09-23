@@ -50,6 +50,34 @@ HTTP の URL・JSON と通常の承認・取消・再送の意味は維持する
 依存は変更していない。状態の事前読み取りが1回増えるため、API の高速化は主張しない。
 型付き transaction callback を host 全体へ導入する案は、この分離に必須ではないため見送った。
 
+## 通話・signaling・非同期状態への適用
+
+| 対象 | 内部で保持する型 | 境界に残す形式と検証 |
+| --- | --- | --- |
+| 通話 | 非公開の fields を持つ `Conversation`。`Phase` が必要な時刻を持ち、revision は状態から導出する。`Origin` は `Direct` / `Event` | `Snapshot` と `ConversationDto` は従来の JSON。ID・整数範囲・時刻・参加者・origin の整合性を入口で確認 |
+| 期限と操作 | `Start / Finish / Cancel / Expire` を純粋な `change` で適用。イベントの5分上限もここで処理 | DB adapter は会員照合と revision による CAS を維持。HTTP の権限・並行操作の試験も維持 |
+| 画面の通話 | `Call` が検証済みモデルと表示用 metadata を保持。session は timer ごとに DTO を復元しない | JS の表示用 DTO はコピー。clock / partner / 終了判定は内部のモデルから求める |
+| signaling | `ClientSignal` / `ServerSignal` / `Authorization`。部屋は `Waiting(connection)` / `Paired(pair)`、交渉済みの状態だけが media ACK を持つ | 未信頼 JSON の方向・サイズ・SDP・ICE を検査し、中継は検証した元の文字列を使う。旧 `parseSignal` の公開形式を維持 |
+| フレンドと認証操作 | API と presenter が同じ `friendship.Action` を使用。認証の field も enum にする | DOM は `accept(id)` / `set_email(value)` 等の具体的な関数を使用。旧 `change` / `set_field` は互換 adapter として残す |
+| 認証 | `Stopped / Idle / Loading(id, draft) / Sending(id, cancel)`。重複した module 完了と、送信後の古い module 失敗を無視 | JS callback の同期完了・二重通知・中断を DB 不要の controller 試験で確認 |
+| 音声 | 取得途中の stream、meter 取得済みの音声、peer 付き音声を別状態にする。remote 音声の再生停止もその状態が所有 | 途中例外でも既に取得したものを解放。終了後の callback は世代で拒否し、後から届いた handle も解放 |
+
+`core/conversation/model.mbt` と `core/signaling/hub.mbt` は DB・ブラウザなしで動作する。
+`core/shared/protocol.mbt` がサーバとブラウザの共通 decoder であり、presenter にあった
+SDP / ICE の重複パーサは削除した。`core/native_server` も文字列 kind を経由せず認証を受け取る。
+内部 enum や Option のコンパイラ固有 ABI は JS に公開しない。TS2Mbt / Mbt2TS と独立 consumer
+で従来の具体的な型を検査する。依存の追加、DB schema の変更はない。
+
+型は「終了状態なのに終了時刻がない」「1人の部屋なのに交渉済み」といった内部表現を制限する。
+一方、どの参加者を許可するか、正しい期限か、callback が遅れて届くか、OS リソースが実際に
+閉じたかは型だけで保証しない。必要な時間・競合・再送・解放試験を残す。読み込みと保存など
+独立した仕事の Bool を全て一つの enum にまとめる変更もしていない。
+
+追加の試験は MoonBit 2件（期限の規則、方向付き wire 検査）、Node 2件（認証の同期完了・中断、
+音声の部分初期化失敗）。既存ケースにも SDP の元文字列保持、表示 DTO の変更からの独立性を
+含めた。型の宣言や enum の列挙を確認するだけの試験、E2E の追加は行っていない。
+再検証やパーサの重複を減らしたが、速度の比較計測はしておらず高速化は主張しない。
+
 ## 整理した検証と、残した根拠
 
 | 変更 | 維持する検証 |
@@ -92,17 +120,23 @@ npm run test:navigation
 固定 ID を、先に別の fixture で埋めた DB は使わない。Compose / CI の healthcheck は TCP を
 使い、MySQL image が初期化中に起動する socket 専用サーバを準備完了と判定しない。
 
-2026-09-23 のローカル検証では、`check`、frontend lint、生成物・fixture 差分なし、独立 consumer、
+フレンド分離時（`21cae20`、2026-09-23）のローカル検証では、`check`、frontend lint、生成物・fixture 差分なし、独立 consumer、
 MoonBit JS 19件 / native 22件、Node 131件、native API 20件、production DOM 28件、
 native browser 11件、Node 通話 parity 3件が成功した。メッセージ API の1件は seed 前の
 空の専用 DB でも単独成功を確認した。任意実行へ移した旧 HTTP 5件も実行可能なことを確認した。
 
+今回の通話・signaling・状態モデルの変更も `check`、lint、fixture 再生成、独立 consumer を
+通過した。MoonBit JS 21件 / native 24件、Node 133件、native API 20件、production DOM 28件、
+native browser 11件、Node 通話 parity 3件が成功した。API / browser は専用の空の MySQL に
+migration → seed を適用して実行した。型だけで保証できない境界と競合を含めた結果であり、
+速度の比較結果ではない。
+
 ## 残る設計上の課題
 
-API 全体の `Host.invoke(Json) -> Json` と global host は残っている。今回はフレンドの業務規則を
-そこから切り離した範囲であり、全 backend の repository を型付きにしたものではない。
-通話の公開 Snapshot は境界で検証されるが、検証済みの opaque Conversation を内部で受け渡す
-変更、signal の内部 kind の enum 化は未実施。これらを行う前に境界の異常系試験を削らない。
+API 全体の `Host.invoke(Json) -> Json` と global host は残っている。フレンドと通話の業務規則は
+そこから分離したが、全 backend の repository を型付きにしたものではない。通知の kind と
+必要な ID の型付け、UserId / ConversationId の区別、他のフォームの具体的な操作関数への
+移行は残る。既存の JSON・認可・競合試験をそれらの型付け前に削らない。
 
 凍結 source oracle の再生成を変更パスで選別する案も未実施。今回の CI は引き続き毎回生成物と
 fixture の差分を検査する。新しいテスト framework や runtime 依存は追加していない。

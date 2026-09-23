@@ -412,6 +412,10 @@ export interface SocialController {
   stop: () => void;
   set_query: (s: string) => void;
   search: () => void;
+  request: (n: number) => void;
+  accept: (n: number) => void;
+  reject: (n: number) => void;
+  cancel: (n: number) => void;
   change: (n: number, s: string) => void;
 }
 

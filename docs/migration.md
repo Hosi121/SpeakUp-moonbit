@@ -177,3 +177,23 @@ API が速くなったという変更ではない。
 HTTP / media の境界試験は production build 上で DB なしに実行する。features の各ケースは
 自分のユーザーと必要な関係を作る。JSON / JS 境界、SQL 原子性、実 RTP の検証は残した。
 [判断理由・対応表・残る課題](testing.md)を参照。
+
+
+## 検証済みの通話と方向付き signaling
+
+通話の内部表現を非公開 constructor の `Conversation` に変更した。状態に必要な開始・終了・
+キャンセル時刻を `Phase` が保持し、revision はそこから導出する。随時通話とイベント通話を
+`Origin` で区別し、イベントの期限・手動終了の上限は同じ純粋な遷移関数で扱う。
+API、native WS、session / call list / reflection は検証済みモデルを使う。JS へ渡す DTO は
+表示用のコピーで、session の内部モデルにその可変配列を共有しない。
+
+signaling の受信型は送信方向ごとに分け、認証は別の decoder を使う。1人待機中の部屋が
+交渉状態を持てない形にし、media-ready の確認は現在の2人の交渉だけに属する。
+不正な方向や状態のメッセージを拒否する規則、旧 Go の `isOffer` 省略、SDP の元文字列の
+中継、HTTP / JSON / 既存 JS 関数の契約は維持する。内部 enum の ABI は JS に出さない。
+
+認証の module 読み込み・送信と、音声の取得途中・取得済みの資源を状態で表現した。
+送信開始後の古い module 読み込み失敗は無視し、正常な送信を失敗で上書きしない。
+`friendship.Action` は API と presenter で共有する。DOM は具体的な操作関数を使い、
+旧文字列 API は互換 adapter として保持する。依存・schema・本番配備は変更していない。
+設計の理由と型で保証しない範囲は [型とテストの分担](testing.md) に記録した。

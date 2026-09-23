@@ -25,9 +25,34 @@ pub(all) struct AuthController {
   start : () -> Unit
   stop : () -> Unit
   preload : () -> Unit
+  set_username : (String) -> Unit
+  set_email : (String) -> Unit
+  set_password : (String) -> Unit
   set_field : (String, String) -> Unit
   show_password : (Bool) -> Unit
   submit : () -> Unit
+}
+
+///|
+priv enum AuthField {
+  Username
+  Email
+  Password
+}
+
+///|
+priv struct AuthDraft {
+  username : String
+  email : String
+  password : String
+}
+
+///|
+priv enum AuthPhase {
+  Stopped
+  Idle
+  Loading(Int, AuthDraft)
+  Sending(Int, () -> Unit)
 }
 
 ///|
@@ -42,68 +67,70 @@ pub fn create_auth(signup : Bool, ports : AuthPorts) -> AuthController {
   })
   let listeners : Array[Listener] = []
   let next = Ref(0)
-  let active = Ref(false)
-  let generation = Ref(0)
-  let cancel = Ref(fn() { () })
+  let sequence = Ref(0)
+  let phase : Ref[AuthPhase] = Ref(Stopped)
   let update = fn(view) {
     state.val = view
     publish(listeners)
+  }
+  let set_field = fn(field : AuthField, value : String) {
+    match field {
+      Username => update({ ..state.val, username: value, })
+      Email => update({ ..state.val, email: value, })
+      Password => update({ ..state.val, password: value, })
+    }
   }
   {
     get_snapshot: fn() { state.val },
     subscribe: fn(listener) { subscribe(listeners, next, listener) },
     start: fn() {
-      if active.val {
-        return
-      }
-      active.val = true
+      guard phase.val is Stopped else { return }
+      phase.val = Idle
       update({ ..state.val, busy: false, })
     },
     stop: fn() {
-      active.val = false
-      generation.val += 1
-      (cancel.val)()
-      cancel.val = fn() { () }
+      let previous = phase.val
+      phase.val = Stopped
+      if previous is Sending(_, cancel) {
+        cancel()
+      }
     },
     preload: fn() { (ports.load)(fn(_) { () }, fn(_) { () }) },
+    set_username: fn(value) { set_field(Username, value) },
+    set_email: fn(value) { set_field(Email, value) },
+    set_password: fn(value) { set_field(Password, value) },
     set_field: fn(field, value) {
       match field {
-        "username" => update({ ..state.val, username: value, })
-        "email" => update({ ..state.val, email: value, })
-        "password" => update({ ..state.val, password: value, })
+        "username" => set_field(Username, value)
+        "email" => set_field(Email, value)
+        "password" => set_field(Password, value)
         _ => ()
       }
     },
     show_password: fn(showPassword) { update({ ..state.val, showPassword, }) },
     submit: fn() {
-      if !active.val || state.val.busy {
-        return
-      }
+      guard phase.val is Idle else { return }
+      sequence.val += 1
+      let current = sequence.val
+      phase.val = Loading(current, {
+        username: state.val.username,
+        email: state.val.email,
+        password: state.val.password,
+      })
       update({ ..state.val, busy: true, error: "", })
-      generation.val += 1
-      let current = generation.val
-      let draft = state.val
-      let started = Ref(false)
-      let complete = Ref(false)
-      let valid = fn() {
-        active.val && current == generation.val && !complete.val
-      }
       (ports.load)(
         fn(send) {
-          if !valid() || started.val {
-            return
-          }
-          started.val = true
+          guard phase.val is Loading(id, draft) && id == current else { return }
+          // Install the stage before calling the port: completion may be synchronous.
+          phase.val = Sending(current, fn() { () })
           let abort = send(
             signup,
             draft.username,
             draft.email,
             draft.password,
             fn(token, error) {
-              if !valid() {
-                return
-              }
-              complete.val = true
+              guard phase.val is Sending(id, _) && id == current else { return }
+              phase.val = Idle
               update({ ..state.val, busy: false, error, })
               if !error.is_empty() {
                 return
@@ -114,16 +141,15 @@ pub fn create_auth(signup : Bool, ports : AuthPorts) -> AuthController {
               (ports.navigate)(if signup { "/login" } else { "/home" }, false)
             },
           )
-          cancel.val = abort
-          if !valid() {
+          if phase.val is Sending(id, _) && id == current {
+            phase.val = Sending(current, abort)
+          } else {
             abort()
           }
         },
         fn(_) {
-          if !valid() {
-            return
-          }
-          complete.val = true
+          guard phase.val is Loading(id, _) && id == current else { return }
+          phase.val = Idle
           update({
             ..state.val,
             busy: false,

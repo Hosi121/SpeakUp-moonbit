@@ -562,6 +562,10 @@ test('auth keeps fields usable during module loading, blocks abandoned requests,
   c.start();
   c.submit();
   pending[1].ok(createAuthRequest(h.ports).submit);
+  pending[1].ok(createAuthRequest(h.ports).submit);
+  pending[1].bad('late module failure');
+  assert.equal(h.requests.filter((r) => r.path === '/signin').length, 1);
+  assert.equal(c.get_snapshot().busy, true);
   assert.equal(h.request('/signin').body.email, 'new');
   h.respond('/signin', { token: 123 });
   assert.equal(h.token, 'fixture');
@@ -572,6 +576,37 @@ test('auth keeps fields usable during module loading, blocks abandoned requests,
   assert.equal(h.token, 'updated');
   assert.equal(h.navigations[0].path, '/home');
   c.stop();
+});
+
+test('auth handles synchronous completion and cancels a sender returned after disposal', () => {
+  for (const dispose of [false, true]) {
+    const h = harness();
+    let sends = 0, aborts = 0;
+    const c = createAuth(false, {
+      load(ready) {
+        const send = (_signup, _name, _email, _password, done) => {
+          sends++;
+          if (dispose) c.stop();
+          done('synchronous', '');
+          done('duplicate', '');
+          return () => { aborts++; };
+        };
+        ready(send);
+        ready(send);
+      },
+      navigate: h.ports.navigate,
+      store_token: h.ports.store_token,
+    });
+    c.start();
+    c.set_email('person@example.test');
+    c.submit();
+    assert.equal(sends, 1);
+    assert.equal(aborts, 1);
+    assert.equal(h.token, dispose ? 'fixture' : 'synchronous');
+    assert.equal(h.navigations.length, dispose ? 0 : 1);
+    c.stop();
+    assert.equal(aborts, 1);
+  }
 });
 
 test('activity module loading is generation-scoped and cannot start requests after logout', () => {

@@ -24,6 +24,10 @@ pub(all) struct SocialController {
   stop : () -> Unit
   set_query : (String) -> Unit
   search : () -> Unit
+  request : (Int) -> Unit
+  accept : (Int) -> Unit
+  reject : (Int) -> Unit
+  cancel : (Int) -> Unit
   change : (Int, String) -> Unit
 }
 
@@ -131,6 +135,30 @@ pub fn create_social(
       },
     )
   }
+  let change = fn(id : Int, action : @friendship.Action) {
+    if !life.active || state.value.busy || id < 1 {
+      return
+    }
+    let path = action.path()
+    life.cancel("social")
+    social_publish(state, { ..state.value, busy: true, error: "", })
+    life.request(
+      "change",
+      "POST",
+      "/friends/\{id}/\{path}",
+      {},
+      fn(text) raise {
+        life.cancel("social")
+        social_publish(state, {
+          ..state.value,
+          social: @shared.checked_social(text),
+          loaded: true,
+          busy: false,
+        })
+      },
+      failed,
+    )
+  }
   {
     get_snapshot: fn() { state.value },
     subscribe: fn(listener) { state.subscribe(listener) },
@@ -185,34 +213,14 @@ pub fn create_social(
         fn(_) { failed("検索できませんでした。") },
       )
     },
-    change: fn(id, action) {
-      if !life.active ||
-        state.value.busy ||
-        id < 1 ||
-        !(action == "request" ||
-        action == "accept" ||
-        action == "reject" ||
-        action == "cancel") {
-        return
+    request: fn(id) { change(id, Request) },
+    accept: fn(id) { change(id, Accept) },
+    reject: fn(id) { change(id, Reject) },
+    cancel: fn(id) { change(id, Cancel) },
+    change: fn(id, value) {
+      if @friendship.Action::parse(value) is Some(action) {
+        change(id, action)
       }
-      life.cancel("social")
-      social_publish(state, { ..state.value, busy: true, error: "", })
-      life.request(
-        "change",
-        "POST",
-        "/friends/\{id}/\{action}",
-        {},
-        fn(text) raise {
-          life.cancel("social")
-          social_publish(state, {
-            ..state.value,
-            social: @shared.checked_social(text),
-            loaded: true,
-            busy: false,
-          })
-        },
-        failed,
-      )
     },
   }
 }

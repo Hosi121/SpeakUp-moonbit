@@ -98,14 +98,11 @@ export function mount(host: HTMLElement, context: PageInput): () => void {
         const image = avatar(),
           name = el("strong"),
           person = el("div", "row", image.element, name);
-        const actions = received
-          ? [
-              ["承認", "accept"],
-              ["見送る", "reject"],
-            ]
-          : [["取り消す", "cancel"]];
+        const actions: Array<[string, (id: number) => void]> = received
+          ? [["承認", controller.accept], ["見送る", controller.reject]]
+          : [["取り消す", controller.cancel]];
         const buttons = actions.map(([label, action]) => {
-          const b = button(label, () => controller.change(p.id, action));
+          const b = button(label, () => action(p.id));
           operations.add(b);
           return b;
         });
@@ -147,7 +144,7 @@ export function mount(host: HTMLElement, context: PageInput): () => void {
         name = el("strong"),
         chat = link("メッセージ", `/message/${row.person.id}`),
         request = button("フレンド申請", () =>
-          controller.change(row.person.id, "request"),
+          controller.request(row.person.id),
         );
       return {
         element: el(
