@@ -1,0 +1,137 @@
+diff --git a/ws_session/src/session.mbt b/ws_session/src/session.mbt
+index b15507d..fd254f5 100644
+--- a/ws_session/src/session.mbt
++++ b/ws_session/src/session.mbt
+@@ -136,13 +136,16 @@ pub async fn with_session(
+     session.closing = true
+     session.output.close(clear=true)
+   }
++  let deadline = WriteDeadline(limits.write_timeout_ms)
++  defer deadline.close()
+   @async.with_task_group(async fn(group) {
++    group.spawn_bg(no_wait=true, async fn() { deadline.watch() })
+     group.spawn_bg(no_wait=true, async fn() {
+       for ;; {
+         let message = session.output.get()
+-        @async.with_timeout(limits.write_timeout_ms, async fn() {
+-          ws.send_text(message.payload)
+-        })
++        deadline.begin()
++        ws.send_text(message.payload)
++        deadline.end()
+         session.bytes -= message.bytes
+         session.messages -= 1
+         if message.close_code is Some(code) {
+diff --git a/ws_session/src/write_deadline.mbt b/ws_session/src/write_deadline.mbt
+new file mode 100644
+--- /dev/null
++++ b/ws_session/src/write_deadline.mbt
+@@ -0,0 +1,60 @@
++///|
++/// One watchdog per writer. Writes that complete before it runs need no timer.
++/// Notifications coalesce; the current deadline is always authoritative.
++priv struct WriteDeadline {
++  timeout_ms : Int
++  wake : @async.Queue[Unit]
++  mut expires_at : Int64?
++  mut notified : Bool
++}
++
++///|
++fn WriteDeadline::WriteDeadline(timeout_ms : Int) -> WriteDeadline {
++  {
++    timeout_ms,
++    wake: @async.Queue(kind=Unbounded),
++    expires_at: None,
++    notified: false,
++  }
++}
++
++///|
++fn WriteDeadline::begin(self : WriteDeadline) -> Unit raise {
++  self.expires_at = Some(@async.now() + self.timeout_ms.to_int64())
++  self.notify()
++}
++
++///|
++fn WriteDeadline::notify(self : WriteDeadline) -> Unit raise {
++  if !self.notified {
++    self.notified = true
++    guard self.wake.try_put(()) else { fail("Write watchdog is closed") }
++  }
++}
++
++///|
++fn WriteDeadline::end(self : WriteDeadline) -> Unit raise {
++  self.expires_at = None
++  self.notify()
++}
++
++///|
++fn WriteDeadline::close(self : WriteDeadline) -> Unit {
++  self.wake.close(clear=true)
++}
++
++///|
++async fn WriteDeadline::watch(self : WriteDeadline) -> Unit {
++  for ;; {
++    self.wake.get()
++    self.notified = false
++    while self.expires_at is Some(expires_at) {
++      let remaining = (expires_at - @async.now()).clamp(
++        min=0L,
++        max=2147483647L,
++      )
++      @async.with_timeout(remaining.to_int(), async fn() { self.wake.get() })
++      self.notified = false
++    }
++  }
++}
+diff --git a/ws_session/src/write_deadline_wbtest.mbt b/ws_session/src/write_deadline_wbtest.mbt
+new file mode 100644
+--- /dev/null
++++ b/ws_session/src/write_deadline_wbtest.mbt
+@@ -0,0 +1,43 @@
++///|
++suberror WatchdogStuck
++
++///|
++async test "write watchdog expires a stalled write" {
++  let deadline = WriteDeadline(10)
++  defer deadline.close()
++  let timed_out = try {
++    @async.with_timeout(1000, error=WatchdogStuck, async fn() {
++      @async.with_task_group(async fn(group) {
++        group.spawn_bg(no_wait=true, async fn() { deadline.watch() })
++        deadline.begin()
++        @async.sleep(5000)
++      })
++    })
++    false
++  } catch {
++    @async.TimeoutError => true
++    _ => false
++  }
++  assert_true(timed_out)
++}
++
++///|
++async test "write watchdog permits idle, completed and refreshed writes" {
++  let deadline = WriteDeadline(30)
++  defer deadline.close()
++  @async.with_timeout(1000, error=WatchdogStuck, async fn() {
++    @async.with_task_group(async fn(group) {
++      group.spawn_bg(no_wait=true, async fn() { deadline.watch() })
++      @async.sleep(60)
++      for _ in 0..<10 {
++        deadline.begin()
++        @async.sleep(10)
++        deadline.end()
++      }
++      @async.sleep(60)
++      deadline.begin()
++      deadline.end()
++      @async.sleep(60)
++    })
++  })
++}

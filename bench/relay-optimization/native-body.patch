@@ -1,0 +1,26 @@
+diff --git a/core/native_io/io.mbt b/core/native_io/io.mbt
+index 95d7f66..f2d20ed 100644
+--- a/core/native_io/io.mbt
++++ b/core/native_io/io.mbt
+@@ -7,7 +7,21 @@ pub(all) suberror InvalidLimits
+ ///|
+ pub async fn limited_body(reader : &@io.Reader, limit : Int) -> Bytes {
+   guard limit >= 0 else { raise InvalidLimits }
++  // A small WebSocket message normally arrives as one owned chunk. Only
++  // allocate an accumulator when a second chunk actually exists.
++  let first = match reader.read_some(max_len=8192) {
++    None => return b""
++    Some(chunk) => chunk
++  }
++  guard first.length() <= limit else { raise TooLarge }
++  let second = match reader.read_some(max_len=8192) {
++    None => return first
++    Some(chunk) => chunk
++  }
++  guard second.length() <= limit - first.length() else { raise TooLarge }
+   let data = @buffer.Buffer()
++  data.write_bytes(first)
++  data.write_bytes(second)
+   while reader.read_some(max_len=8192) is Some(chunk) {
+     guard chunk.length() <= limit - data.length() else { raise TooLarge }
+     data.write_bytes(chunk)

@@ -37,6 +37,36 @@ native の RSS は Node の約1/8.1だが、DB pool・認証を含む本番サ�
 全 DB 接続を row lock 待ちにしても ICE が進むことは[統合テスト](testing.md)で確認する。
 これは待ち時間の分離の検証であり、DB throughput や本番 capacity の計測ではない。
 
+### native 最適化の採用判断
+
+2026-09-24 JST、`a1c811c` を基準に3案を独立に比較し、**いずれも不採用**。
+[再計測・予備比較](../bench/relay-optimization/exploration.json)、
+[確認比較の全50 trial](../bench/relay-optimization/results.json)、
+[基準 revision・差分・測定上の制約](../bench/relay-optimization/study.json)を保存している。
+本体と公開ライブラリの実装は変更していない。
+
+| 案 | 同じ round の変更前に対する throughput 比の幾何平均 | round ごとの比の範囲 | 判断 |
+| --- | ---: | ---: | --- |
+| 単一 chunk の受信で Buffer へのコピーを省く | 0.998 | 0.887–1.133 | 改善を確認できず |
+| 送信 queue で UTF-8 bytes を保持し再変換を省く | 0.995 | 0.936–1.059 | RSS は10.75 → 9.75 MiB、速度改善は確認できず |
+| メッセージ単位の timeout を接続単位の watchdog に置き換える | 0.998 | 0.881–1.098 | 予備比較の中央値 +4.5% は再現せず |
+
+確認比較は Go・変更前 native・3案を各10 trial。server は CPU 14、client は CPU 15 に固定し、
+5方式の巡回順と逆順を組み合わせた10通りで実行した。全120順列ではない。
+各 trial は32 rooms、warm-up 1,000 / 測定3,000 ICE messages per room。全 ICE payload を照合した。
+表の範囲は実測比の最小・最大で、信頼区間ではない。全体の中央値だけで採用を判断しない。
+Go の同 round 比は1.015（範囲0.831–1.210）。Go / native の優劣も確定できない。
+
+別途の [CPU profile](../bench/relay-optimization/profile-self.txt)では、self の15.93%が
+`moonbit_drop_object`、11.73%が `_mi_page_malloc_zero`、5.38%が `mi_free`。
+[呼出先込みの記録](../bench/relay-optimization/profile-callers.txt)には async task・I/O・JSON 処理も現れるが、
+割合は重複し、継続の呼出元に見える時間をその関数単独のコストとは扱えない。
+profile は起動・warm-up を含む user-space の標本で、速度比較には使っていない。
+
+共有 WSL ホストの他の負荷は除去できていない。変更前の CPU 中央値は server 1.64秒 / client 1.60秒で、
+client が負荷の上限を作っている可能性も残る。今回の結果は3案を採用する根拠がないという判断であり、
+native の高速化余地がないという結論ではない。
+
 ## フロントエンド
 
 主な比較は2026-09-23 JST。Linux / Core Ultra 7 255H / Node 24.13.0 /
@@ -106,6 +136,42 @@ node bench/summarize.mjs _build/relay-results.json
 `node bench/summarize.mjs bench/results.json` は保存済みの結果を集計する。
 race 確認は `BENCH_GO_RACE=1 BENCH_ROUNDS=1 BENCH_MESSAGES=300 node bench/run.mjs`。
 race 有効の値は通常の速度比較に混ぜない。
+
+独立した変更前後を比較するには、release executable を別名で保存し、
+`_build/variants.json` に指定する。この場合は再ビルドせず、指定した実行ファイルを測る。
+
+```json
+[
+  { "kind": "before", "command": "_build/native-before" },
+  { "kind": "after", "command": "_build/native-after" }
+]
+```
+
+```bash
+BENCH_VARIANTS=_build/variants.json BENCH_SERVER_CPU=14 BENCH_ROUNDS=10 \
+  BENCH_OUTPUT=_build/comparison.json taskset -c 15 node bench/run.mjs
+node bench/summarize.mjs _build/comparison.json before
+node bench/summarize.mjs bench/relay-optimization/results.json native-baseline
+```
+
+CPU 番号は環境に合わせる。CPU 固定はホストの負荷を排除しない。
+結果には試行順・実行ファイル hash・ソース revision・dirty・client CPU も残る。
+JS 方式の実行ファイル hash は Node のもので、アプリの JS 全体を識別する値ではない。
+
+保存した3案の再ビルドには、`study.json` の revision を別 checkout に用意し、対応する `.patch` を適用する。
+ライブラリ案は `moonbit-sessions/ws_session` を一時的に `moon.work` の members に追加する。
+各案とも変更前から独立に `node scripts/build-bench.mjs` でビルドし、`.tools/native-bench` を別名で保存する。
+通常のアプリは Mooncakes 依存を使う。予備比較の watchdog は上限 clamp 追加前で、保存差分は確認比較の版。
+
+CPU profile は別実行にする。`perf` の場所は環境に合わせ、出力先を先に作成する。
+
+```bash
+mkdir -p _build/profile
+BENCH_VARIANTS=_build/variants.json BENCH_ROUNDS=1 BENCH_MESSAGES=30000 \
+  BENCH_PERF=/usr/bin/perf BENCH_PROFILE_PREFIX=_build/profile/relay \
+  BENCH_OUTPUT=_build/profile/results.json node bench/run.mjs
+perf report --stdio --no-children -i _build/profile/relay-before-0.data
+```
 
 フロントエンドは表の旧新 checkout でそれぞれ `npm ci`、`npm --prefix frontend ci`、
 固定 MoonBit の準備、`npm run build:core`、`npm --prefix frontend run build` を行う。

@@ -1,0 +1,99 @@
+{
+  "decision": "No candidate adopted: no reproducible throughput improvement in the ten-round confirmation.",
+  "budget": {
+    "maximumCandidates": 3,
+    "comparedCandidates": 3
+  },
+  "app_commit": "a1c811cc6877127c5ec0efea8ffcf6ba42134a6c",
+  "library_commit": "cc178dee4d34d61412af9ae4638d5087bd7c1b31",
+  "library_repository": "https://github.com/Hosi121/moonbit-sessions",
+  "candidates": [
+    {
+      "name": "native-body",
+      "repository": "SpeakUp-moonbit",
+      "decision": "not adopted: no reproducible throughput improvement",
+      "patch": "native-body.patch"
+    },
+    {
+      "name": "native-encoding",
+      "repository": "moonbit-sessions",
+      "decision": "not adopted: RSS reduction, no reproducible throughput improvement",
+      "patch": "native-encoding.patch"
+    },
+    {
+      "name": "native-deadline",
+      "repository": "moonbit-sessions",
+      "decision": "not adopted: initial throughput gain did not reproduce",
+      "patch": "native-deadline.patch"
+    }
+  ],
+  "build": {
+    "native": [
+      "node",
+      "scripts/build-bench.mjs"
+    ],
+    "nativeMode": "--target native --release (C backend), unchanged build settings for all candidates",
+    "go": [
+      "go",
+      "build",
+      "-o",
+      "../../.tools/go-bench",
+      "."
+    ],
+    "goCwd": "bench/go",
+    "workspaceOverride": "For library candidates only, add the sibling moonbit-sessions/ws_session directory to moon.work members. No registry source edits.",
+    "candidateIsolation": "Every candidate starts at the baseline; patches are not cumulative.",
+    "hashMeaning": "artifacts.sha256 hashes only the executable. For moonbit-js this identifies Node, not the application JS."
+  },
+  "confirmation": "results.json",
+  "exploratoryTrials": "exploration.json",
+  "methodologyClarifications": [
+    "Confirmation uses five variants and ten balanced cyclic/reversed orders, not all 120 permutations. Arrays preserve actual trial order.",
+    "The baseline and native-body exploration were unpinned. Later explorations and confirmation pinned server to CPU 14 and client to CPU 15.",
+    "Every warmup and measured ICE payload was checked for exact string equality. The old report prose overstates this as every received payload: SDP equality assertions were added only in the final harness smoke.",
+    "The preliminary native-deadline executable preceded an Int64-to-Int timeout upper clamp. Its hash differs; the archived patch identifies the confirmation version. The initial exploratory helper source was not fully archived.",
+    "Timing and CPU counts exclude warmup; server CPU includes user and system /proc ticks. The initial baseline harness included latency sorting in its CPU sampling interval; later reports sample before sorting.",
+    "This shared WSL host had other active workloads. CPU affinity did not reserve physical cores or eliminate host contention.",
+    "The closed-loop Node client consumes about as much CPU as the server. This workload does not establish server saturation or a language-level speed limit.",
+    "No performance measurements include DB, JWT, TLS, TURN, rate limiting or heartbeat. Go is the corrected reference implementation, not the original application.",
+    "Source patches and raw trials are retained for audit. Prototypes were reverted; no application or library optimization was shipped."
+  ],
+  "profile": {
+    "variant": "native-baseline",
+    "executableSha256": "21747acaff470062e4e98f01217fa4e6b3c94c286078954663ce3b588a6231b7",
+    "rawDataSha256": "46b19a227cfc5f4e990ef8e77586a6257604c00b486e4996b131ddedf8a076cb",
+    "rawDataBytes": 23545604,
+    "configuration": {
+      "rooms": 32,
+      "warmupPerRoom": 1000,
+      "messagesPerRoom": 30000,
+      "serverCpu": null,
+      "clientAffinity": "not pinned"
+    },
+    "command": [
+      "perf",
+      "record",
+      "--quiet",
+      "-F",
+      "199",
+      "-e",
+      "cpu-clock:u",
+      "--call-graph",
+      "dwarf",
+      "-p",
+      "<server-pid>",
+      "-o",
+      "<profile.data>"
+    ],
+    "selfReport": "profile-self.txt",
+    "inclusiveReport": "profile-callers.txt",
+    "lostSamples": 0,
+    "approximateEventCountNs": 14005023375,
+    "limitations": [
+      "Samples cover user-space CPU, including startup and warmup; kernel time and allocation counts are not measured.",
+      "Inclusive caller percentages overlap. Async continuation callers also include resumed downstream work; do not add them or attribute all of a continuation total to its body.",
+      "The initial harness treated the profiler SIGINT shutdown as failure after collecting data. The perf recording completed, but no benchmark JSON was saved for this profiled run. The harness shutdown handling was corrected and smoke-tested.",
+      "Reports retain all symbols; perf.data and experimental executables are local temporary artifacts, not committed."
+    ]
+  }
+}

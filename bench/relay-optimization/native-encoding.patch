@@ -1,0 +1,41 @@
+diff --git a/ws_session/src/session.mbt b/ws_session/src/session.mbt
+index b15507d..f8078ee 100644
+--- a/ws_session/src/session.mbt
++++ b/ws_session/src/session.mbt
+@@ -37,7 +37,7 @@ pub fn Limits::Limits(
+
+ ///|
+ priv struct Message {
+-  payload : String
++  payload : Bytes
+   bytes : Int
+   close_code : @ws.CloseCode?
+ }
+@@ -71,7 +71,8 @@ fn Session::enqueue(
+   if self.closing {
+     return false
+   }
+-  let bytes = @utf8.encode(payload).length()
++  let encoded = @utf8.encode(payload)
++  let bytes = encoded.length()
+   if bytes > self.limits.max_pending_bytes - self.bytes ||
+     self.messages >= self.limits.max_pending_messages {
+     self.close()
+@@ -79,7 +80,7 @@ fn Session::enqueue(
+   }
+   self.bytes += bytes
+   self.messages += 1
+-  let queued = self.output.try_put({ payload, bytes, close_code, }) catch {
++  let queued = self.output.try_put({ payload: encoded, bytes, close_code, }) catch {
+     _ => false
+   }
+   if !queued {
+@@ -141,7 +142,7 @@ pub async fn with_session(
+       for ;; {
+         let message = session.output.get()
+         @async.with_timeout(limits.write_timeout_ms, async fn() {
+-          ws.send_text(message.payload)
++          ws..start_message(Text)..write(message.payload).end_message()
+         })
+         session.bytes -= message.bytes
+         session.messages -= 1
