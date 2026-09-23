@@ -30,14 +30,18 @@ export function partitionClient(code, groups) {
     byName = new Map(),
     exported = new Map(),
     imports = [];
+  // async 0.22.1 initializes its single scheduler with core Deque / Set
+  // constructors. These allocate in-memory containers; they do not start work.
+  // Keep the allowlist narrow and preserve one declaration across partitions.
+  const containerConstructor = /^_M0MPC1(?:5deque5Deque5Deque|3set3Set3Set)G/;
   const checkInitializer = (node) => {
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) return;
     if (
       ts.isCallExpression(node) &&
       (!ts.isIdentifier(node.expression) ||
-        !['$i64_reinterpret_f64', '_M0FPB12random__seed'].includes(
+        (!['$i64_reinterpret_f64', '_M0FPB12random__seed'].includes(
           node.expression.text,
-        ))
+        ) && !containerConstructor.test(node.expression.text)))
     )
       throw new Error('Unsupported linked initializer call');
     if (

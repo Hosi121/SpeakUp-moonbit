@@ -60,7 +60,7 @@ HTTP の URL・JSON と通常の承認・取消・再送の意味は維持する
 | signaling | `ClientSignal` / `ServerSignal` / `Authorization`。部屋は `Waiting(connection)` / `Paired(pair)`、交渉済みの状態だけが media ACK を持つ | 未信頼 JSON の方向・サイズ・SDP・ICE を検査し、中継は検証した元の文字列を使う。旧 `parseSignal` の公開形式を維持 |
 | フレンドと認証操作 | API と presenter が同じ `friendship.Action` を使用。認証の field も enum にする | DOM は `accept(id)` / `set_email(value)` 等の具体的な関数を使用。旧 `change` / `set_field` は互換 adapter として残す |
 | 認証 | `Stopped / Idle / Loading(id, draft) / Sending(id, cancel)`。重複した module 完了と、送信後の古い module 失敗を無視 | JS callback の同期完了・二重通知・中断を DB 不要の controller 試験で確認 |
-| 音声 | 取得途中の stream、meter 取得済みの音声、peer 付き音声を別状態にする。remote 音声の再生停止もその状態が所有 | 途中例外でも既に取得したものを解放。終了後の callback は世代で拒否し、後から届いた handle も解放 |
+| 音声 | 通話の実行ごとに新しい `Lifetime` を作り、取得した resource をその場で登録。SDP / ICE だけを `Negotiation` enum の queue に入れる | 途中例外・退出・再接続・結果受け渡し中の取消と遅い handle の解放を検証。終了通知は SDP の完了を待たない |
 
 `core/conversation/model.mbt` と `core/signaling/hub.mbt` は DB・ブラウザなしで動作する。
 `core/shared/protocol.mbt` がサーバとブラウザの共通 decoder であり、presenter にあった
@@ -132,6 +132,10 @@ migration → seed を適用して実行した。型だけで保証できない�
 速度の比較結果ではない。
 
 ## 残る設計上の課題
+
+通話の callback / 世代管理は、その後 [`Lifetime` と公式 TaskGroup](async-browser.md) に移した。
+同期的なブラウザ資源の解放と取消不能な取得の結果処理を共通化し、通話以外の Scope は残す。
+通話の controller 試験は JS、共有モデルと Lifetime は JS / native で実行する。
 
 API 全体の `Host.invoke(Json) -> Json` と global host は残っている。フレンドと通話の業務規則は
 そこから分離したが、全 backend の repository を型付きにしたものではない。通知の kind と

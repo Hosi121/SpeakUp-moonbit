@@ -197,3 +197,14 @@ signaling の受信型は送信方向ごとに分け、認証は別の decoder �
 `friendship.Action` は API と presenter で共有する。DOM は具体的な操作関数を使い、
 旧文字列 API は互換 adapter として保持する。依存・schema・本番配備は変更していない。
 設計の理由と型で保証しない範囲は [型とテストの分担](testing.md) に記録した。
+
+## ブラウザ通話の async と終了通知
+
+通話の開始・SDP / ICE・音量監視は公式 `moonbitlang/async@0.22.1` と一回ごとの
+Lifetime を使う。公開 JS controller / port の型と HTTP / signaling payload は維持する。
+callback の完了から後続の処理へは runtime の scheduling が入るため、同じスタック内で
+次の port が呼ばれることには依存しない。
+
+会話終了・peer-left・error の通知は保留中の SDP 操作を待たずに処理するよう変更した。
+停止時には同期的に資源を閉じ、後から取得された stream と受け渡し途中の値も解放する。
+[先行実装、契約、切り出し候補、配布サイズの比較](async-browser.md)を参照。

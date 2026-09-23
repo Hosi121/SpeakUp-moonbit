@@ -48,6 +48,8 @@ MySQL は `127.0.0.1:3308`、backend は `127.0.0.1:8081`。**移植用の新規
 core/shared       DTO、画面向け変換、HTTP 応答・WebSocket 入力検証
 core/thread       メッセージ画面の状態・通信順序・再送・既読・キャンセル
 core/presenter    各画面のフォーム・取得・保存、通知と WebRTC の制御
+core/lifetime     一度だけ閉じる resource の寿命・子の寿命（JS / native 共通）
+core/browser_async 公式 async への型付き callback 接続、取消と遅い成功値の解放
 core/shell        初期表示用の認証フォーム・遅延読み込みの寿命・route 判定
 core/browser_platform  TS2Mbt で生成するブラウザ primitive の binding
 core/client       shared / thread / presenter を一度だけ JS にリンクする生成 entry
@@ -81,6 +83,8 @@ npm run check          # MoonBit / TS / frontend build / 動的型の検査
 ```
 
 標準 `.d.ts` の struct→any、Promise ABI、callback の opaque 型、JS prototype、数値範囲、JSON 境界については [移行記録](docs/migration.md#js-境界と-ts2mbt) に記載しています。
+
+通話の非同期処理は公式 `TaskGroup` と明示的な resource の寿命で管理します。SDP の完了待ちでも終了通知を処理でき、キャンセル後に取得されたマイクも解放します。先行実装との比較、汎用部分の切り出し候補、通話 chunk のサイズ増は [非同期処理の設計](docs/async-browser.md) に記載しています。
 
 フォーム、一覧、通知、WebRTC、マイク確認の状態・操作規則・非同期処理の寿命は MoonBit controller に集約しています。TS に残るのは DOM の生成と差分反映、History・fetch・media の具体的な操作、module 読み込みです。画面遷移時の破棄と遅い module の無効化も MoonBit が判断します。型は TS2Mbt / Mbt2TS で生成し、ブラウザの handle は具体的な操作を持つ port で包みます。[責務の分担と残る TS](docs/react-removal.md)
 

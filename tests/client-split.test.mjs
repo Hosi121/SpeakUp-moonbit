@@ -10,7 +10,8 @@ test('linked module partition preserves prototypes, shared object identity, recu
   const code = `
     function Box(value) { this.value = value; }
     Box.prototype.$tag = 4;
-    const shared = new Box(7);
+    function _M0MPC15deque5Deque5DequeGf(items) { return new Box(items[0]); }
+    const shared = _M0MPC15deque5Deque5DequeGf([7]);
     function sum(n) { return n === 0 ? 0 : n + sum(n - 1); }
     function left() { return shared; }
     function right() { return { box: shared, n: sum(4) }; }

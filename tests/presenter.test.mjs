@@ -714,7 +714,18 @@ function mediaHarness() {
     },
   };
 }
-function voice() {
+async function untilVoice(predicate) {
+  const deadline = performance.now() + 2000;
+  while (!predicate()) {
+    assert.ok(performance.now() < deadline, 'Browser async operation did not settle');
+    await new Promise(setImmediate);
+  }
+}
+async function respondVoice(h, path, value) {
+  await untilVoice(() => h.requests.some((r) => r.path === path && !r.canceled));
+  h.respond(path, value);
+}
+function voice(t) {
   const h = harness(),
     m = mediaHarness(),
     events = [];
@@ -724,29 +735,35 @@ function voice() {
     error: (x) => events.push(['error', x]),
     speaking() {},
   });
-  const setup = () => {
+  t.after(() => c.stop());
+  const setup = async () => {
+    const acquired = m.acquired.length, sockets = h.sockets.length;
     c.start();
-    h.respond('/conversations/42', call);
-    h.respond('/rtc-config', { iceServers: [] });
+    await respondVoice(h, '/conversations/42', call);
+    await respondVoice(h, '/rtc-config', { iceServers: [] });
+    await untilVoice(() => m.acquired.length > acquired);
     const s = m.stream();
     m.acquired.at(-1).ready(s.port);
+    await untilVoice(() => h.sockets.length > sockets);
     h.sockets.at(-1).receive('open', '');
     return s;
   };
   return { h, m, c, events, setup };
 }
 
-test('voice discards a late microphone completion after stop and aborts configuration', () => {
-  const { h, m, c } = voice();
+test('voice discards a late microphone completion after stop and aborts configuration', async (t) => {
+  const { h, m, c } = voice(t);
   c.start();
-  h.respond('/conversations/42', call);
+  await respondVoice(h, '/conversations/42', call);
+  await untilVoice(() => h.requests.some((r) => r.path === '/rtc-config'));
   const rtc = h.request('/rtc-config');
   c.stop();
   rtc.done(200, '{"iceServers":[]}', false);
   assert.equal(m.acquired.length, 0);
   c.start();
-  h.respond('/conversations/42', call);
-  h.respond('/rtc-config', { iceServers: [] });
+  await respondVoice(h, '/conversations/42', call);
+  await respondVoice(h, '/rtc-config', { iceServers: [] });
+  await untilVoice(() => m.acquired.length > 0);
   c.stop();
   const s = m.stream();
   m.acquired[0].ready(s.port);
@@ -754,10 +771,10 @@ test('voice discards a late microphone completion after stop and aborts configur
   assert.equal(m.peers.length, 0);
 });
 
-test('voice serializes SDP and buffered ICE, never sends from a stopped generation, and preserves mute on restart', () => {
-  const { h, m, c, setup } = voice();
+test('voice serializes SDP and buffered ICE, never sends from a stopped attempt, and preserves mute on restart', async (t) => {
+  const { h, m, c, setup } = voice(t);
   c.mute(true);
-  const s = setup();
+  const s = await setup();
   assert.equal(s.resource.muted, true);
   const ws = h.sockets[0],
     peer = m.peers[0];
@@ -770,12 +787,16 @@ test('voice serializes SDP and buffered ICE, never sends from a stopped generati
     'text',
     '{"type":"offer","offer":{"type":"offer","sdp":"offer-sdp"}}',
   );
+  await untilVoice(() => peer.pending.length > 0);
   assert.equal(peer.pending[0].kind, 'remote');
   peer.pending.shift().done('');
+  await untilVoice(() => peer.pending.length > 0);
   assert.equal(peer.pending[0].kind, 'ice');
   peer.pending.shift().done('');
+  await untilVoice(() => peer.pending.length > 0);
   assert.equal(peer.pending[0].kind, 'describe');
   peer.pending.shift().done('answer-sdp', '');
+  await untilVoice(() => peer.pending.length > 0);
   assert.equal(peer.pending[0].kind, 'local');
   const late = peer.pending.shift();
   c.stop();
@@ -794,24 +815,30 @@ test('voice serializes SDP and buffered ICE, never sends from a stopped generati
     m.frames.every((f) => f.canceled),
     true,
   );
-  setup();
+  await setup();
   assert.equal(m.streams.at(-1).muted, true);
+  peer.connection('failed');
+  late.done('stale restart completion', '');
+  assert.equal(m.peers.at(-1).closed, false);
   c.stop();
 });
 
-test('voice offer and media-ready wire payloads remain compatible; duplicate completions are ignored', () => {
-  const { h, m, c, setup } = voice();
-  setup();
+test('voice offer and media-ready wire payloads remain compatible; duplicate completions are ignored', async (t) => {
+  const { h, m, c, setup } = voice(t);
+  await setup();
   const ws = h.sockets[0],
     peer = m.peers[0];
   ws.receive('text', '{"type":"callType","isOffer":true}');
+  await untilVoice(() => peer.pending.length > 0);
   const describe = peer.pending.shift();
   describe.done('offer-sdp', '');
   describe.done('duplicate', '');
+  await untilVoice(() => peer.pending.length > 0);
   assert.equal(peer.pending.length, 1);
   const local = peer.pending.shift();
   local.done('local-sdp', '');
   local.done('duplicate', '');
+  await untilVoice(() => ws.sent.length === 2);
   peer.connection('connected');
   assert.deepEqual(ws.sent, [
     { type: 'Authorization', token: 'Bearer fixture', room: 42 },
@@ -821,36 +848,46 @@ test('voice offer and media-ready wire payloads remain compatible; duplicate com
   c.stop();
 });
 
-test('voice bounds both pre-description ICE and the queue behind a pending SDP operation', () => {
+test('voice bounds both pre-description ICE and the queue behind a pending SDP operation', async (t) => {
   for (const blocked of [false, true]) {
-    const { h, c, events, setup } = voice();
-    setup();
+    const { h, m, c, events, setup } = voice(t);
+    await setup();
     const ws = h.sockets[0];
-    if (blocked) ws.receive('text', '{"type":"callType","isOffer":true}');
-    for (let i = 0; i < 260; i++)
+    if (blocked) {
+      ws.receive('text', '{"type":"callType","isOffer":true}');
+      await untilVoice(() => m.peers[0].pending.length > 0);
+    }
+    for (let i = 0; i < 260; i++) {
       ws.receive(
         'text',
         '{"type":"ice-candidate","candidate":{"candidate":"c"}}',
       );
+      if (!blocked) await new Promise(setImmediate);
+    }
+    await untilVoice(() => ws.closed);
     assert.equal(ws.closed, true);
     assert.match(events.find((e) => e[0] === 'error')[1], /多すぎ/);
     c.stop();
   }
 });
 
-test('voice refuses malformed signal/another conversation and releases remote playback on peer departure', () => {
+test('voice refuses malformed signals and releases remote playback even while SDP is suspended', async (t) => {
   for (const input of [
     '{',
     '{"type":"Authorization","token":"Bearer x","room":42}',
     '{"type":"media-ready"}',
     JSON.stringify({ type: 'conversation', value: { ...call, id: 99 } }),
     '{"type":"peer-left"}',
+    '{"type":"error","error":"signaling failed"}',
   ]) {
-    const { h, m, c, events, setup } = voice();
-    setup();
+    const { h, m, c, events, setup } = voice(t);
+    await setup();
+    h.sockets[0].receive('text', '{"type":"callType","isOffer":true}');
+    await untilVoice(() => m.peers[0].pending.length > 0);
     const remote = m.stream();
     m.peers[0].remote(remote.port);
     h.sockets[0].receive('text', input);
+    await untilVoice(() => h.sockets[0].closed);
     assert.equal(
       events.some((e) => e[0] === 'error'),
       true,
@@ -861,26 +898,54 @@ test('voice refuses malformed signal/another conversation and releases remote pl
   }
 });
 
-test('voice releases partially acquired media when meter, peer or playback initialization fails', () => {
-  for (const stage of ['local meter', 'peer', 'remote meter', 'playback']) {
-    const { h, m, c, events } = voice();
+test('voice closes before launch and handles call completion while SDP never resolves', async (t) => {
+  const { h, m, c, events, setup } = voice(t);
+  c.start();
+  c.stop();
+  await new Promise(setImmediate);
+  assert.equal(h.requests.length, 0);
+  const stream = await setup();
+  const ws = h.sockets[0], peer = m.peers[0];
+  ws.receive('text', '{"type":"callType","isOffer":true}');
+  await untilVoice(() => peer.pending.length > 0);
+  ws.receive('text', JSON.stringify({type: 'conversation', value: {
+    ...call, started_at: 100000, ended_at: 101000, revision: 2,
+  }}));
+  assert.equal(ws.closed, true);
+  assert.equal(peer.closed, true);
+  assert.equal(stream.resource.closed, true);
+  assert.ok(events.some(([kind, revision]) => kind === 'conversation' && revision === 2));
+  peer.pending[0].done('late offer', '');
+  await new Promise(setImmediate);
+  assert.equal(ws.sent.some(x => x.type === 'offer'), false);
+  assert.equal(events.some(([kind]) => kind === 'error'), false);
+});
+
+test('voice releases media on initialization failure or a sampling task failure', async (t) => {
+  for (const stage of ['local meter', 'peer', 'remote meter', 'playback', 'sampling']) {
+    const { h, m, c, events } = voice(t);
     c.start();
-    h.respond('/conversations/42', call);
-    h.respond('/rtc-config', { iceServers: [] });
+    await respondVoice(h, '/conversations/42', call);
+    await respondVoice(h, '/rtc-config', { iceServers: [] });
+    await untilVoice(() => m.acquired.length > 0);
     const local = m.stream();
     const fail = () => { throw new Error(stage); };
     if (stage === 'local meter') local.port.meter = fail;
     if (stage === 'peer') local.port.peer = fail;
-    // Match the browser port's exception-to-error callback contract.
-    try { m.acquired[0].ready(local.port); }
-    catch (error) { m.acquired[0].failed(error.message); }
+    if (stage === 'sampling') {
+      const meter = local.port.meter;
+      local.port.meter = () => ({ ...meter(), sample: fail });
+    }
+    m.acquired[0].ready(local.port);
     if (stage.startsWith('remote') || stage === 'playback') {
+      await untilVoice(() => m.peers.length > 0);
       const remote = m.stream();
       if (stage === 'remote meter') remote.port.meter = fail;
       else remote.port.play = fail;
       try { m.peers[0].remote(remote.port); }
       catch { m.peers[0].connection('failed'); }
     }
+    await untilVoice(() => events.some(([kind]) => kind === 'error'));
     assert.equal(events.filter(([kind]) => kind === 'error').length, 1, stage);
     assert.ok(m.streams.every((s) => s.closed && s.meters.every((meter) => meter.closed)), stage);
     assert.ok(m.peers.every((p) => p.closed), stage);
@@ -889,16 +954,19 @@ test('voice releases partially acquired media when meter, peer or playback initi
   }
 });
 
-test('session ignores lower revisions, serializes ending, applies server time, and replaces URL on completion', () => {
+test('session ignores lower revisions, serializes ending, applies server time, and replaces URL on completion', async (t) => {
   const h = harness(),
     m = mediaHarness(),
     c = createSession(h.ports, h.realtime, m.ports, '42');
   c.start();
   h.respond('/user/info', profile);
   h.respond('/memo', {});
-  h.respond('/conversations/42', call);
-  h.respond('/rtc-config', { iceServers: [] });
+  await respondVoice(h, '/conversations/42', call);
+  await respondVoice(h, '/rtc-config', { iceServers: [] });
+  await untilVoice(() => m.acquired.length > 0);
+  t.after(() => c.stop());
   m.acquired[0].ready(m.stream().port);
+  await untilVoice(() => h.sockets.length > 0);
   const ws = h.sockets[0];
   ws.receive(
     'text',
@@ -913,6 +981,7 @@ test('session ignores lower revisions, serializes ending, applies server time, a
       },
     }),
   );
+  await untilVoice(() => c.get_snapshot().conversation[0]?.revision === 1);
   c.set_offset(1000);
   m.peers[0].connection('connected');
   assert.match(c.get_snapshot().status, /299/);
@@ -924,6 +993,7 @@ test('session ignores lower revisions, serializes ending, applies server time, a
   assert.match(c.get_snapshot().status, /298/);
   assert.notEqual(c.get_snapshot().partner.username, 'mutated view');
   ws.receive('text', JSON.stringify({ type: 'conversation', value: call }));
+  await new Promise(setImmediate);
   assert.equal(c.get_snapshot().conversation[0].revision, 1);
   c.finish();
   c.finish();

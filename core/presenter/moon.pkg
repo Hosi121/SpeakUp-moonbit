@@ -3,10 +3,18 @@ import {
   "hosi121/speakup/friendship",
   "hosi121/speakup/browser_platform" @browser,
   "moonbitlang/core/json",
+  "hosi121/speakup/lifetime",
+  "hosi121/speakup/browser_async",
+  "moonbitlang/async",
 }
 
 options(
-  targets: { "browser.mbt": [ "js" ] },
+  targets: {
+    "browser.mbt": [ "js" ],
+    "voice.mbt": [ "js" ],
+    "voice_ports.mbt": [ "js" ],
+    "session.mbt": [ "js" ],
+  },
   link: {
     "js": {
       "format": "esm",

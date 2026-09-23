@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/browser_async"
+
+import {
+  "hosi121/speakup/lifetime",
+  "moonbitlang/async",
+}
+
+// Values
+pub fn check(@lifetime.Lifetime) -> Unit raise Stopped
+
+pub fn[T] guard_sync(() -> T) -> T raise PortError
+
+pub fn run(@lifetime.Lifetime, async (@async.TaskGroup[Unit]) -> Unit, (Error) -> Unit) -> Unit
+
+pub async fn[T] wait(@lifetime.Lifetime, ((Result[T, PortError]) -> Unit) -> () -> Unit, discard? : (T) -> Unit) -> T
+
+// Errors
+pub(all) suberror PortError {
+  PortError(String)
+}
+
+pub(all) suberror Stopped
+
+// Types and methods
+pub struct Inbox[T] {
+  // private fields
+}
+pub fn[T] Inbox::Inbox(@lifetime.Lifetime, limit~ : Int) -> Self[T]
+pub async fn[T] Inbox::next(Self[T]) -> T
+pub fn[T] Inbox::offer(Self[T], T) -> Bool
+
+// Type aliases
+
+// Traits
