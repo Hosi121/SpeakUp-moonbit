@@ -5,6 +5,10 @@ Shared SQL sessions, the native MySQL adapter and WebSocket session primitives
 are published Mooncakes dependencies from Hosi121/moonbit-sessions. Make library
 changes in that repository, verify and release them there, then update the module
 versions in moon.mod; do not restore an application-local copy or submodule.
+Explicit lifetimes and browser callback adapters are published dependencies from
+Hosi121/moonbit-lifetime (`Hosi121/lifetime` and `Hosi121/lifetime_js`). Maintain
+their generic implementation and race tests there, then update registry versions
+here. Keep call policy and typed media ports in this application.
 Domain code belongs in `core/`; DOM rendering and platform I/O stay in adapters.
 Do not introduce `Any`, `JSValue`, generic unchecked casts, or TypeScript `any`
 into handwritten code. Parse untrusted JSON at ingress. Generated bindings are

@@ -8,6 +8,8 @@ SQL の接続・トランザクション管理、MySQL adapter、WebSocket の�
 
 共通 API は MySQL / PostgreSQL の両実 DB で同じ契約試験を実行しています。SpeakUp の native backend もその API を使いますが、アプリの SQL・schema・運用 DB は引き続き MySQL です。SQL 方言の自動変換やアプリ全体の PostgreSQL 対応を意味しません。[実装した抽象化と制約](https://github.com/Hosi121/moonbit-sessions/blob/main/docs/database-abstraction.md)
 
+ブラウザ資源の寿命と callback の受け渡しには、別 repo の **[moonbit-lifetime](https://github.com/Hosi121/moonbit-lifetime)** を使います。`Hosi121/lifetime@0.1.0` と `Hosi121/lifetime_js@0.1.0` は Apache-2.0 の Mooncakes 公開版です。前者は外部依存なし、後者は公式 `moonbitlang/async` への接続を担当し、画像プレビューでも独立検証しています。通話の規則は SpeakUp 内に残します。
+
 **今回の測定では native 化による高速化は確認できませんでした。** signaling 中継の中央値は Go 比較用実装の約 0.95 倍。中継プログラムの RSS は JS/Node の約 85 MiB に対し native は約 10.5 MiB でした。[測定方法と結果](docs/performance.md)を参照してください。
 
 ## 起動
@@ -48,8 +50,6 @@ MySQL は `127.0.0.1:3308`、backend は `127.0.0.1:8081`。**移植用の新規
 core/shared       DTO、画面向け変換、HTTP 応答・WebSocket 入力検証
 core/thread       メッセージ画面の状態・通信順序・再送・既読・キャンセル
 core/presenter    各画面のフォーム・取得・保存、通知と WebRTC の制御
-core/lifetime     一度だけ閉じる resource の寿命・子の寿命（JS / native 共通）
-core/browser_async 公式 async への型付き callback 接続、取消と遅い成功値の解放
 core/shell        初期表示用の認証フォーム・遅延読み込みの寿命・route 判定
 core/browser_platform  TS2Mbt で生成するブラウザ primitive の binding
 core/client       shared / thread / presenter を一度だけ JS にリンクする生成 entry
@@ -84,7 +84,7 @@ npm run check          # MoonBit / TS / frontend build / 動的型の検査
 
 標準 `.d.ts` の struct→any、Promise ABI、callback の opaque 型、JS prototype、数値範囲、JSON 境界については [移行記録](docs/migration.md#js-境界と-ts2mbt) に記載しています。
 
-通話の非同期処理は公式 `TaskGroup` と明示的な resource の寿命で管理します。SDP の完了待ちでも終了通知を処理でき、キャンセル後に取得されたマイクも解放します。先行実装との比較、汎用部分の切り出し候補、通話 chunk のサイズ増は [非同期処理の設計](docs/async-browser.md) に記載しています。
+通話の非同期処理は公式 `TaskGroup` と明示的な resource の寿命で管理します。SDP の完了待ちでも終了通知を処理でき、キャンセル後に取得されたマイクも解放します。先行実装との比較、汎用部分の公開先、通話 chunk のサイズ増は [非同期処理の設計](docs/async-browser.md) に記載しています。
 
 フォーム、一覧、通知、WebRTC、マイク確認の状態・操作規則・非同期処理の寿命は MoonBit controller に集約しています。TS に残るのは DOM の生成と差分反映、History・fetch・media の具体的な操作、module 読み込みです。画面遷移時の破棄と遅い module の無効化も MoonBit が判断します。型は TS2Mbt / Mbt2TS で生成し、ブラウザの handle は具体的な操作を持つ port で包みます。[責務の分担と残る TS](docs/react-removal.md)
 
@@ -110,7 +110,7 @@ node bench/summarize.mjs
 
 Playwright はイベント／随時通話の双方で audio RTP 受信、退出と再接続、開始時刻の維持、同時終了通知、振り返りの保存・非公開性、ログイン・メモ保存を確認します。
 
-ライブラリ単体の型境界・接続寿命・各 DB adapter・配布物の検証は `moonbit-sessions` の CI が担当します。この repo の CI は Mooncakes の公開版でアプリをビルドし、上記の結合試験と通話試験を実行します。
+ライブラリ単体の型境界・接続寿命・各 DB adapter・配布物の検証は `moonbit-sessions`、汎用資源の寿命と callback の競合は `moonbit-lifetime` の CI が担当します。この repo の CI は Mooncakes の公開版でアプリをビルドし、上記の結合試験と通話試験を実行します。
 
 CI は型・単体・DB 不要の DOM 試験と、実 DB・通話試験を並行実行します。フレンドの業務判断は型とパターンマッチで表し、DB なしで検証できます。同時更新と通知の原子性は実 DB で検証します。共有 UI の重複を整理し、`verify` は両 job の成功を必須にします。[型とテストの分担](docs/testing.md)、[検証範囲と実行時間](docs/ci.md)
 

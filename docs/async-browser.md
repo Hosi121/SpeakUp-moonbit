@@ -21,13 +21,14 @@ MoonBit 実装は確認できなかった。設計自体の新規性を主張す
 
 ## 分離した部分
 
-* [`core/lifetime`](../core/lifetime/lifetime.mbt) は再開しない `Lifetime` と一度だけ実行する
+* [`Hosi121/lifetime`](https://github.com/Hosi121/moonbit-lifetime/tree/main/lifetime) は再開しない `Lifetime` と一度だけ実行する
   `Release`。子の寿命、登録と逆順の解放、終了後に届いた resource の即時解放を扱う。
   DOM、HTTP、通話の型、async runtime に依存せず、JS / native の双方で検証する。
-* [`core/browser_async`](../core/browser_async/callback.mbt) は JS 用の薄い接続層。
+* [`Hosi121/lifetime_js`](https://github.com/Hosi121/moonbit-lifetime/tree/main/lifetime_js) は JS 用の薄い接続層。
   `wait[T]` は `Result[T, PortError]` を受け取り、重複完了を抑え、処理終了時に callback の
   登録を解除する。渡せなかった成功値は `discard` に返す。
   `run` が公式 `TaskGroup` を作り、`Inbox[T]` が容量制限のあるイベント入口を提供する。
+  `acquire(release~)` は受け渡した資源を lifetime へ登録するところまでを行う。
 * [`voice_ports.mbt`](../core/presenter/voice_ports.mbt) でブラウザの空の error 文字列を
   checked error に変換する。`DescriptionKind` は Offer / Answer を表す。
 * [`voice.mbt`](../core/presenter/voice.mbt) は通話の規則を扱う。SDP 作成→local 設定→送信、
@@ -62,6 +63,7 @@ SDP 待機を取り消して全 resource を解放できる。型宣言だけで
 * 成功 callback は値の所有を渡す。既に渡した同じ resource を再送してはいけない。
   別の成功値が重複して届いた場合は、それも `discard` へ渡す。
 * `wait` から受け取った resource は、次に待機する前に `life.own` 等へ登録する。
+  音声取得では公開版の `acquire` を使い、その登録をライブラリ側で行う。
   resource を持たない値では `discard` は不要。
 * cleanup は同期・例外なし。非同期 rollback 等は、この utility の対象にせず公式 async の
   `defer` / `protect_from_cancel` と個別 driver の契約で扱う。
@@ -91,7 +93,7 @@ DOM と通話試験を同時に動かした際は Playwright の共通出力先�
 
 ## 配布サイズと制約
 
-Node 24.13.0、固定 MoonBit 0.10.14、同じ Vite 設定で、変更前 `53dd8e2` と変更後の production
+Node 24.13.0、固定 MoonBit 0.10.14、同じ Vite 設定で、変更前 `53dd8e2` と `78e1d2b` の production
 build を比較した。gzip は各出力ファイルに Node の `gzipSync` を適用した値。
 
 | 対象 | 変更前 bytes / gzip | 変更後 bytes / gzip |
@@ -108,12 +110,23 @@ build を比較した。gzip は各出力ファイルに Node の `gzipSync` を
 生成 JS を分割する既存 script には、公式 scheduler が使う core の Deque / Set 初期化を許可した。
 任意の初期化関数を許すものではなく、単一の共有状態を保つ試験も維持する。
 
-## 切り出す際の範囲
+## 独立公開した範囲
 
-`lifetime` と `browser_async` は通話の型・URL・表示文言を持たず、callback を持つほかの browser
-API に利用できる。独立配布の前に別用途でも API を使い、cleanup の制約、取消不能な処理、
-単一 reader の契約をサンプルと一緒に公開するのが次の判断点。
-この変更では別 repo や Mooncakes package は作っていない。
+2026-09-24 に既存の DisposableStack binding、editor の Disposable、公式 async を比較し、
+即時終了と callback の資源受け渡しを扱う薄い層として
+[moonbit-lifetime](https://github.com/Hosi121/moonbit-lifetime) を公開した。
+`Hosi121/lifetime@0.1.0` は async 依存なし、`Hosi121/lifetime_js@0.1.0` が JS 接続を担う。
+登録 ID の wrap / 再利用と、解除時の再入を修正し、`Inbox` は同時 reader を checked error で拒否する。
+
+通話以外の ImageBitmap preview で、取消後の遅い decode、差し替え、DOM listener の解除、
+描画例外による sibling task の取消を実ブラウザで検証した。配布 ZIP と Mooncakes 公開版の
+双方から独立 consumer をビルドしている。SpeakUp は公開版を import し、汎用実装と内部試験の
+コピーを持たない。[比較と公開判断](https://github.com/Hosi121/moonbit-lifetime/blob/main/docs/design.md)
+
+公開版への切り替え後は `check`、frontend lint、独立 TS consumer、生成物・fixture の差分検査、
+MoonBit JS 21件 / native 24件、Node 134件、native API 20件、production DOM 28件、
+native browser 11件、Node 通話 parity 3件を通過した。アプリ側の MoonBit 試験が減ったのは
+汎用の5件をライブラリ側へ移したため。通話の JS 公開型と payload の変更はない。
 
 フォームやマイク確認など、ほかの presenter に残る callback ベースの Scope は未変更である。
 全処理を一度に async に変えず、今回は通話の開始・継続・終了を検証単位とした。

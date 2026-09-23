@@ -241,7 +241,7 @@ async fn Voice::connect(
   let servers = @shared.checked_ice_servers(
     read_voice(ports, self.life, "/rtc-config"),
   )
-  let stream = @browser_async.wait(
+  let stream = @browser_async.acquire(
     self.life,
     fn(done) {
       (self.media.acquire)(fn(stream) { done(Ok(stream)) }, fn(error) {
@@ -249,9 +249,8 @@ async fn Voice::connect(
       })
       noop
     },
-    discard=fn(stream) { (stream.close)() },
+    release=fn(stream) { (stream.close)() },
   )
-  ignore(self.life.own(stream.close))
   @browser_async.guard_sync(fn() { (stream.mute)(self.muted) })
   @browser_async.check(self.life)
   let meter = @browser_async.guard_sync(fn() { (stream.meter)(256) })

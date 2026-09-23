@@ -14,7 +14,6 @@ const result = spawnSync(
     'core/friendship',
     'core/thread',
     'core/presenter',
-    'core/lifetime',
     'core/shell',
     'core/wire',
     'core/native_host',

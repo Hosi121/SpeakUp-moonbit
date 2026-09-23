@@ -135,7 +135,12 @@ migration → seed を適用して実行した。型だけで保証できない�
 
 通話の callback / 世代管理は、その後 [`Lifetime` と公式 TaskGroup](async-browser.md) に移した。
 同期的なブラウザ資源の解放と取消不能な取得の結果処理を共通化し、通話以外の Scope は残す。
-通話の controller 試験は JS、共有モデルと Lifetime は JS / native で実行する。
+通話の controller 試験は JS、共有モデルは JS / native で実行する。
+汎用 Lifetime と callback の競合試験は公開先の
+[moonbit-lifetime](https://github.com/Hosi121/moonbit-lifetime) へ移した。
+ライブラリ側で JS / native / Wasm GC、配布物、通話以外の実 browser 資源を検証し、
+SpeakUp 側は公開版を import して controller・実通話・JS 公開型を検証する。
+ライブラリ内部の5件をアプリの CI で二重実行するためのコピーは残さない。
 
 API 全体の `Host.invoke(Json) -> Json` と global host は残っている。フレンドと通話の業務規則は
 そこから分離したが、全 backend の repository を型付きにしたものではない。通知の kind と

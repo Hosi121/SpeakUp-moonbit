@@ -207,4 +207,17 @@ callback の完了から後続の処理へは runtime の scheduling が入る�
 
 会話終了・peer-left・error の通知は保留中の SDP 操作を待たずに処理するよう変更した。
 停止時には同期的に資源を閉じ、後から取得された stream と受け渡し途中の値も解放する。
-[先行実装、契約、切り出し候補、配布サイズの比較](async-browser.md)を参照。
+[先行実装、契約、公開ライブラリ、配布サイズの比較](async-browser.md)を参照。
+
+## 汎用 lifetime の公開版へ移行
+
+2026-09-24、`core/lifetime` と `core/browser_async` を
+[moonbit-lifetime](https://github.com/Hosi121/moonbit-lifetime) へ切り出し、
+Apache-2.0 の `Hosi121/lifetime@0.1.0` / `Hosi121/lifetime_js@0.1.0` を
+Mooncakes から import する構成にした。ローカル実装と内部単体試験のコピーは削除した。
+
+音声取得は `wait` → `life.own` の組合せから `acquire(release~)` へ置き換え、
+受け渡しの登録忘れを避ける。通話の規則、port 型、HTTP / signaling JSON は維持する。
+汎用ライブラリでは登録 ID の wrap / 再利用、解除処理が親を閉じる再入、複数 reader の
+誤用を検査・修正した。別用途の ImageBitmap と DOM listener でも公開版を検証した。
+新しい npm runtime 依存や本番配備はなく、実行速度の向上は主張しない。

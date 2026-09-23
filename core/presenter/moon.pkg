@@ -3,8 +3,8 @@ import {
   "hosi121/speakup/friendship",
   "hosi121/speakup/browser_platform" @browser,
   "moonbitlang/core/json",
-  "hosi121/speakup/lifetime",
-  "hosi121/speakup/browser_async",
+  "Hosi121/lifetime",
+  "Hosi121/lifetime_js" @browser_async,
   "moonbitlang/async",
 }
 
