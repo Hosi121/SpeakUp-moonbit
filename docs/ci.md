@@ -4,7 +4,7 @@
 既存の必須 status `verify` は両 job の成功を確認する。失敗・cancel・skip を成功として
 扱わない。同じ ref / PR の古い実行は新しい実行で取り消す。本番への配備は行わない。
 
-## 実測（2026-09-23 JST）
+## 並列化時の実測（2026-09-23 JST）
 
 アプリ本体が同じ `6955157` の直前 CI と比較した。時間は workflow の作成から完了までで、
 queue と最後の `verify` job も含む。cache の有無は native executable のことであり、
@@ -32,28 +32,35 @@ Node の135試験そのものは変更前の実行で約3.7秒であり、件数
 [計測記録](../bench/ci-results.json)に全試行の commit、step 時間と、参考として過去4 run も
 残した。過去4 run はアプリの版も異なるため改善率の分母には使わない。
 計測後の点検で npm の build entry (`package.json`) も cache key に加えた。
-job の配置・build・検証範囲は計測した最終構成と同じである。
+この表はテスト責務を整理する前の記録であり、以下の件数変更による速度向上を測ったものではない。
 
 ## テストの分担
 
 | job | 実行内容 |
 | --- | --- |
-| Types, contracts and DOM | TS2Mbt / Mbt2TS、型・build・lint、凍結 source oracle、生成物差分、MoonBit JS 16件 / native 17件、DB 不要の Node 112件、独立 JS 境界 consumer、production DOM / navigation 29件 |
-| API and browser integration | Node API 19件 + DB migration 4件、native API 19件、native backend 上の全 UI / RTP 16件、Node の通話・ログイン・メモ3件 |
+| Types, contracts and DOM | TS2Mbt / Mbt2TS、型・build・lint、凍結 source oracle、生成物差分、MoonBit JS 19件 / native 22件、DB 不要の Node 107件、独立 JS 境界 consumer、production DOM / navigation 28件 |
+| API and browser integration | Node API 20件 + DB migration 4件、native API 20件、native backend 上の実 API UI / RTP 11件、Node の通話・ログイン・メモ3件 |
 | verify | 上の2 job が成功したことの確認 |
 
-Node の従来の135件は112 + 23へ分割しただけで、削除・skip はない。
+Node の135件から、凍結した旧 HTTP adapter の5件を任意実行へ移し、競合するフレンド操作の
+原子性を試す1件を追加した。現在は131件 = 107 + 24。フレンドの純粋な業務規則3件は MoonBit
+の両 target へ追加し、wire の native 2件も native 単体コマンドに統合した。
+CI の boundary コマンドが重複していた JS 5件は除き、独立 consumer の型検査を残す。
 `scripts/test-node.mjs` は同じ `tests/*.test.mjs` を分類し、新規ファイルは単体側へ入れる。
 DB の試験は専用 MySQL 8.4 に限定し、両 backend が同じ API 契約を通ることを維持する。
 
-共有 frontend の13件を Node / native 両方で繰り返す部分を整理した。
-標準 backend の native では全16件を実行する。Node でもイベント／随時通話の実 RTP、
+共有 frontend を Node / native 両方で繰り返す部分は前回整理した。その後、同じ message
+renderer の6シナリオの重複も除いたため、ブラウザ試験は計61 → 48 → 42件になった。
+HTTP / media の5件は件数を維持して DB 不要の production DOM 側へ移動した。
+native backend では実 API の全11件を実行し、Node にもイベント／随時通話の実 RTP、
 再接続・終了・振り返り、ログインとメモ保存を残す。API での権限・永続化・画像・通知・
-フレンド・メッセージ等は引き続き両 backend を検査する。ブラウザ試験は計61 → 48件。
-Node の全画面試験自体は消さず、`npm run test:browser` で従来どおり全16件を実行できる。
+フレンド・メッセージ等は引き続き両 backend を検査する。
+`npm run test:browser` は実 API の11件を Node でも実行できる。
+[テストの対応表と型による分離](testing.md)に、残す理由と任意実行の旧試験を記載した。
 
 DB を共有する browser worker は1のまま。異なる job は別 runner を使う。
 時間のかかる通話試験を同じ DB 上で無理に並列化する変更はしていない。
+MySQL の healthcheck は TCP 接続を使い、初期化用の socket 専用サーバを準備完了と扱わない。
 
 ## 省いた処理と cache
 
@@ -86,7 +93,7 @@ cache の有無で API / browser 試験を skip しない。成功した integra
 npm run check
 npm run test:unit
 npm run test:native
-npm run test:boundaries -- --no-build
+npm run test:consumer
 # 隔離 DB の起動・migration・seed 後
 npm run test:database
 npm run test:integration:native
@@ -96,5 +103,7 @@ npm --prefix frontend run build:message-views
 npm run test:navigation:built
 ```
 
-`test:unit` / `test:database` / `--no-build` / `test:navigation:built` は対応する成果物が
+`test:unit` / `test:database` / `test:consumer` / `test:navigation:built` は対応する成果物が
 最新であることを前提にする。`workflow_dispatch` でも同じ全検証を再実行できる。
+境界だけを build からまとめて確認したい場合は `npm run test:boundaries` を使える。
+CI は既に単体 suite で実行した ABI 試験をここで繰り返さない。

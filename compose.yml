@@ -11,7 +11,8 @@ services:
     volumes:
       - moonbit_mysql:/var/lib/mysql
     healthcheck:
-      test: [CMD, mysqladmin, ping, -h, localhost]
+      # The image starts a socket-only server while initializing the volume.
+      test: [CMD, mysqladmin, ping, --protocol=tcp, -h, '127.0.0.1']
       interval: 2s
       timeout: 2s
       retries: 30

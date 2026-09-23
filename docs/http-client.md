@@ -88,9 +88,9 @@ node bench/http-client.mjs compare axios-before fetch-after
 
 ## 回帰試験
 
-- `tests/http-client.test.mjs`: 凍結した旧 HTTP adapter に対する source oracle の5件。現在の adapter の試験とは区別する。
+- `tests/oracles/http-client.test.mjs`: 凍結した旧 HTTP adapter の5件。通常 CI から外し、`npm run test:oracle-http` で必要時に確認する。
 - `tests/transport.test.mjs`: 現在の adapter を実 HTTP で検証。base path / 認証 / JSON / multipart / 204 / status / 切断 / headers・body 途中の abort を確認。
 - `tests/frontend-projections.test.mjs`: 旧エラー本文の表示規則から生成した fixture を現在の MoonBit 関数へ適用する。
 - `tests/http-contracts.test.mjs`: 実際に生成された MoonBit JS に、不正な ID・ログイン token・メモ・AI 応答・ICE 設定を渡す。
-- `tests/browser/http.spec.mjs`: 401 の表示、公開ログインに Bearer を付けないこと、不正 token で保存済み認証を上書きしないこと、通話準備中の中止を Chromium で確認。
+- `tests/navigation/http.spec.mjs`: 401 の表示、公開ログインに Bearer を付けないこと、不正 token で保存済み認証を上書きしないこと、通話準備中の中止・media 解放を production build の Chromium で確認。DB は不要。
 - 既存の JS/native API とブラウザ試験: ログイン、プロフィール・画像保存、メモ、イベント作成、随時／イベントの実 RTP 通話、再接続、終了、振り返りを確認。

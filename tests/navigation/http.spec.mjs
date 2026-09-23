@@ -1,5 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+// Browser/DOM boundaries only: every API response is local to this suite.
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/**', route => route.fulfill({ status: 401, json: { error: 'ログインが必要です' } }));
+  for (const path of ['events/overview', 'conversations'])
+    await page.route(`**/api/${path}`, route => route.fulfill({ json: [] }));
+  await page.route('**/api/user/info', route => route.fulfill({ json: {
+    id: 1, username: 'Alice', email: '', avatar_url: '', role: 'user', created_at: '', updated_at: '',
+  } }));
+  await page.route('**/api/memo', route => route.fulfill({ json: { memo1: '', memo2: '' } }));
+  await page.routeWebSocket('**/activity', socket => socket.onMessage(() => socket.send('{"type":"refresh"}')));
+});
+
 test('a stale initial memo response cannot overwrite an editable draft', async ({
   page,
 }) => {
@@ -127,30 +139,22 @@ test('leaving during ICE configuration cancels HTTP setup before the microphone 
     await route.fulfill({ json: { iceServers: [] } });
   });
   try {
-    await page.goto('/login');
-    await page.evaluate(async () => {
-      const { startVoiceCall } = await import('/src/services/voiceCall.ts');
-      window.setupEvents = [];
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.addInitScript(() => {
+      window.microphoneAcquisitions = 0;
       navigator.mediaDevices.getUserMedia = async () => {
-        window.setupEvents.push('microphone');
+        window.microphoneAcquisitions++;
         throw new Error('Unexpected microphone acquisition');
       };
-      window.pendingCall = startVoiceCall({
-        conversationId: 42,
-        audio: document.createElement('audio'),
-        onLocal() {},
-        onRemote() {},
-        onState() {},
-        onConnection() {},
-        onError() {
-          window.setupEvents.push('error');
-        },
-      });
     });
+    await page.goto('/session?conversation=42');
     await entered.promise;
-    await page.evaluate(() => window.pendingCall.stop());
+    await page.getByRole('button', { name: '通話一覧へ戻る', exact: true }).click();
     await canceled;
-    expect(await page.evaluate(() => window.setupEvents)).toEqual([]);
+    await expect(page.getByRole('heading', { name: '通話', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => window.microphoneAcquisitions)).toBe(0);
+    expect(errors).toEqual([]);
   } finally {
     release.resolve();
     await page.unrouteAll({ behavior: 'wait' });
@@ -186,20 +190,6 @@ for (const stage of ['constructor', 'source'])
     await page.route('**/api/rtc-config', (route) =>
       route.fulfill({ json: { iceServers: [] } }),
     );
-    await page.route('**/api/user/info', (route) =>
-      route.fulfill({
-        json: {
-          id: 1,
-          username: 'Alice',
-          email: '',
-          avatar_url: '',
-          role: 'user',
-          created_at: '',
-          updated_at: '',
-        },
-      }),
-    );
-    await page.route('**/api/memo', (route) => route.fulfill({ json: {} }));
     await page.addInitScript((stage) => {
       window.acquiredTracks = [];
       window.closedContexts = 0;

@@ -53,6 +53,7 @@ core/browser_platform  TS2Mbt で生成するブラウザ primitive の binding
 core/client       shared / thread / presenter を一度だけ JS にリンクする生成 entry
 scripts/split-client.mjs  生成 JS の宣言を画面別 ESM と共通 runtime に分割
 core/conversation 開始・終了・取消、再送時の不変条件（I/O なし）
+core/friendship   enum による申請・承認・拒否・取消の状態遷移（I/O なし）
 core/signaling    部屋と negotiation の状態管理（I/O なし）
 core/matching     rank / round / 参加ビットによるペア生成
 core/api          HTTP 入力検査、業務処理、SQL と応答構築
@@ -107,7 +108,7 @@ Playwright はイベント／随時通話の双方で audio RTP 受信、退出�
 
 ライブラリ単体の型境界・接続寿命・各 DB adapter・配布物の検証は `moonbit-sessions` の CI が担当します。この repo の CI は Mooncakes の公開版でアプリをビルドし、上記の結合試験と通話試験を実行します。
 
-CI は型・単体試験と実 DB・ブラウザ試験を並行実行します。UI 全体は native backend、Node は同じ API 契約と通話経路で検証し、共有 UI の二重実行を減らしています。`verify` は両 job の成功を必須にします。[検証範囲と実行時間](docs/ci.md)
+CI は型・単体・DB 不要の DOM 試験と、実 DB・通話試験を並行実行します。フレンドの業務判断は型とパターンマッチで表し、DB なしで検証できます。同時更新と通知の原子性は実 DB で検証します。共有 UI の重複を整理し、`verify` は両 job の成功を必須にします。[型とテストの分担](docs/testing.md)、[検証範囲と実行時間](docs/ci.md)
 
 ## 現在の範囲
 

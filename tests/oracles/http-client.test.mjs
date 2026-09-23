@@ -2,8 +2,8 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { EventEmitter, once } from 'node:events';
-import { createHttpClient } from '../contract/frontend/httpClient.ts';
-import { ApiError, toApiError } from '../contract/frontend/errorUtils.ts';
+import { createHttpClient } from '../../contract/frontend/httpClient.ts';
+import { ApiError, toApiError } from '../../contract/frontend/errorUtils.ts';
 
 const events = new EventEmitter(),
   seen = [];

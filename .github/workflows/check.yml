@@ -29,10 +29,11 @@ jobs:
       - run: npm run generate && npm run check
       - run: npm --prefix frontend run lint
       - name: Source oracles and generated contracts
-        run: npm run fixtures && git diff --exit-code -- contract core/platform core/browser_platform core/client core/presenter/pkg.generated.mbti core/shell/pkg.generated.mbti examples/js-boundary/src/platform examples/js-boundary/generated
+        run: npm run fixtures && git diff --exit-code -- contract core/platform core/browser_platform core/client core/friendship/pkg.generated.mbti core/presenter/pkg.generated.mbti core/shell/pkg.generated.mbti examples/js-boundary/src/platform examples/js-boundary/generated
       - name: JS and native unit tests
         run: npm run test:unit && npm run test:native
-      - run: npm run test:boundaries -- --no-build
+      # wire runs in both MoonBit suites; js-boundary runs in the Node unit suite.
+      - run: npm run test:consumer
       - name: Production DOM and navigation contracts
         run: npm --prefix frontend run build:message-views && npm run test:navigation:built
 
@@ -49,7 +50,7 @@ jobs:
           MYSQL_PASSWORD: speakup-local-only
           MYSQL_ROOT_PASSWORD: speakup-root-local-only
         ports: ['3308:3306']
-        options: --health-cmd="mysqladmin ping -h localhost" --health-interval=2s --health-timeout=2s --health-retries=30
+        options: --health-cmd="mysqladmin ping --protocol=tcp -h 127.0.0.1" --health-interval=2s --health-timeout=2s --health-retries=30
     env:
       AUTH_MODE: development
       DATABASE_URL: mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit
@@ -87,7 +88,7 @@ jobs:
       - name: Node API and database migration tests
         run: npm run test:database
       - run: npm run test:integration:native
-      - name: All UI and call tests on the default native backend
+      - name: Real API UI and call tests on the default native backend
         id: browser-native
         run: npm run test:browser:native
       - name: Node call transport parity

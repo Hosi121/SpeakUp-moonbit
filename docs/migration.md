@@ -164,3 +164,16 @@ SpeakUp は native MySQL adapter の combined result API を継続使用する�
 registry から取得した公開版の双方で独立 consumer をビルドした。SpeakUp も
 公開版で再ビルド・実 DB 試験を通し、暫定の submodule を削除した。
 Frontend / npm / TS2Mbt の依存は変更していない。
+
+## フレンドの型付き状態遷移とテストの分担
+
+`core/friendship` に状態・操作・参加者の enum と純粋な `decide` を分離した。API adapter が
+HTTP / DB の値を検証し、revision を照合する更新と通知を同一 transaction で保存する。
+競合時は最新状態から再判断し、最大4回で安定しなければ409を返す。通常の権限・再送・
+拒否後の新規申請、URL・JSON、schema、host ABI は維持する。状態の事前読み取りが1回増えるため、
+API が速くなったという変更ではない。
+
+移行用の旧 HTTP 試験は任意実行へ、同じ DOM renderer の二重試験は一か所へ集約した。
+HTTP / media の境界試験は production build 上で DB なしに実行する。features の各ケースは
+自分のユーザーと必要な関係を作る。JSON / JS 境界、SQL 原子性、実 RTP の検証は残した。
+[判断理由・対応表・残る課題](testing.md)を参照。

@@ -134,7 +134,7 @@ test('microphone check releases every acquired stream when the screen changes', 
   await expect.poll(() => page.evaluate(() => globalThis.__micTracks.every(track => track.readyState === 'ended'))).toBe(true);
 });
 
-test('pages fit narrow and desktop viewports and notifications close with Escape', async ({ page, request }, testInfo) => {
+test('pages fit narrow and desktop viewports and notifications close with Escape', async ({ page, request }) => {
   await authenticate(page, request);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -152,9 +152,6 @@ test('pages fit narrow and desktop viewports and notifications close with Escape
       // DOM views retain nodes and hide inactive branches.
       await expect(page.getByText('読み込み中…', { exact: true })).toBeHidden();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      if (['/login', '/home', '/sessionlist'].includes(route)) {
-        await page.screenshot({ path: testInfo.outputPath(`${route.slice(1)}-${width}.png`), fullPage: true });
-      }
     }
   }
   await page.goto('/home');
