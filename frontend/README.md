@@ -1,13 +1,18 @@
 # SpeakUp frontend
 
-React / TypeScript と標準 HTML/CSS による UI。共通の会話モデルと DTO は MoonBit の JS target と Mbt2TS から生成した `../dist/shared.js` / `.d.ts` を利用する。MUI・Emotion・CSS-in-JS の依存はない。
+MoonBit controller と標準 DOM / HTML / CSS による UI。
+TypeScript は描画とブラウザ API を担当し、公開型は Mbt2TS で生成する。
+frontend の実行時 npm 依存はない。
 
-セットアップと native backend の起動は [ルート README](../README.md) を参照。ルートで `npm run dev` を実行すると共通コードをビルドし、native backend と Vite を起動する。
+セットアップと起動は[開発手順](../docs/development.md)、責務・画面遷移・通信の契約は
+[フロントエンド設計](../docs/frontend.md)を参照。
 
-- `npm run build` — TypeScript check と production build
-- `npm run lint` — ESLint
-- `src/styles/app.css` — 共通の CSS と色
-- `src/components/ui` — 型付き DOM 部品
-- `src/services` — HTTP / WebRTC / マイク等のブラウザ境界
+| 場所 | 内容 |
+| --- | --- |
+| `src/dom` / `src/message/dom.ts` | DOM renderer |
+| `src/services` | ブラウザ API adapter |
+| `src/styles/app.css` | CSS |
+| `src/main.ts` | アプリの host と module 読み込み |
 
-MUI の削除内容、bundle 比較、残る依存と未実装機能は [frontend の設計](../docs/frontend.md) に記載している。
+root で `npm run build:core` 後、このディレクトリの `npm run build` で production build、
+`npm run lint` で ESLint を実行する。通常の開発は root の `npm run dev` を使う。

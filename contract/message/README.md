@@ -1,22 +1,21 @@
-# Message migration contract
+# Message source contract
 
-Source: `Message.tsx` at `018634f`, Node 24.13.0, React 18.3.1, ESM in Chromium.
-Regenerate the reducer oracle and original public signature with
-`node scripts/capture-message.mjs`. To re-extract the source reducer and public
-signature, add `--capture-source` (requires that Git revision). Normal fixture
-regeneration uses the checked-in verbatim reducer and also works in shallow CI.
+Pinned source: `Message.tsx` at `018634f`
+(Node 24.13.0, React 18.3.1, ESM in Chromium).
+React describes the captured source; the current app uses a DOM renderer.
 
-The screen's observable contract is semantic: the same peer, safe text content,
-chronologically ordered unique messages, monotonic read receipts, older-page
-availability, visibility-gated read acknowledgement, and one idempotency key
-per unchanged send retry. IDs are positive signed 32-bit integers; text and
-input limits use UTF-16 code units (2,000). Timestamps remain server strings;
-the browser formats them in its locale. HTTP paths and payloads are unchanged.
+Run `node scripts/capture-message.mjs` to regenerate outputs from the checked-in reducer.
+Use `--capture-source` only to re-extract from the pinned revision; it requires that Git history.
+Normal fixture generation also works in shallow CI.
 
-The React export `Message({friendId})` remains available. The new controller's
-public API is intentionally independent of React. Its declarations are generated
-from MoonBit; renderer-specific types do not enter the controller.
+The observable contract is the same peer, safe text, chronological unique messages,
+monotonic read receipts, older-page availability, visibility-gated read acknowledgement,
+and one idempotency key per unchanged send retry.
+IDs are positive signed 32-bit integers; text limits use UTF-16 code units (2,000).
+Timestamps remain server strings and are displayed in the browser locale.
 
-Deliberate corrections: cancel work on disposal, ignore superseded responses,
-prevent concurrent older-page loads, and acknowledge older unread messages when
-they become visible. These are covered separately from source parity fixtures.
+The historical React export is reference material. Current controller declarations are generated
+from MoonBit and do not contain renderer-specific types.
+Disposal, superseded responses, duplicate page loads and older-message read acknowledgement
+are checked separately from source parity. See [frontend.md](../../docs/frontend.md) and
+[testing.md](../../docs/testing.md).

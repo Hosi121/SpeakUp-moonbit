@@ -21,3 +21,7 @@ Run `npm run check`, `npm test`, `npm run test:native`, and the isolated
 `npm run test:browser:native`. The default backend is native; the Node server
 is retained for parity tests. Never pass MoonBit-managed memory into C workers.
 Document deliberate differences from SpeakUp in `docs/migration.md`.
+Keep docs organized by topic: current contracts, decisions with reasons and
+constraints, and runnable instructions. Update the existing canonical page;
+do not append work diaries, per-change test counts, or duplicate summaries.
+Keep measurements in `bench/` and reference their conditions from `docs/performance.md`.
