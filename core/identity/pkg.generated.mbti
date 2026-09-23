@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/identity"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+pub suberror InvalidId derive(@debug.Debug)
+pub fn InvalidId::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub struct ConversationId {
+  // private fields
+} derive(Eq)
+pub fn ConversationId::equal(Self, Self) -> Bool
+pub fn ConversationId::from_int(Int) -> Self raise InvalidId
+pub fn ConversationId::not_equal(Self, Self) -> Bool
+pub fn ConversationId::to_json(Self) -> Json
+pub fn ConversationId::value(Self) -> Int
+pub impl ToJson for ConversationId
+
+pub struct MessageId {
+  // private fields
+} derive(Eq)
+pub fn MessageId::equal(Self, Self) -> Bool
+pub fn MessageId::from_int(Int) -> Self raise InvalidId
+pub fn MessageId::not_equal(Self, Self) -> Bool
+pub fn MessageId::to_json(Self) -> Json
+pub fn MessageId::value(Self) -> Int
+pub impl ToJson for MessageId
+
+pub struct UserId {
+  // private fields
+} derive(Eq)
+pub fn UserId::compare(Self, Self) -> Int
+pub fn UserId::equal(Self, Self) -> Bool
+pub fn UserId::from_int(Int) -> Self raise InvalidId
+pub fn UserId::not_equal(Self, Self) -> Bool
+pub fn UserId::op_ge(Self, Self) -> Bool
+pub fn UserId::op_gt(Self, Self) -> Bool
+pub fn UserId::op_le(Self, Self) -> Bool
+pub fn UserId::op_lt(Self, Self) -> Bool
+pub fn UserId::to_json(Self) -> Json
+pub fn UserId::value(Self) -> Int
+pub impl Compare for UserId
+pub impl ToJson for UserId
+
+// Type aliases
+
+// Traits

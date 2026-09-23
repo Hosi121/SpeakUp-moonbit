@@ -128,5 +128,5 @@ MoonBit JS 21件 / native 24件、Node 134件、native API 20件、production DO
 native browser 11件、Node 通話 parity 3件を通過した。アプリ側の MoonBit 試験が減ったのは
 汎用の5件をライブラリ側へ移したため。通話の JS 公開型と payload の変更はない。
 
-フォームやマイク確認など、ほかの presenter に残る callback ベースの Scope は未変更である。
-全処理を一度に async に変えず、今回は通話の開始・継続・終了を検証単位とした。
+その後、フォームの Scope・通知 socket・マイク確認・認証送信にも公開版 Lifetime を適用した。
+同期 callback の契約は保ち、全処理を一律に async 化していない。[現在の所有範囲](typed-boundaries.md#寿命の共有)

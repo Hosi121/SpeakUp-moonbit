@@ -89,7 +89,7 @@ pub fn create_settings(ports : AppPorts) -> SettingsController {
       }
     },
     save: fn() {
-      if !life.active ||
+      if !life.is_active() ||
         state.value.busy ||
         !state.value.loaded ||
         state.value.editing.is_empty() {
@@ -120,7 +120,7 @@ pub fn create_settings(ports : AppPorts) -> SettingsController {
       )
     },
     upload: fn(upload) {
-      if !life.active || state.value.busy || !state.value.loaded {
+      if !life.is_active() || state.value.busy || !state.value.loaded {
         return
       }
       state.set({ ..state.value, busy: true, error: "", })

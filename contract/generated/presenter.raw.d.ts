@@ -71,7 +71,10 @@ export interface AdminController {
   subscribe: (fn_: () => void) => () => void;
   start: () => void;
   stop: () => void;
-  set_field: (s: string, s2: string) => void;
+  set_date_time: (s: string) => void;
+  set_theme: (s: string) => void;
+  set_query: (s: string) => void;
+  set_section: (s: string) => void;
   set_topic: (n: number, s: string) => void;
   open: () => void;
   close: () => void;
@@ -199,11 +202,15 @@ export interface HistoryController {
   start: () => void;
   stop: () => void;
   set_tab: (s: string) => void;
+  load_more: () => void;
+  retry: () => void;
 }
 
 export interface HistoryView {
   calls: Array<shared.ConversationDto>;
   loaded: boolean;
+  loading: boolean;
+  has_more: boolean;
   error: string;
   tab: string;
 }
@@ -321,7 +328,9 @@ export interface ReflectionController {
   subscribe: (fn_: () => void) => () => void;
   start: () => void;
   stop: () => void;
-  set_field: (s: string, s2: string) => void;
+  set_satisfaction: (s: string) => void;
+  set_comment: (s: string) => void;
+  set_learned: (s: string) => void;
   save: () => void;
 }
 
@@ -350,7 +359,9 @@ export interface SessionController {
   stop: () => void;
   set_offset: (n: number) => void;
   toggle_mute: () => void;
-  set_open: (s: string, flag: boolean) => void;
+  open_memo: (flag: boolean) => void;
+  open_assistant: (flag: boolean) => void;
+  open_topic: (flag: boolean) => void;
   set_tab: (s: string) => void;
   set_draft: (s: string) => void;
   send: () => void;

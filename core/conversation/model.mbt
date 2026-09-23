@@ -36,9 +36,9 @@ pub(all) enum Action {
 /// Only restore and transitions can construct a validated conversation.
 /// Timestamps and revision are projections of the phase, not independent state.
 pub struct Conversation {
-  priv id : Int
-  priv first : Int
-  priv second : Int
+  priv id : @identity.ConversationId
+  priv first : @identity.UserId
+  priv second : @identity.UserId
   priv phase : Phase
   priv origin : Origin
 }
@@ -85,9 +85,15 @@ pub fn restore(
     _ => raise InvalidSnapshot
   }
   let c = Conversation::{
-    id: s.id,
-    first: s.first,
-    second: s.second,
+    id: @identity.ConversationId::from_int(s.id) catch {
+      _ => raise InvalidSnapshot
+    },
+    first: @identity.UserId::from_int(s.first) catch {
+      _ => raise InvalidSnapshot
+    },
+    second: @identity.UserId::from_int(s.second) catch {
+      _ => raise InvalidSnapshot
+    },
     phase,
     origin,
   }
@@ -106,7 +112,7 @@ pub fn Conversation::origin(self : Conversation) -> Origin {
 }
 
 ///|
-pub fn Conversation::id(self : Conversation) -> Int {
+pub fn Conversation::id(self : Conversation) -> @identity.ConversationId {
   self.id
 }
 
@@ -128,9 +134,9 @@ pub fn Conversation::snapshot(self : Conversation) -> Snapshot {
     Cancelled(at) => (0.0, 0.0, at)
   }
   {
-    id: self.id,
-    first: self.first,
-    second: self.second,
+    id: self.id.value(),
+    first: self.first.value(),
+    second: self.second.value(),
     started_at,
     ended_at,
     cancelled_at,
@@ -141,7 +147,7 @@ pub fn Conversation::snapshot(self : Conversation) -> Snapshot {
 ///|
 fn Conversation::authorize(
   self : Conversation,
-  actor : Int,
+  actor : @identity.UserId,
 ) -> Unit raise StateError {
   if actor != self.first && actor != self.second {
     raise NotParticipant
@@ -151,8 +157,8 @@ fn Conversation::authorize(
 ///|
 pub fn Conversation::partner(
   self : Conversation,
-  actor : Int,
-) -> Int raise StateError {
+  actor : @identity.UserId,
+) -> @identity.UserId raise StateError {
   self.authorize(actor)
   if actor == self.first {
     self.second
@@ -182,7 +188,7 @@ pub fn Conversation::has_deadline(self : Conversation) -> Bool {
 pub fn Conversation::change(
   self : Conversation,
   action : Action,
-  actor : Int,
+  actor : @identity.UserId,
   now : Double,
 ) -> Conversation raise StateError {
   self.authorize(actor)
@@ -267,7 +273,7 @@ pub fn begin(
   actor : Int,
   now : Double,
 ) -> Snapshot raise StateError {
-  restore(s).change(Start, actor, now).snapshot()
+  restore(s).change(Start, member_id(actor), now).snapshot()
 }
 
 ///|
@@ -276,7 +282,7 @@ pub fn finish(
   actor : Int,
   now : Double,
 ) -> Snapshot raise StateError {
-  restore(s).change(Finish, actor, now).snapshot()
+  restore(s).change(Finish, member_id(actor), now).snapshot()
 }
 
 ///|
@@ -285,7 +291,7 @@ pub fn cancel(
   actor : Int,
   now : Double,
 ) -> Snapshot raise StateError {
-  restore(s).change(Cancel, actor, now).snapshot()
+  restore(s).change(Cancel, member_id(actor), now).snapshot()
 }
 
 ///|
@@ -295,7 +301,7 @@ pub fn state(s : Snapshot) -> String raise StateError {
 
 ///|
 pub fn partner(s : Snapshot, actor : Int) -> Int raise StateError {
-  restore(s).partner(actor)
+  restore(s).partner(member_id(actor)).value()
 }
 
 ///|
@@ -318,3 +324,10 @@ pub extend StateError with Eq::{equal, not_equal}
 
 ///|
 pub extend StateError with @debug.Debug::{to_repr}
+
+///|
+fn member_id(value : Int) -> @identity.UserId raise StateError {
+  @identity.UserId::from_int(value) catch {
+    _ => raise NotParticipant
+  }
+}

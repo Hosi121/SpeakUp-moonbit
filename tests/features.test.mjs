@@ -241,3 +241,30 @@ test('event roster respects participation bits, publishes private invitations an
   assert.equal((await request(`/conversations/${call.id}`, c)).status, 404);
   assert.equal((await request('/stats', a)).body.event_calls, 1);
 });
+
+test('history keyset pages exceed 100 entries, survive cursor deletion and exclude other members', async () => {
+  const [a, b, other] = await participants();
+  const create = async (first, second, ended = 4000) => {
+    const [row] = await db.execute('INSERT INTO conversations(started_at,ended_at,revision) VALUES(1000,?,2)', [ended]);
+    await db.execute('INSERT INTO conversation_members(conversation_id,user_id,seat) VALUES(?,?,0),(?,?,1)', [row.insertId, first.id, row.insertId, second.id]);
+    return row.insertId;
+  };
+  const ids = [];
+  for (let i = 0; i < 103; i++) ids.push(await create(a, b));
+  const foreign = await create(b, other, 2000);
+  const first = await request('/conversations/history/page', a);
+  assert.equal(first.status, 200, JSON.stringify(first.body));
+  assert.deepEqual(first.body.items.map(c => c.id), ids.toReversed().slice(0, 100));
+  assert.equal((await request('/conversations/history', a)).body.length, 100); // legacy contract
+  const boundary = first.body.items.at(-1).id;
+  await db.execute('DELETE FROM conversation_members WHERE conversation_id=?', [boundary]);
+  await db.execute('DELETE FROM conversations WHERE id=?', [boundary]);
+  const added = await create(a, b);
+  const second = await request(`/conversations/history/page/${first.body.next_cursor}`, a);
+  assert.equal(second.status, 200, JSON.stringify(second.body));
+  assert.deepEqual(second.body.items.map(c => c.id), ids.toReversed().slice(100));
+  assert.equal(second.body.next_cursor, '');
+  assert.ok(!second.body.items.some(c => c.id === added || c.id === foreign));
+  assert.equal((await request('/conversations/history/page/v1.0.1', a)).status, 400);
+  assert.equal((await request('/conversations/history/page')).status, 401);
+});

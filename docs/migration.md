@@ -221,3 +221,13 @@ Mooncakes から import する構成にした。ローカル実装と内部単�
 汎用ライブラリでは登録 ID の wrap / 再利用、解除処理が親を閉じる再入、複数 reader の
 誤用を検査・修正した。別用途の ImageBitmap と DOM listener でも公開版を検証した。
 新しい npm runtime 依存や本番配備はなく、実行速度の向上は主張しない。
+
+## 型付き backend・画面の寿命・履歴ページング
+
+汎用 JSON dispatcher と global host を型付きの `Api` インスタンスへ置き換えた。
+会話モデル・backend は UserId / ConversationId を区別し、通知は必要な ID を持つ enum にする。
+フォーム・通知・マイク・認証送信は公開 Lifetime を使用する。管理・振り返り・認証の
+`set_field` と通話の dialog セレクターは具体的操作に分け、DOM と生成型を同時更新した。
+HTTP/WebSocket の既存契約と DB schema は維持し、履歴にはカーソル付き API を追加した。
+既存の配列 API は残し、画面では100件より前の会話も「さらに表示」で読める。
+[実装・互換性・検証の分担](typed-boundaries.md)を参照。

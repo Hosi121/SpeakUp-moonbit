@@ -93,18 +93,18 @@ export function mount(host: HTMLElement, context: PageInput): () => void {
   const content = form(controller.save, "panel stack"),
     rating = input(
       "満足度 (%)",
-      (v) => controller.set_field("satisfaction", v),
+      (v) => controller.set_satisfaction(v),
       { type: "number", min: "0", max: "100", step: "1", required: true },
     );
   const comment = textarea(
       "感想",
-      (v) => controller.set_field("comment", v),
+      (v) => controller.set_comment(v),
       3,
       4000,
     ),
     learned = textarea(
       "学んだ表現",
-      (v) => controller.set_field("learned", v),
+      (v) => controller.set_learned(v),
       4,
       8000,
     ),

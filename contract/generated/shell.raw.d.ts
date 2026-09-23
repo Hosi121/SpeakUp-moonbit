@@ -38,7 +38,6 @@ export interface AuthController {
   set_username: (s: string) => void;
   set_email: (s: string) => void;
   set_password: (s: string) => void;
-  set_field: (s: string, s2: string) => void;
   show_password: (flag: boolean) => void;
   submit: () => void;
 }

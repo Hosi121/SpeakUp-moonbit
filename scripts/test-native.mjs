@@ -8,6 +8,7 @@ const result = spawnSync(
     '--target',
     'native',
     'core/shared',
+    'core/api',
     'core/signaling',
     'core/matching',
     'core/conversation',

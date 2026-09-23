@@ -43,58 +43,88 @@ fn[T] Store::subscribe(self : Store[T], listener : () -> Unit) -> () -> Unit {
 }
 
 ///|
+#cfg(target="js")
 fn noop() -> Unit {
   ()
 }
 
 ///|
-priv struct Work {
-  id : Int
-  mut cancel : () -> Unit
-}
-
-///|
 priv struct Scope {
   ports : AppPorts
-  mut active : Bool
-  mut sequence : Int
-  work : Map[String, Work]
-  mut unwatch : () -> Unit
+  mut current : @lifetime.Lifetime?
+  work : Map[String, @lifetime.Lifetime]
 }
 
 ///|
 fn scope(ports : AppPorts) -> Scope {
-  { ports, active: false, sequence: 0, work: Map([]), unwatch: noop, }
+  { ports, current: None, work: Map([]), }
+}
+
+///|
+fn Scope::is_active(self : Self) -> Bool {
+  self.current.map(fn(life) { life.is_open() }).unwrap_or(false)
+}
+
+///|
+fn Scope::activate(self : Self) -> Unit {
+  if !self.is_active() {
+    self.current = Some(@lifetime.Lifetime())
+  }
+}
+
+///|
+fn Scope::watch(
+  self : Self,
+  register : (() -> Unit) -> () -> Unit,
+  listener : () -> Unit,
+) -> Unit {
+  guard self.current is Some(owner) && owner.is_open() else { return }
+  let cancel = register(fn() { if owner.is_open() { listener() } })
+  ignore(owner.own(cancel))
+}
+
+///|
+fn Scope::begin(self : Self, key : String) -> @lifetime.Lifetime? {
+  guard self.current is Some(parent) && parent.is_open() else { return None }
+  self.cancel(key)
+  // Cancelling an operation can synchronously stop its parent.
+  guard parent.is_open() && !self.work.contains(key) else { return None }
+  let pending = parent.child()
+  self.work[key] = pending
+  Some(pending)
 }
 
 ///|
 fn Scope::cancel(self : Self, key : String) -> Unit {
   if self.work.get(key) is Some(work) {
     self.work.remove(key)
-    (work.cancel)()
+    work.close()
   }
 }
 
 ///|
 fn Scope::stop(self : Self) -> Unit {
-  self.active = false
-  (self.unwatch)()
-  self.unwatch = noop
-  for key in self.work.keys().to_array() {
-    self.cancel(key)
+  let previous = self.current
+  self.current = None
+  self.work.clear()
+  if previous is Some(life) {
+    life.close()
   }
 }
 
 ///|
 fn Scope::start(self : Self, refresh : () -> Unit, activity : Bool) -> Unit {
-  if self.active {
+  if self.is_active() {
     return
   }
-  self.active = true
+  self.activate()
+  guard self.current is Some(owner) else { return }
   if activity {
-    self.unwatch = (self.ports.on_activity)(refresh)
+    self.watch(self.ports.on_activity, refresh)
   }
-  refresh()
+  if owner.is_open() {
+    refresh()
+  }
 }
 
 ///|
@@ -105,20 +135,13 @@ fn Scope::run(
   done : (String) -> Unit raise,
   failed : (String) -> Unit,
 ) -> Unit {
-  if !self.active {
-    return
-  }
-  self.cancel(key)
-  self.sequence += 1
-  let id = self.sequence
-  let pending : Work = { id, cancel: noop, }
-  self.work[key] = pending
+  guard self.current is Some(owner) else { return }
+  guard self.begin(key) is Some(pending) else { return }
   let cancel = launch(fn(status, text, network_error) {
-    guard self.active &&
-      self.work.get(key).map(fn(w) { w.id == id }).unwrap_or(false) else {
-      return
-    }
+    guard pending.is_open() else { return }
     self.work.remove(key)
+    pending.close()
+    guard owner.is_open() else { return }
     if network_error {
       failed("サーバーに接続できませんでした")
       return
@@ -131,10 +154,7 @@ fn Scope::run(
       _ => failed("データを取得・保存できませんでした")
     }
   })
-  pending.cancel = cancel
-  if !self.work.get(key).map(fn(w) { w.id == id }).unwrap_or(false) {
-    cancel()
-  }
+  ignore(pending.own(cancel))
 }
 
 ///|
@@ -179,30 +199,22 @@ fn[A, B] Scope::pair(
   done : (A, B) -> Unit raise,
   failed : (String) -> Unit,
 ) -> Unit {
-  if !self.active {
-    return
-  }
-  self.cancel(key)
-  self.sequence += 1
-  let id = self.sequence
-  let first_key = key + "/first"
-  let second_key = key + "/second"
-  self.work[key] = {
-    id,
-    cancel: fn() {
-      self.cancel(first_key)
-      self.cancel(second_key)
-    },
+  guard self.current is Some(owner) else { return }
+  guard self.begin(key) is Some(pending) else { return }
+  let pair : Scope = {
+    ports: self.ports,
+    current: Some(pending.child()),
+    work: Map([]),
   }
   let first : Ref[A?] = Ref(None)
   let second : Ref[B?] = Ref(None)
-  let valid = fn() {
-    self.active && self.work.get(key).map(fn(w) { w.id == id }).unwrap_or(false)
-  }
+  let valid = fn() { pending.is_open() }
   let reject = fn(message) {
     if valid() {
       self.cancel(key)
-      failed(message)
+      if owner.is_open() {
+        failed(message)
+      }
     }
   }
   let ready = fn() {
@@ -211,13 +223,14 @@ fn[A, B] Scope::pair(
     }
     if first.val is Some(a) && second.val is Some(b) {
       self.cancel(key)
+      guard owner.is_open() else { return }
       done(a, b) catch {
         _ => failed("データを取得・保存できませんでした")
       }
     }
   }
-  self.request(
-    first_key,
+  pair.request(
+    "first",
     "GET",
     first_path,
     Json::null(),
@@ -228,8 +241,8 @@ fn[A, B] Scope::pair(
     reject,
   )
   if valid() {
-    self.request(
-      second_key,
+    pair.request(
+      "second",
       "GET",
       second_path,
       Json::null(),

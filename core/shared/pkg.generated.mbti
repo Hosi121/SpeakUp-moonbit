@@ -3,6 +3,7 @@ package "hosi121/speakup/shared"
 
 import {
   "hosi121/speakup/conversation",
+  "hosi121/speakup/identity",
   "moonbitlang/core/json",
 }
 
@@ -116,6 +117,10 @@ pub fn parse_client_signal(String) -> ClientSignal?
 pub fn parse_conversation(String) -> ConversationDto raise
 
 pub fn parse_conversations(String) -> Array[ConversationDto] raise
+
+pub fn parse_history_cursor(String) -> HistoryCursor raise
+
+pub fn parse_history_page(String) -> HistoryPage raise
 
 pub fn parse_reflection(String) -> ReflectionDto raise
 
@@ -292,6 +297,20 @@ pub(all) struct FriendSummaryDto {
 pub fn FriendSummaryDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn FriendSummaryDto::to_json(Self) -> Json
 
+pub struct HistoryCursor {
+  ended_at : Double
+  id : @identity.ConversationId
+}
+pub fn HistoryCursor::HistoryCursor(Double, @identity.ConversationId) -> Self raise
+pub fn HistoryCursor::encode(Self) -> String
+
+pub(all) struct HistoryPage {
+  items : Array[ConversationDto]
+  next_cursor : String
+} derive(ToJson, @json.FromJson)
+pub fn HistoryPage::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn HistoryPage::to_json(Self) -> Json
+
 pub(all) struct IceServerDto {
   urls : Array[String]
   username : String
@@ -333,6 +352,16 @@ pub(all) struct MessageDto {
 pub fn MessageDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn MessageDto::to_json(Self) -> Json
 
+pub(all) enum Notice {
+  FriendRequested(@identity.UserId)
+  FriendAccepted(@identity.UserId)
+  CallInvitation(@identity.ConversationId)
+  EventMatched(@identity.ConversationId)
+  Message(@identity.UserId, @identity.MessageId)
+}
+pub fn Notice::description(Self) -> String
+pub fn Notice::destination(Self) -> String
+
 pub(all) struct NotificationDto {
   id : Int
   kind : String
@@ -343,6 +372,7 @@ pub(all) struct NotificationDto {
   created_at : String
 } derive(ToJson, @json.FromJson)
 pub fn NotificationDto::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn NotificationDto::notice(Self) -> Notice raise
 pub fn NotificationDto::to_json(Self) -> Json
 
 pub(all) struct ParsedSignal {

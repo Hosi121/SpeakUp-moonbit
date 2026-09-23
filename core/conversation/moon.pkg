@@ -1,4 +1,5 @@
 import {
+  "hosi121/speakup/identity",
   "hosi121/speakup/wire",
   "moonbitlang/core/json",
   "moonbitlang/core/debug",

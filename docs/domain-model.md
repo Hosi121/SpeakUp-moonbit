@@ -54,7 +54,7 @@ flowchart LR
 - `conversation_reflections`: `(conversation_id, user_id)` ごとの upsert。本人の行だけ読み書きする。
 - 履歴は Completed の会話の読み取り。別の履歴行へ複製しない。
 
-一覧は本人の membership から会話を JOIN し、一度の SQL で二人とテーマを取得する。振り返りを一覧ごとに取得する N+1 はない。各一覧は直近 100 件で、ページングは未実装。
+一覧は本人の membership から会話を JOIN し、一度の SQL で二人とテーマを取得する。振り返りを一覧ごとに取得する N+1 はない。履歴画面は終了時刻と ID のカーソルで100件ずつ古い会話へ進める。旧配列 API と稼働中一覧の100件制限は維持する。[ページングの契約](typed-boundaries.md#履歴を100件より前へ読む)
 
 状態更新は `WHERE revision=?` を付ける。一度終了した会話への finish は書き込まずに既存値を返す。接続の受入れと begin/finish/cancel はプロセス内でも会話ごとの queue で順序づけ、古い DB 読み取りを使って終了後に再 join する競合を防ぐ。
 

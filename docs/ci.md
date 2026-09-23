@@ -38,21 +38,24 @@ Node の135試験そのものは変更前の実行で約3.7秒であり、件数
 
 | job | 実行内容 |
 | --- | --- |
-| Types, contracts and DOM | TS2Mbt / Mbt2TS、型・build・lint、凍結 source oracle、生成物差分、MoonBit JS 21件 / native 24件、DB 不要の Node 109件、独立 JS 境界 consumer、production DOM / navigation 28件 |
-| API and browser integration | Node API 20件 + DB migration 4件、native API 20件、native backend 上の実 API UI / RTP 11件、Node の通話・ログイン・メモ3件 |
+| Types, contracts and DOM | TS2Mbt / Mbt2TS、型・build・lint、凍結 source oracle、生成物差分、MoonBit JS 22件 / native 25件、DB 不要の Node 113件、独立 JS 境界 consumer、production DOM / navigation 29件 |
+| API and browser integration | Node API 21件 + DB migration 4件、native API 21件、native backend 上の実 API UI / RTP 11件、Node の通話・ログイン・メモ3件 |
 | verify | 上の2 job が成功したことの確認 |
 
 Node の135件から、凍結した旧 HTTP adapter の5件を任意実行へ移し、競合するフレンド操作の
 原子性を試す1件を追加し、131件 = 107 + 24 とした。続く型モデルの変更では、同期 callback と
-音声の部分初期化失敗の2件を追加し、現在は133件 = 109 + 24。フレンドの純粋な業務規則3件は MoonBit
+音声の部分初期化失敗の2件を追加し、133件 = 109 + 24 とした。フレンドの純粋な業務規則3件は MoonBit
 の両 target へ追加し、wire の native 2件も native 単体コマンドに統合した。通話の期限と
 signal の方向検査も両 target で各1件を追加した。型だけで保証できる形の試験は追加していない。
 CI の boundary コマンドが重複していた JS 5件は除き、独立 consumer の型検査を残す。
+その後の Lifetime 適用・型付き API・履歴ページングに伴い、現在は138件 = 113 + 25。
+API のインスタンス分離は MoonBit の両 target で各1件を追加した。
 `scripts/test-node.mjs` は同じ `tests/*.test.mjs` を分類し、新規ファイルは単体側へ入れる。
 DB の試験は専用 MySQL 8.4 に限定し、両 backend が同じ API 契約を通ることを維持する。
 
 共有 frontend を Node / native 両方で繰り返す部分は前回整理した。その後、同じ message
 renderer の6シナリオの重複も除いたため、ブラウザ試験は計61 → 48 → 42件になった。
+今回、履歴ページングの DOM 接続1件を追加して43件となる。
 HTTP / media の5件は件数を維持して DB 不要の production DOM 側へ移動した。
 native backend では実 API の全11件を実行し、Node にもイベント／随時通話の実 RTP、
 再接続・終了・振り返り、ログインとメモ保存を残す。API での権限・永続化・画像・通知・

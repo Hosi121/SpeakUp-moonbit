@@ -1,68 +1,39 @@
 ///|
 priv suberror ApiError {
   Invalid(Int, String)
-  Upstream(String)
 }
 
 ///|
-pub(all) suberror HostError {
-  HostError(String)
+async fn Api::query(
+  self : Self,
+  sql : String,
+  params : Array[SqlValue],
+) -> DbResult {
+  (self.host.database.run)({ sql, params, })
 }
 
 ///|
-pub(all) struct Host {
-  invoke : async (Json) -> Json
-  now : () -> String
-  now_millis : () -> Double
-  public_url : (String) -> String
-  event_times : (String) -> String
+async fn Api::transaction(
+  self : Self,
+  statements : Array[Statement],
+) -> DbResult {
+  (self.host.database.transaction)(statements)
 }
 
 ///|
-let configured_host : Ref[Host?] = { val: None, }
-
-///|
-pub fn configure_host(value : Host) -> Unit {
-  configured_host.val = Some(value)
+async fn Api::rows(
+  self : Self,
+  sql : String,
+  params : Array[SqlValue],
+) -> Array[DbRow] {
+  self.query(sql, params).rows()
 }
 
 ///|
-fn host() -> Host {
-  configured_host.val.unwrap()
-}
-
-///|
-async fn invoke(request : Json) -> Json {
-  (host().invoke)(request) catch {
-    HostError(code) => raise Upstream(code)
-    e => raise e
-  }
-}
-
-///|
-async fn query(sql : String, params : Array[Json]) -> Json {
-  invoke({
-    "operation": "database",
-    "sql": sql.to_json(),
-    "params": params.to_json(),
-  })
-}
-
-///|
-async fn rows(sql : String, params : Array[Json]) -> Array[Json] {
-  match query(sql, params) {
-    Array(xs) => xs
-    _ => raise Upstream("invalid database result")
-  }
-}
-
-///|
-async fn one(sql : String, params : Array[Json]) -> Json {
-  let xs = rows(sql, params)
-  if xs.length() == 0 {
-    raise Invalid(404, "Not found")
-  }
-  xs[0]
+async fn Api::one(self : Self, sql : String, params : Array[SqlValue]) -> DbRow {
+  let xs = self.rows(sql, params)
+  guard xs.get(0) is Some(row) else { raise Invalid(404, "Not found") }
+  row
 }
 
 ///|
@@ -117,19 +88,19 @@ fn path_id(s : String) -> Int raise ApiError {
 }
 
 ///|
-fn profile(v : Json) -> @shared.UserProfileDto raise {
-  let p : @shared.UserProfileDto = @json.from_json(v)
+fn Api::profile(self : Self, v : DbRow) -> @shared.UserProfileDto raise {
+  let p : @shared.UserProfileDto = v.decode()
   {
     ..p,
-    avatar_url: (host().public_url)(p.avatar_url),
+    avatar_url: (self.host.public_url)(p.avatar_url),
     created_at: iso(p.created_at),
     updated_at: iso(p.updated_at),
   }
 }
 
 ///|
-fn user(v : Json) -> @shared.UserDto raise {
-  let p = profile(v)
+fn Api::user(self : Self, v : DbRow) -> @shared.UserDto raise {
+  let p = self.profile(v)
   {
     id: p.id,
     username: p.username,
@@ -140,17 +111,17 @@ fn user(v : Json) -> @shared.UserDto raise {
 }
 
 ///|
-fn event(v : Json) -> @shared.EventDto raise {
+fn event(v : DbRow) -> @shared.EventDto raise {
   {
-    id: number(v, "id"),
-    event_start: iso(string(v, "event_start")),
-    event_end: iso(string(v, "event_end")),
-    theme_id: number(v, "theme_id"),
+    id: v.id("id"),
+    event_start: iso(v.text("event_start")),
+    event_end: iso(v.text("event_end")),
+    theme_id: v.id("theme_id"),
     theme: {
-      theme_text: string(v, "theme_text"),
-      topic1: string(v, "topic1"),
-      topic2: string(v, "topic2"),
-      topic3: string(v, "topic3"),
+      theme_text: v.text("theme_text"),
+      topic1: v.text("topic1"),
+      topic2: v.text("topic2"),
+      topic3: v.text("topic3"),
     },
   }
 }
@@ -182,7 +153,8 @@ fn response(status : Int, body : String) -> ApiResponse {
 }
 
 ///|
-pub async fn execute(
+pub async fn Api::execute(
+  self : Self,
   verb : String,
   path : String,
   uid : Int,
@@ -198,16 +170,16 @@ pub async fn execute(
       }
     }
     guard value is Object(_) else { raise Invalid(400, "Expected object") }
-    let result = route(verb, path, uid, value, query_text)
+    let result = self.route(verb, path, uid, value, query_text)
     response(200, result.stringify())
   } catch {
     Invalid(code, message) =>
       response(code, ({ "error": message.to_json() } : Json).stringify())
-    Upstream("credentials") =>
+    HostError::Credentials =>
       response(401, "{\"error\":\"Invalid email or password\"}")
-    Upstream("not_configured") =>
+    HostError::NotConfigured =>
       response(503, "{\"error\":\"External service is not configured\"}")
-    Upstream("conflict") => response(409, "{\"error\":\"Already exists\"}")
+    HostError::Conflict => response(409, "{\"error\":\"Already exists\"}")
     @conversation.NotParticipant =>
       response(403, "{\"error\":\"Not a participant\"}")
     @conversation.NotStarted =>
@@ -220,4 +192,14 @@ pub async fn execute(
       )
     _ => response(500, "{\"error\":\"Request failed\"}")
   }
+}
+
+///|
+fn path_user(value : String) -> @identity.UserId raise {
+  @identity.UserId::from_int(path_id(value))
+}
+
+///|
+fn path_conversation(value : String) -> @identity.ConversationId raise {
+  @identity.ConversationId::from_int(path_id(value))
 }

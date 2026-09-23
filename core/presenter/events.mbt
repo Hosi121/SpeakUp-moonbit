@@ -178,7 +178,7 @@ pub fn create_event_card(
       }
     },
     act: fn(action) {
-      if !life.active || state.value.busy {
+      if !life.is_active() || state.value.busy {
         return
       }
       if action != "register" && action != "roster" && action != "match" {

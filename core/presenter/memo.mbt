@@ -67,7 +67,7 @@ pub fn create_memo(ports : AppPorts) -> MemoController {
       }
     },
     save: fn() {
-      if !life.active || state.value.busy {
+      if !life.is_active() || state.value.busy {
         return
       }
       state.set({ ..state.value, busy: true, error: "", saved: false, })

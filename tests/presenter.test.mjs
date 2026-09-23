@@ -238,7 +238,7 @@ test('history and stats dispose activity subscriptions and ignore old result gen
     stats = createStats(h.ports);
   history.start();
   history.set_tab('friends');
-  h.respond('/conversations/history', [call]);
+  h.respond('/conversations/history/page', { items: [{ ...call, started_at: 1000, ended_at: 2000, revision: 2 }], next_cursor: '' });
   assert.equal(history.get_snapshot().tab, 'friends');
   stats.start();
   const old = h.request('/stats');
@@ -359,8 +359,8 @@ test('admin catches invalid date, snapshots topic fields and serializes creation
   c.create();
   assert.ok(c.get_snapshot().dialogError);
   assert.equal(h.requests.length, 0);
-  c.set_field('dateTime', '2026-09-24T00:00:00Z');
-  c.set_field('theme', 'Theme');
+  c.set_date_time('2026-09-24T00:00:00Z');
+  c.set_theme('Theme');
   c.set_topic(0, 'One');
   c.create();
   c.create();
@@ -418,7 +418,7 @@ test('reflection validates URL/rating and permits edits only after completed cal
   bad.stop();
   const c = createReflection(h.ports, '42');
   c.start();
-  c.set_field('comment', 'too early');
+  c.set_comment('too early');
   h.respond('/conversations/42', {
     ...call,
     started_at: 1000,
@@ -432,11 +432,11 @@ test('reflection validates URL/rating and permits edits only after completed cal
     learned_expressions: '',
     updated_at: '',
   });
-  c.set_field('satisfaction', '　');
+  c.set_satisfaction('　');
   c.save();
   assert.match(c.get_snapshot().error, /0〜100/);
-  c.set_field('satisfaction', '85');
-  c.set_field('comment', 'draft');
+  c.set_satisfaction('85');
+  c.set_comment('draft');
   c.save();
   assert.equal(h.request('/conversations/42/reflection').body.satisfaction, 85);
   c.stop();
@@ -550,10 +550,10 @@ test('auth keeps fields usable during module loading, blocks abandoned requests,
     store_token: h.ports.store_token,
   });
   c.start();
-  c.set_field('email', 'old');
+  c.set_email('old');
   c.submit();
   c.submit();
-  c.set_field('email', 'new');
+  c.set_email('new');
   assert.equal(c.get_snapshot().email, 'new');
   assert.equal(pending.length, 1);
   c.stop();
@@ -1113,4 +1113,71 @@ test('late notification acknowledgement cannot discard a newly arrived notificat
   });
   assert.equal(c.get_snapshot().inbox.unread, 1);
   c.stop();
+});
+
+test('history paging retries the same cursor, ignores duplicate clicks and abandons old pages on restart', () => {
+  const h = harness(), c = createHistory(h.ports);
+  const finished = id => ({ ...call, id, started_at: 1000, ended_at: 2000, revision: 2 });
+  c.start();
+  h.respond('/conversations/history/page', { items: [finished(103), finished(102)], next_cursor: 'v1.2000.102' });
+  c.load_more();
+  c.load_more();
+  assert.equal(h.requests.filter(r => r.path.endsWith('/v1.2000.102')).length, 1);
+  h.respond('/conversations/history/page/v1.2000.102', { error: 'temporary failure' }, 503);
+  assert.deepEqual(c.get_snapshot().calls.map(c => c.id), [103, 102]);
+  c.retry();
+  h.respond('/conversations/history/page/v1.2000.102', { items: [finished(101)], next_cursor: 'v1.2000.101' });
+  c.load_more();
+  const old = h.request('/conversations/history/page/v1.2000.101');
+  c.stop();
+  c.start();
+  old.done(200, JSON.stringify({ items: [finished(100)], next_cursor: '' }), false);
+  h.respond('/conversations/history/page', { items: [finished(104)], next_cursor: '' });
+  assert.deepEqual(c.get_snapshot().calls.map(c => c.id), [104]);
+  assert.equal(c.get_snapshot().has_more, false);
+  c.load_more();
+  assert.equal(h.requests.length, 5);
+  c.stop();
+});
+
+test('a request completing while cancellation restarts its screen cannot overwrite the new screen', () => {
+  const h = harness();
+  let restart = false, c;
+  const request = h.ports.request;
+  h.ports.request = (...args) => {
+    const cancel = request(...args);
+    return () => {
+      cancel();
+      if (restart) { restart = false; c.stop(); c.start(); }
+    };
+  };
+  c = createMemo(h.ports);
+  c.start();
+  restart = true;
+  h.respond('/memo', { memo1: 'abandoned', memo2: '' });
+  assert.notEqual(c.get_snapshot().carryInMemo, 'abandoned');
+  h.respond('/memo', { memo1: 'current', memo2: '' });
+  assert.equal(c.get_snapshot().carryInMemo, 'current');
+  c.stop();
+});
+
+test('microphone initialization and sampling failures release the acquired tracks and listeners', () => {
+  for (const stage of ['meter', 'sample']) {
+    const h = harness(), m = mediaHarness(), c = createMicrophone(m.ports, h.realtime);
+    c.start();
+    const stream = m.stream();
+    const meter = stream.port.meter;
+    stream.port.meter = size => {
+      if (stage === 'meter') throw new Error('meter failed');
+      const value = meter(size);
+      value.sample = () => { throw new Error('sample failed'); };
+      return value;
+    };
+    m.acquired[0].ready(stream.port);
+    assert.equal(stream.resource.closed, true);
+    assert.equal(h.focus.size, 0);
+    assert.equal(c.get_snapshot().ready, false);
+    assert.ok(c.get_snapshot().error);
+    c.stop();
+  }
 });

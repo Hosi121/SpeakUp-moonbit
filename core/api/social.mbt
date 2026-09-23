@@ -1,36 +1,28 @@
 ///|
-let activity_listener : Ref[(Int) -> Unit] = { val: fn(_) { () }, }
-
-///|
-pub fn set_notifier(listener : (Int) -> Unit) -> Unit {
-  activity_listener.val = listener
+fn Api::notify_user(self : Self, uid : @identity.UserId) -> Unit {
+  (self.notify)(uid)
 }
 
 ///|
-fn notify_user(uid : Int) -> Unit {
-  (activity_listener.val)(uid)
+fn Api::friend_dto(self : Self, v : DbRow) -> @shared.FriendSummaryDto raise {
+  let dto : @shared.FriendSummaryDto = v.decode()
+  { ..dto, avatar_url: (self.host.public_url)(dto.avatar_url), }
 }
 
 ///|
-fn friend_dto(v : Json) -> @shared.FriendSummaryDto raise {
-  let dto : @shared.FriendSummaryDto = @json.from_json(v)
-  { ..dto, avatar_url: (host().public_url)(dto.avatar_url), }
-}
-
-///|
-async fn social(uid : Int) -> @shared.SocialDto {
+async fn Api::social(self : Self, uid : @identity.UserId) -> @shared.SocialDto {
   let friends = []
   let incoming = []
   let outgoing = []
-  let result = rows(
+  let result = self.rows(
     "SELECT u.id,u.username,u.avatar_url,f.status,f.requested_by FROM friendships f JOIN users u ON u.id=IF(f.low_user_id=?,f.high_user_id,f.low_user_id) WHERE (f.low_user_id=? OR f.high_user_id=?) AND u.is_deleted=0 AND f.status IN ('FRIEND','PENDING') ORDER BY u.id",
-    [uid.to_json(), uid.to_json(), uid.to_json()],
+    [uid.to_sql(), uid.to_sql(), uid.to_sql()],
   )
   for row in result {
-    let other = friend_dto(row)
-    if string(row, "status") == "FRIEND" {
+    let other = self.friend_dto(row)
+    if row.text("status") == "FRIEND" {
       friends.push(other)
-    } else if number(row, "requested_by") == uid {
+    } else if row.user_id("requested_by") == uid {
       outgoing.push(other)
     } else {
       incoming.push(other)
@@ -40,80 +32,93 @@ async fn social(uid : Int) -> @shared.SocialDto {
 }
 
 ///|
-async fn inbox(uid : Int) -> @shared.InboxDto {
+async fn Api::inbox(self : Self, uid : @identity.UserId) -> @shared.InboxDto {
   // One statement keeps the unread count and the displayed read watermark in
   // the same snapshot, even when a notification is inserted concurrently.
-  let result = rows(
+  let result = self.rows(
     "SELECT n.id,n.kind,n.conversation_id,n.message_id,n.read_at,n.created_at,u.id AS actor_id,u.username,u.avatar_url,(SELECT COUNT(*) FROM notifications WHERE user_id=? AND read_at IS NULL) AS unread FROM notifications n JOIN users u ON u.id=n.actor_id WHERE n.user_id=? ORDER BY n.id DESC LIMIT 100",
-    [uid.to_json(), uid.to_json()],
+    [uid.to_sql(), uid.to_sql()],
   )
   let items = result.map(fn(v) raise {
-    @shared.NotificationDto::{
-      id: number(v, "id"),
-      kind: string(v, "kind"),
+    let dto = @shared.NotificationDto::{
+      id: v.id("id"),
+      kind: v.text("kind"),
       actor: {
-        id: number(v, "actor_id"),
-        username: string(v, "username"),
-        avatar_url: (host().public_url)(string(v, "avatar_url")),
+        id: v.id("actor_id"),
+        username: v.text("username"),
+        avatar_url: (self.host.public_url)(v.text("avatar_url")),
       },
-      conversation_id: if field(v, "conversation_id") == Json::null() {
+      conversation_id: if v.field("conversation_id") is Null {
         0
       } else {
-        number(v, "conversation_id")
+        v.id("conversation_id")
       },
-      message_id: if field(v, "message_id") == Json::null() {
+      message_id: if v.field("message_id") is Null {
         0
       } else {
-        number(v, "message_id")
+        v.id("message_id")
       },
-      read: field(v, "read_at") != Json::null(),
-      created_at: iso(string(v, "created_at")),
+      read: !(v.field("read_at") is Null),
+      created_at: iso(v.text("created_at")),
     }
+    dto.notice() |> ignore
+    dto
   })
   {
     items,
     unread: if result.is_empty() {
       0
     } else {
-      @json.from_json(field(result[0], "unread"))
+      result[0].int("unread")
     },
-    now: (host().now_millis)(),
+    now: (self.host.now_millis)(),
   }
 }
 
 ///|
-async fn require_friend(uid : Int, target : Int) -> @shared.FriendSummaryDto {
-  friend_dto(
-    one(
+async fn Api::require_friend(
+  self : Self,
+  uid : @identity.UserId,
+  target : @identity.UserId,
+) -> @shared.FriendSummaryDto {
+  self.friend_dto(
+    self.one(
       "SELECT u.id,u.username,u.avatar_url FROM friendships f JOIN users u ON u.id=? WHERE f.low_user_id=LEAST(?,?) AND f.high_user_id=GREATEST(?,?) AND f.status='FRIEND' AND u.is_deleted=0",
       [
-        target.to_json(),
-        uid.to_json(),
-        target.to_json(),
-        uid.to_json(),
-        target.to_json(),
+        target.to_sql(),
+        uid.to_sql(),
+        target.to_sql(),
+        uid.to_sql(),
+        target.to_sql(),
       ],
     ),
   )
 }
 
 ///|
-async fn thread(uid : Int, target : Int, before : Int) -> @shared.ThreadDto {
-  let peer = require_friend(uid, target)
-  let messages = rows(
-    "SELECT id,sender_id,recipient_id,body,created_at,COALESCE(read_at,'') AS read_at FROM direct_messages WHERE ((sender_id=? AND recipient_id=?) OR (sender_id=? AND recipient_id=?)) AND (?=0 OR id<?) ORDER BY id DESC LIMIT 51",
-    [
-      uid.to_json(),
-      target.to_json(),
-      target.to_json(),
-      uid.to_json(),
-      before.to_json(),
-      before.to_json(),
-    ],
-  ).map(fn(v) raise {
-    let dto : @shared.MessageDto = @json.from_json(v)
-    { ..dto, created_at: iso(dto.created_at), read_at: iso(dto.read_at), }
-  })
+async fn Api::thread(
+  self : Self,
+  uid : @identity.UserId,
+  target : @identity.UserId,
+  before : Int,
+) -> @shared.ThreadDto {
+  let peer = self.require_friend(uid, target)
+  let messages = self
+    .rows(
+      "SELECT id,sender_id,recipient_id,body,created_at,COALESCE(read_at,'') AS read_at FROM direct_messages WHERE ((sender_id=? AND recipient_id=?) OR (sender_id=? AND recipient_id=?)) AND (?=0 OR id<?) ORDER BY id DESC LIMIT 51",
+      [
+        uid.to_sql(),
+        target.to_sql(),
+        target.to_sql(),
+        uid.to_sql(),
+        before.to_sql(),
+        before.to_sql(),
+      ],
+    )
+    .map(fn(v) raise {
+      let dto : @shared.MessageDto = v.decode()
+      { ..dto, created_at: iso(dto.created_at), read_at: iso(dto.read_at), }
+    })
   let has_older = messages.length() > 50
   if has_older {
     messages.pop() |> ignore
@@ -139,50 +144,38 @@ fn request_key(body : Json) -> String raise {
 }
 
 ///|
-async fn send_message(
-  uid : Int,
-  target : Int,
+async fn Api::send_message(
+  self : Self,
+  uid : @identity.UserId,
+  target : @identity.UserId,
   body : Json,
 ) -> @shared.ThreadDto {
-  require_friend(uid, target) |> ignore
+  self.require_friend(uid, target) |> ignore
   let content = required(body, "body", 2000)
   if content.trim().is_empty() {
     raise Invalid(400, "Message is empty")
   }
   let key = request_key(body)
   // Unique sender/request key makes retries safe. A key cannot address another peer or body.
-  invoke({
-    "operation": "transaction",
-    "statements": [
-      {
-        "sql": "INSERT INTO direct_messages(sender_id,recipient_id,request_id,body) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE id=id",
-        "params": [
-          uid.to_json(),
-          target.to_json(),
-          key.to_json(),
-          content.to_json(),
-        ],
-      },
-      {
-        "sql": "INSERT IGNORE INTO notifications(user_id,actor_id,event_key,kind,message_id) SELECT recipient_id,sender_id,CONCAT('message:',id),'message',id FROM direct_messages WHERE sender_id=? AND request_id=? AND recipient_id=? AND BINARY body=BINARY ?",
-        "params": [
-          uid.to_json(),
-          key.to_json(),
-          target.to_json(),
-          content.to_json(),
-        ],
-      },
-    ],
-  })
+  self.transaction([
+    {
+      sql: "INSERT INTO direct_messages(sender_id,recipient_id,request_id,body) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE id=id",
+      params: [uid.to_sql(), target.to_sql(), key.to_sql(), content.to_sql()],
+    },
+    {
+      sql: "INSERT IGNORE INTO notifications(user_id,actor_id,event_key,kind,message_id) SELECT recipient_id,sender_id,CONCAT('message:',id),'message',id FROM direct_messages WHERE sender_id=? AND request_id=? AND recipient_id=? AND BINARY body=BINARY ?",
+      params: [uid.to_sql(), key.to_sql(), target.to_sql(), content.to_sql()],
+    },
+  ])
   |> ignore
-  let saved = one(
+  let saved = self.one(
     "SELECT recipient_id,body FROM direct_messages WHERE sender_id=? AND request_id=?",
-    [uid.to_json(), key.to_json()],
+    [uid.to_sql(), key.to_sql()],
   )
-  if number(saved, "recipient_id") != target || string(saved, "body") != content {
+  if saved.user_id("recipient_id") != target || saved.text("body") != content {
     raise Invalid(409, "Request ID already used")
   }
-  notify_user(target)
-  notify_user(uid)
-  thread(uid, target, 0)
+  self.notify_user(target)
+  self.notify_user(uid)
+  self.thread(uid, target, 0)
 }

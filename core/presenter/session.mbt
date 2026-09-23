@@ -38,7 +38,9 @@ pub(all) struct SessionController {
   stop : () -> Unit
   set_offset : (Double) -> Unit
   toggle_mute : () -> Unit
-  set_open : (String, Bool) -> Unit
+  open_memo : (Bool) -> Unit
+  open_assistant : (Bool) -> Unit
+  open_topic : (Bool) -> Unit
   set_tab : (String) -> Unit
   set_draft : (String) -> Unit
   send : () -> Unit
@@ -130,12 +132,12 @@ pub fn create_session(
     if !clock.can_join {
       (voice.val.stop)()
     }
-    if call.model.phase() is Completed(_, _) && life.active {
+    if call.model.phase() is Completed(_, _) && life.is_active() {
       (ports.navigate)("/sessionrecord?conversation=\{id}", true)
     }
   }
   let receive = fn(call : @shared.Call) {
-    if !life.active || call.model.id() != id {
+    if !life.is_active() || call.model.id().value() != id {
       return
     }
     if current.val is Some(previous) &&
@@ -165,7 +167,7 @@ pub fn create_session(
     },
   })
   let end_call = fn(action : EndCall) {
-    if !life.active || state.value.saving {
+    if !life.is_active() || state.value.saving {
       return
     }
     guard current.val is Some(call) else { return }
@@ -183,7 +185,7 @@ pub fn create_session(
       {},
       fn(text) raise {
         let call = @shared.parse_call(text)
-        guard call.model.id() == id else { fail("Wrong conversation") }
+        guard call.model.id().value() == id else { fail("Wrong conversation") }
         state.set({ ..state.value, saving: false, })
         receive(call)
       },
@@ -194,10 +196,10 @@ pub fn create_session(
     get_snapshot: fn() { state.value },
     subscribe: fn(listener) { state.subscribe(listener) },
     start: fn() {
-      if life.active || id == 0 {
+      if life.is_active() || id == 0 {
         return
       }
-      life.active = true
+      life.activate()
       state.set({ ..state.value, error: "", saving: false, sending: false, })
       life.request(
         "memo",
@@ -245,14 +247,11 @@ pub fn create_session(
       state.set({ ..state.value, muted, })
       (voice.val.mute)(muted)
     },
-    set_open: fn(dialog, open) {
-      match dialog {
-        "memo" => state.set({ ..state.value, memo_open: open, })
-        "assistant" => state.set({ ..state.value, assistant_open: open, })
-        "topic" => state.set({ ..state.value, topic_open: open, })
-        _ => ()
-      }
+    open_memo: fn(open) { state.set({ ..state.value, memo_open: open, }) },
+    open_assistant: fn(open) {
+      state.set({ ..state.value, assistant_open: open, })
     },
+    open_topic: fn(open) { state.set({ ..state.value, topic_open: open, }) },
     set_tab: fn(tab) {
       if tab == "1" || tab == "2" {
         state.set({ ..state.value, memo_tab: tab, })
@@ -264,7 +263,7 @@ pub fn create_session(
       }
     },
     send: fn() {
-      if !life.active ||
+      if !life.is_active() ||
         state.value.sending ||
         trim(state.value.draft).is_empty() {
         return
@@ -308,7 +307,7 @@ pub fn create_session(
       )
     },
     retry: fn() {
-      if !life.active || !state.value.can_retry {
+      if !life.is_active() || !state.value.can_retry {
         return
       }
       (voice.val.stop)()

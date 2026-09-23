@@ -63,3 +63,23 @@ test('production page code and SVG assets load without React', async ({ page }) 
   expect((await Promise.all(scripts)).join('\n')).not.toMatch(/react\.element|react-dom\.production|react\.production/);
   expect(errors).toEqual([]);
 });
+
+test('history appends older entries through the MoonBit controller and keeps existing rows', async ({ page }) => {
+  const call = id => ({ id, event_id: 0, round: 0, started_at: 1000, ended_at: 2000,
+    cancelled_at: 0, revision: 2, theme: `Call ${id}`, topics: [], event_start: '',
+    participants: [{ id: 1, username: 'Alice', avatar_url: '' }, { id: 2, username: 'Bob', avatar_url: '' }] });
+  await page.route('**/api/conversations/history/page', route => route.fulfill({ json: {
+    items: [call(103), call(102)], next_cursor: 'v1.2000.102',
+  } }));
+  await page.route('**/api/conversations/history/page/v1.2000.102', route => route.fulfill({ json: {
+    items: [call(101)], next_cursor: '',
+  } }));
+  await page.goto('/conversation_history');
+  const first = page.getByRole('article').filter({ hasText: 'Call 103' });
+  await expect(first).toBeVisible();
+  await first.evaluate(node => { window.firstHistoryRow = node; });
+  await page.getByRole('button', { name: 'さらに表示', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(3);
+  expect(await first.evaluate(node => node === window.firstHistoryRow)).toBe(true);
+  await expect(page.getByRole('button', { name: 'さらに表示', exact: true })).toBeHidden();
+});

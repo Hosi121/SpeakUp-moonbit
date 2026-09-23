@@ -42,7 +42,7 @@ DOM 版メッセージと、ブラウザのない MoonBit JS / native テスト�
 
 ## 非同期処理とリソースの寿命
 
-`core/presenter/runtime.mbt` の `Scope` がキーごとに処理を所有する。要求を置換すると
+`core/presenter/runtime.mbt` の `Scope` は公開版 `Lifetime` を使い、キーごとに処理を所有する。要求を置換すると
 前の要求を abort し、破棄・再起動後に届いた応答と二重 callback は無視する。
 callback が同期的に呼ばれる port も扱える。`stop` は要求・timer・購読を解放する。
 独立した二つの GET は並列に開始し、両方が完了してから一つの snapshot に反映する。
@@ -56,7 +56,7 @@ callback が同期的に呼ばれる port も扱える。`stop` は要求・time
 通知は100 msの更新集約、60秒の復旧取得、1 / 2 / 4 / 8 / 16 / 30秒の再接続を
 MoonBit が管理する。時計差は HTTP の開始・完了時刻の中点から求め、module 待ちを
 含めない。既読応答を即時反映し、途中で新しい通知を取得済みなら古い一覧で消さず
-再取得する。socket error と close の双方で接続世代を無効化する。
+再取得する。socket error と close の双方で接続の Lifetime を閉じる。
 
 通話では JSON を一度だけ parse して内部の Signal enum にする。SDP / ICE の順序、
 offer / answer、接続状態、mute、音量判定、終了時の後始末を MoonBit が判断する。

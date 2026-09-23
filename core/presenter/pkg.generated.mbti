@@ -80,7 +80,10 @@ pub(all) struct AdminController {
   subscribe : (() -> Unit) -> () -> Unit
   start : () -> Unit
   stop : () -> Unit
-  set_field : (String, String) -> Unit
+  set_date_time : (String) -> Unit
+  set_theme : (String) -> Unit
+  set_query : (String) -> Unit
+  set_section : (String) -> Unit
   set_topic : (Int, String) -> Unit
   open : () -> Unit
   close : () -> Unit
@@ -208,11 +211,15 @@ pub(all) struct HistoryController {
   start : () -> Unit
   stop : () -> Unit
   set_tab : (String) -> Unit
+  load_more : () -> Unit
+  retry : () -> Unit
 }
 
 pub(all) struct HistoryView {
   calls : Array[@shared.ConversationDto]
   loaded : Bool
+  loading : Bool
+  has_more : Bool
   error : String
   tab : String
 }
@@ -330,7 +337,9 @@ pub(all) struct ReflectionController {
   subscribe : (() -> Unit) -> () -> Unit
   start : () -> Unit
   stop : () -> Unit
-  set_field : (String, String) -> Unit
+  set_satisfaction : (String) -> Unit
+  set_comment : (String) -> Unit
+  set_learned : (String) -> Unit
   save : () -> Unit
 }
 
@@ -359,7 +368,9 @@ pub(all) struct SessionController {
   stop : () -> Unit
   set_offset : (Double) -> Unit
   toggle_mute : () -> Unit
-  set_open : (String, Bool) -> Unit
+  open_memo : (Bool) -> Unit
+  open_assistant : (Bool) -> Unit
+  open_topic : (Bool) -> Unit
   set_tab : (String) -> Unit
   set_draft : (String) -> Unit
   send : () -> Unit

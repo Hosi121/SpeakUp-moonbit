@@ -1,4 +1,5 @@
 import {
+  "Hosi121/lifetime",
   "hosi121/speakup/presenter",
 }
 

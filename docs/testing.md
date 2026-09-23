@@ -58,8 +58,8 @@ HTTP の URL・JSON と通常の承認・取消・再送の意味は維持する
 | 期限と操作 | `Start / Finish / Cancel / Expire` を純粋な `change` で適用。イベントの5分上限もここで処理 | DB adapter は会員照合と revision による CAS を維持。HTTP の権限・並行操作の試験も維持 |
 | 画面の通話 | `Call` が検証済みモデルと表示用 metadata を保持。session は timer ごとに DTO を復元しない | JS の表示用 DTO はコピー。clock / partner / 終了判定は内部のモデルから求める |
 | signaling | `ClientSignal` / `ServerSignal` / `Authorization`。部屋は `Waiting(connection)` / `Paired(pair)`、交渉済みの状態だけが media ACK を持つ | 未信頼 JSON の方向・サイズ・SDP・ICE を検査し、中継は検証した元の文字列を使う。旧 `parseSignal` の公開形式を維持 |
-| フレンドと認証操作 | API と presenter が同じ `friendship.Action` を使用。認証の field も enum にする | DOM は `accept(id)` / `set_email(value)` 等の具体的な関数を使用。旧 `change` / `set_field` は互換 adapter として残す |
-| 認証 | `Stopped / Idle / Loading(id, draft) / Sending(id, cancel)`。重複した module 完了と、送信後の古い module 失敗を無視 | JS callback の同期完了・二重通知・中断を DB 不要の controller 試験で確認 |
+| フレンドと認証操作 | API と presenter が同じ `friendship.Action` を使用。認証の field も enum にする | DOM は `accept(id)` / `set_email(value)` 等の具体的な関数を使用。旧 `change` は互換 adapter として残す。`set_field` はその後削除 |
+| 認証 | `Stopped / Idle / Loading(draft) / Sending` と要求ごとの Lifetime。重複した module 完了と、送信後の古い module 失敗を無視 | JS callback の同期完了・二重通知・中断を DB 不要の controller 試験で確認 |
 | 音声 | 通話の実行ごとに新しい `Lifetime` を作り、取得した resource をその場で登録。SDP / ICE だけを `Negotiation` enum の queue に入れる | 途中例外・退出・再接続・結果受け渡し中の取消と遅い handle の解放を検証。終了通知は SDP の完了を待たない |
 
 `core/conversation/model.mbt` と `core/signaling/hub.mbt` は DB・ブラウザなしで動作する。
@@ -125,16 +125,24 @@ MoonBit JS 19件 / native 22件、Node 131件、native API 20件、production DO
 native browser 11件、Node 通話 parity 3件が成功した。メッセージ API の1件は seed 前の
 空の専用 DB でも単独成功を確認した。任意実行へ移した旧 HTTP 5件も実行可能なことを確認した。
 
-今回の通話・signaling・状態モデルの変更も `check`、lint、fixture 再生成、独立 consumer を
+通話・signaling・状態モデルの変更時も `check`、lint、fixture 再生成、独立 consumer を
 通過した。MoonBit JS 21件 / native 24件、Node 133件、native API 20件、production DOM 28件、
 native browser 11件、Node 通話 parity 3件が成功した。API / browser は専用の空の MySQL に
 migration → seed を適用して実行した。型だけで保証できない境界と競合を含めた結果であり、
 速度の比較結果ではない。
 
+2026-09-24 の型付き backend・Lifetime 適用・履歴ページングでは、`check`、frontend lint、
+TS2Mbt diagnostics、fixture 差分なし、独立 consumer を確認した。MoonBit JS 22件 / native 25件、
+Node 138件（API・DB migration を含む）、native API 21件、production DOM 29件が成功した。
+native browser 11件、Node 通話 parity 3件も成功した。イベント・随時通話の音声 RTP、
+再接続・終了・振り返りを含む。追加したテストは API インスタンス1件、controller 3件、
+DB ページング1件、DOM 1件で、汎用ライブラリの試験や型宣言を重複させていない。
+今回専用の MySQL を別 port で起動し、既存の DB は使用していない。
+
 ## 残る設計上の課題
 
 通話の callback / 世代管理は、その後 [`Lifetime` と公式 TaskGroup](async-browser.md) に移した。
-同期的なブラウザ資源の解放と取消不能な取得の結果処理を共通化し、通話以外の Scope は残す。
+通話以外の Scope も公開版 Lifetime を使用する薄いアプリ層へ移した。
 通話の controller 試験は JS、共有モデルは JS / native で実行する。
 汎用 Lifetime と callback の競合試験は公開先の
 [moonbit-lifetime](https://github.com/Hosi121/moonbit-lifetime) へ移した。
@@ -142,10 +150,10 @@ migration → seed を適用して実行した。型だけで保証できない�
 SpeakUp 側は公開版を import して controller・実通話・JS 公開型を検証する。
 ライブラリ内部の5件をアプリの CI で二重実行するためのコピーは残さない。
 
-API 全体の `Host.invoke(Json) -> Json` と global host は残っている。フレンドと通話の業務規則は
-そこから分離したが、全 backend の repository を型付きにしたものではない。通知の kind と
-必要な ID の型付け、UserId / ConversationId の区別、他のフォームの具体的な操作関数への
-移行は残る。既存の JSON・認可・競合試験をそれらの型付け前に削らない。
+API の global host は廃止し、型付き DB・認証・AI 操作を `Api` インスタンスへ渡す。
+UserId / ConversationId の区別、通知の種類と必須 ID、フォームの具体的操作、履歴ページングも
+[型付き境界の整理](typed-boundaries.md)で実装した。SQL schema の静的検査、ほかの一覧の
+ページング、本番負荷・実回線の評価は含まない。JSON・認可・SQL 競合の試験は引き続き必要である。
 
 凍結 source oracle の再生成を変更パスで選別する案も未実施。今回の CI は引き続き毎回生成物と
 fixture の差分を検査する。新しいテスト framework や runtime 依存は追加していない。

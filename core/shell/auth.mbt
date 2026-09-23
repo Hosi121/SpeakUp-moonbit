@@ -28,7 +28,6 @@ pub(all) struct AuthController {
   set_username : (String) -> Unit
   set_email : (String) -> Unit
   set_password : (String) -> Unit
-  set_field : (String, String) -> Unit
   show_password : (Bool) -> Unit
   submit : () -> Unit
 }
@@ -51,8 +50,8 @@ priv struct AuthDraft {
 priv enum AuthPhase {
   Stopped
   Idle
-  Loading(Int, AuthDraft)
-  Sending(Int, () -> Unit)
+  Loading(AuthDraft)
+  Sending
 }
 
 ///|
@@ -67,7 +66,7 @@ pub fn create_auth(signup : Bool, ports : AuthPorts) -> AuthController {
   })
   let listeners : Array[Listener] = []
   let next = Ref(0)
-  let sequence = Ref(0)
+  let owner : Ref[@lifetime.Lifetime?] = Ref(None)
   let phase : Ref[AuthPhase] = Ref(Stopped)
   let update = fn(view) {
     state.val = view
@@ -85,71 +84,75 @@ pub fn create_auth(signup : Bool, ports : AuthPorts) -> AuthController {
     subscribe: fn(listener) { subscribe(listeners, next, listener) },
     start: fn() {
       guard phase.val is Stopped else { return }
+      owner.val = Some(@lifetime.Lifetime())
       phase.val = Idle
       update({ ..state.val, busy: false, })
     },
     stop: fn() {
-      let previous = phase.val
       phase.val = Stopped
-      if previous is Sending(_, cancel) {
-        cancel()
+      let previous = owner.val
+      owner.val = None
+      if previous is Some(life) {
+        life.close()
       }
     },
     preload: fn() { (ports.load)(fn(_) { () }, fn(_) { () }) },
     set_username: fn(value) { set_field(Username, value) },
     set_email: fn(value) { set_field(Email, value) },
     set_password: fn(value) { set_field(Password, value) },
-    set_field: fn(field, value) {
-      match field {
-        "username" => set_field(Username, value)
-        "email" => set_field(Email, value)
-        "password" => set_field(Password, value)
-        _ => ()
-      }
-    },
     show_password: fn(showPassword) { update({ ..state.val, showPassword, }) },
     submit: fn() {
       guard phase.val is Idle else { return }
-      sequence.val += 1
-      let current = sequence.val
-      phase.val = Loading(current, {
+      let parent = owner.val.unwrap()
+      let current = parent.child()
+      phase.val = Loading({
         username: state.val.username,
         email: state.val.email,
         password: state.val.password,
       })
       update({ ..state.val, busy: true, error: "", })
+      if !current.is_open() {
+        return
+      }
       (ports.load)(
         fn(send) {
-          guard phase.val is Loading(id, draft) && id == current else { return }
+          guard current.is_open() && phase.val is Loading(draft) else { return }
           // Install the stage before calling the port: completion may be synchronous.
-          phase.val = Sending(current, fn() { () })
+          phase.val = Sending
           let abort = send(
             signup,
             draft.username,
             draft.email,
             draft.password,
             fn(token, error) {
-              guard phase.val is Sending(id, _) && id == current else { return }
+              guard current.is_open() && phase.val is Sending else { return }
               phase.val = Idle
+              current.close()
+              if !parent.is_open() {
+                return
+              }
               update({ ..state.val, busy: false, error, })
-              if !error.is_empty() {
+              if !parent.is_open() || !error.is_empty() {
                 return
               }
               if !signup {
                 (ports.store_token)(token)
               }
+              if !parent.is_open() {
+                return
+              }
               (ports.navigate)(if signup { "/login" } else { "/home" }, false)
             },
           )
-          if phase.val is Sending(id, _) && id == current {
-            phase.val = Sending(current, abort)
-          } else {
-            abort()
-          }
+          ignore(current.own(abort))
         },
         fn(_) {
-          guard phase.val is Loading(id, _) && id == current else { return }
+          guard current.is_open() && phase.val is Loading(_) else { return }
           phase.val = Idle
+          current.close()
+          if !parent.is_open() {
+            return
+          }
           update({
             ..state.val,
             busy: false,

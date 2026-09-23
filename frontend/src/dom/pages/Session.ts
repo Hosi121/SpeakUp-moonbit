@@ -64,14 +64,14 @@ export function mount(host: HTMLElement, context: PageInput): () => void {
     cancel = button("通話の予定を取り消す", controller.cancel),
     retry = button("再接続", controller.retry),
     error = alert();
-  const memo = dialog("メモ", () => controller.set_open("memo", false), true),
+  const memo = dialog("メモ", () => controller.open_memo(false), true),
     assistant = dialog(
       "アシスタント",
-      () => controller.set_open("assistant", false),
+      () => controller.open_assistant(false),
       true,
     ),
     topic = dialog("まだ話していないトピックはありますか？", () =>
-      controller.set_open("topic", false),
+      controller.open_topic(false),
     );
   for (const modal of [memo, assistant, topic]) scope.own(modal.dispose);
   const tab = choices(
@@ -139,12 +139,12 @@ export function mount(host: HTMLElement, context: PageInput): () => void {
     muteLabel = el("span");
   mute.append(muteIcon, mutedIcon, muteLabel);
   nav.append(mute);
-  for (const [key, label, name] of [
-    ["memo", "メモ", "message"],
-    ["assistant", "アシスタント", "search"],
-    ["topic", "トピック", "topic"],
+  for (const [setOpen, label, name] of [
+    [controller.open_memo, "メモ", "message"],
+    [controller.open_assistant, "アシスタント", "search"],
+    [controller.open_topic, "トピック", "topic"],
   ] as const) {
-    const open = button("", () => controller.set_open(key, true));
+    const open = button("", () => setOpen(true));
     open.setAttribute("aria-haspopup", "dialog");
     open.append(icon(name), label);
     nav.append(open);

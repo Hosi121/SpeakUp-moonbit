@@ -2,6 +2,7 @@
 package "hosi121/speakup/conversation"
 
 import {
+  "hosi121/speakup/identity",
   "moonbitlang/core/debug",
   "moonbitlang/core/json",
 }
@@ -46,11 +47,11 @@ pub struct Conversation {
   // private fields
 }
 pub fn Conversation::can_join(Self) -> Bool
-pub fn Conversation::change(Self, Action, Int, Double) -> Self raise StateError
+pub fn Conversation::change(Self, Action, @identity.UserId, Double) -> Self raise StateError
 pub fn Conversation::has_deadline(Self) -> Bool
-pub fn Conversation::id(Self) -> Int
+pub fn Conversation::id(Self) -> @identity.ConversationId
 pub fn Conversation::origin(Self) -> Origin
-pub fn Conversation::partner(Self, Int) -> Int raise StateError
+pub fn Conversation::partner(Self, @identity.UserId) -> @identity.UserId raise StateError
 pub fn Conversation::phase(Self) -> Phase
 pub fn Conversation::remaining(Self, Double) -> Int raise StateError
 pub fn Conversation::revision(Self) -> Int

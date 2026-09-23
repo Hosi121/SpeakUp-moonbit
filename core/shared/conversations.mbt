@@ -93,7 +93,7 @@ pub fn Call::dto(self : Call) -> ConversationDto {
 
 ///|
 pub fn Call::partner(self : Call, actor : Int) -> FriendSummaryDto raise {
-  let other = self.model.partner(actor)
+  let other = self.model.partner(@identity.UserId::from_int(actor)).value()
   if self.first.id == other {
     { ..self.first, }
   } else {

@@ -1,4 +1,7 @@
 import {
+  "moonbitlang/core/debug",
+  "hosi121/speakup/wire",
+  "hosi121/speakup/identity",
   "hosi121/speakup/shared",
   "hosi121/speakup/platform",
   "hosi121/speakup/bridge",
@@ -7,6 +10,10 @@ import {
   "hosi121/speakup/friendship",
   "moonbitlang/core/json",
 }
+
+import {
+  "moonbitlang/async",
+} for "wbtest"
 
 options(
   targets: { "js.mbt": [ "js" ] },

@@ -9,7 +9,7 @@ pub fn create_auth_request(ports : AppPorts) -> AuthRequest {
   {
     submit: fn(signup, username, email, password, done) {
       let life = scope(ports)
-      life.active = true
+      life.activate()
       let body : Json = if signup {
         {
           "username": username.to_json(),

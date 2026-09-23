@@ -17,7 +17,9 @@ pub(all) struct ReflectionController {
   subscribe : (() -> Unit) -> () -> Unit
   start : () -> Unit
   stop : () -> Unit
-  set_field : (String, String) -> Unit
+  set_satisfaction : (String) -> Unit
+  set_comment : (String) -> Unit
+  set_learned : (String) -> Unit
   save : () -> Unit
 }
 
@@ -54,7 +56,7 @@ pub fn create_reflection(
       @shared.parse_call,
       @shared.parse_reflection,
       fn(call, reflection) raise {
-        guard call.model.id() == id else { fail("Wrong conversation") }
+        guard call.model.id().value() == id else { fail("Wrong conversation") }
         state.set({
           ..state.value,
           conversation: [call.dto()],
@@ -75,20 +77,23 @@ pub fn create_reflection(
     subscribe: fn(listener) { state.subscribe(listener) },
     start: fn() { life.start(refresh, false) },
     stop: fn() { life.stop() },
-    set_field: fn(field, value) {
-      if state.value.busy || !state.value.complete {
-        return
+    set_satisfaction: fn(value) {
+      if !state.value.busy && state.value.complete {
+        state.set({ ..state.value, satisfaction: value, saved: false, })
       }
-      match field {
-        "satisfaction" =>
-          state.set({ ..state.value, satisfaction: value, saved: false, })
-        "comment" => state.set({ ..state.value, comment: value, saved: false, })
-        "learned" => state.set({ ..state.value, learned: value, saved: false, })
-        _ => ()
+    },
+    set_comment: fn(value) {
+      if !state.value.busy && state.value.complete {
+        state.set({ ..state.value, comment: value, saved: false, })
+      }
+    },
+    set_learned: fn(value) {
+      if !state.value.busy && state.value.complete {
+        state.set({ ..state.value, learned: value, saved: false, })
       }
     },
     save: fn() {
-      if !life.active || state.value.busy || !state.value.complete {
+      if !life.is_active() || state.value.busy || !state.value.complete {
         return
       }
       let rating = (ports.number)(state.value.satisfaction)
@@ -211,7 +216,7 @@ pub fn create_learning(
       }
       reflection_saved.val = saved
       update(state.value)
-      if life.active {
+      if life.is_active() {
         refresh()
       }
     },
@@ -224,7 +229,7 @@ pub fn create_learning(
       update({ ..state.value, answers, saved: false, })
     },
     save: fn() {
-      if !life.active || id == 0 || state.value.busy {
+      if !life.is_active() || id == 0 || state.value.busy {
         return
       }
       update({ ..state.value, busy: true, error: "", saved: false, })
@@ -238,7 +243,7 @@ pub fn create_learning(
       )
     },
     generate: fn() {
-      if !life.active || !state.value.can_generate {
+      if !life.is_active() || !state.value.can_generate {
         return
       }
       update({ ..state.value, busy: true, error: "", })

@@ -14,6 +14,8 @@ let subscribers : Map[Int, (Int, @transport.Peer)] = Map([])
 
 ///|
 async fn activity_connection(
+  api : @api.Api,
+  host : @host.Runtime,
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit {
@@ -26,8 +28,8 @@ async fn activity_connection(
       let token = @shared.activity_token(
         @utf8.decode(@native_io.limited_body(message, 8192)),
       )
-      let uid = @host.verify_token(token)
-      let result = @api.execute("GET", "/user/info", uid, "", "")
+      let uid = host.verify_token(token)
+      let result = api.execute("GET", "/user/info", uid, "", "")
       guard result.status == 200 else { raise BadRequest }
       uid
     })
@@ -69,7 +71,7 @@ async fn[T] with_conversation(id : Int, f : async () -> T) -> T {
 fn publish_conversation(body : String) -> Unit raise {
   let conversation = @shared.parse_call(body)
   relay.publish(
-    conversation.model.id(),
+    conversation.model.id().value(),
     "{\"type\":\"conversation\",\"value\":" + body + "}",
     !conversation.model.can_join(),
   )
@@ -77,6 +79,8 @@ fn publish_conversation(body : String) -> Unit raise {
 
 ///|
 async fn connection(
+  api : @api.Api,
+  host : @host.Runtime,
   request : @http.Request,
   conn : @http.ServerConnection,
   service : @async.TaskGroup[Unit],
@@ -91,9 +95,9 @@ async fn connection(
       guard @shared.parse_authorization(text) is Some(auth) else {
         raise BadRequest
       }
-      let uid = @host.verify_token(auth.token)
+      let uid = host.verify_token(auth.token)
       with_conversation(auth.room, async fn() {
-        let result = @api.execute(
+        let result = api.execute(
           "GET",
           "/conversations/\{auth.room}",
           uid,
@@ -128,7 +132,7 @@ async fn connection(
         // Persist the command independently; subsequent ICE frames keep flowing.
         service.spawn_bg(allow_failure=true, async fn() {
           with_conversation(conversation_id, async fn() {
-            let result = @api.execute(
+            let result = api.execute(
               "POST",
               "/conversations/\{conversation_id}/start",
               uid,
@@ -309,6 +313,8 @@ priv enum ConnectionAction {
 
 ///|
 async fn handle(
+  api : @api.Api,
+  host : @host.Runtime,
   request : @http.Request,
   conn : @http.ServerConnection,
   service : @async.TaskGroup[Unit],
@@ -333,9 +339,9 @@ async fn handle(
       return Close
     }
     if request.path == "/activity" {
-      activity_connection(request, conn)
+      activity_connection(api, host, request, conn)
     } else {
-      connection(request, conn, service)
+      connection(api, host, request, conn, service)
     }
     return Close
   }
@@ -373,7 +379,7 @@ async fn handle(
     let uid = if path == "/health" || path == "/signin" || path == "/signup" {
       0
     } else {
-      @host.verify_token(header(request, "Authorization")) catch {
+      host.verify_token(header(request, "Authorization")) catch {
         _ => {
           send(401, "{\"error\":\"Authentication required\"}", None)
           return Reuse
@@ -412,7 +418,7 @@ async fn handle(
       segments[1] == "conversations" &&
       (segments[3] == "finish" || segments[3] == "cancel")
     let run = async fn() {
-      let result = @api.execute(verb, path, uid, input, query)
+      let result = api.execute(verb, path, uid, input, query)
       if terminal && result.status == 200 {
         publish_conversation(result.body)
       }
@@ -441,11 +447,12 @@ async fn handle(
 ///|
 async fn main {
   @signal.set_global_cancellation_signals([SIGINT, SIGTERM])
-  @host.initialize()
-  defer @host.close()
+  let host = @host.initialize()
+  defer host.close()
   defer relay.close()
   defer activity.close()
-  @api.set_notifier(fn(uid) {
+  let api = @api.Api(host.host(), notify=fn(user) {
+    let uid = user.value()
     for (owner, peer) in subscribers.values() {
       if owner == uid {
         activity.send(peer, "{\"type\":\"refresh\"}")
@@ -463,9 +470,9 @@ async fn main {
     group.spawn_bg(no_wait=true, async fn() {
       for ;; {
         try {
-          for id in @api.overdue_conversations() {
-            with_conversation(id, async fn() {
-              let result = @api.expire_conversation(id)
+          for id in api.overdue_conversations() {
+            with_conversation(id.value(), async fn() {
+              let result = api.expire_conversation(id)
               publish_conversation(result.body)
             })
           }
@@ -492,11 +499,11 @@ async fn main {
             conn.read_request()
           })
           if header(request, "Upgrade").to_lower() == "websocket" {
-            ignore(handle(request, conn, group))
+            ignore(handle(api, host, request, conn, group))
             break
           }
           let action = @async.with_timeout(30000, async fn() {
-            handle(request, conn, group)
+            handle(api, host, request, conn, group)
           })
           if action is Close ||
             header(request, "Connection").to_lower() == "close" {

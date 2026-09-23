@@ -12,6 +12,7 @@ options(
   targets: {
     "browser.mbt": [ "js" ],
     "voice.mbt": [ "js" ],
+    "microphone.mbt": [ "js" ],
     "voice_ports.mbt": [ "js" ],
     "session.mbt": [ "js" ],
   },

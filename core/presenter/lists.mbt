@@ -61,6 +61,8 @@ pub fn create_home(ports : AppPorts) -> HomeController {
 pub(all) struct HistoryView {
   calls : Array[@shared.ConversationDto]
   loaded : Bool
+  loading : Bool
+  has_more : Bool
   error : String
   tab : String
 }
@@ -72,6 +74,22 @@ pub(all) struct HistoryController {
   start : () -> Unit
   stop : () -> Unit
   set_tab : (String) -> Unit
+  load_more : () -> Unit
+  retry : () -> Unit
+}
+
+///|
+priv enum HistoryRequest {
+  First
+  Older(@shared.HistoryCursor)
+}
+
+///|
+priv enum HistoryLoad {
+  Idle
+  Loading
+  Ready(@shared.HistoryCursor?)
+  Failed(HistoryRequest)
 }
 
 ///|
@@ -79,37 +97,84 @@ pub fn create_history(ports : AppPorts) -> HistoryController {
   let state = store(HistoryView::{
     calls: [],
     loaded: false,
+    loading: false,
+    has_more: false,
     error: "",
     tab: "history",
   })
   let life = scope(ports)
-  let refresh = fn() {
+  let phase : Ref[HistoryLoad] = Ref(Idle)
+  let load = fn(request : HistoryRequest) {
+    if !life.is_active() {
+      return
+    }
+    phase.val = Loading
+    state.set({ ..state.value, loading: true, error: "", })
+    let path = match request {
+      First => "/conversations/history/page"
+      Older(cursor) => "/conversations/history/page/" + cursor.encode()
+    }
     life.request(
       "history",
       "GET",
-      "/conversations/history",
+      path,
       Json::null(),
       fn(text) raise {
+        let page = @shared.parse_history_page(text)
+        let calls = match request {
+          First => page.items
+          Older(cursor) => {
+            if page.items.get(0) is Some(first) {
+              guard first.ended_at < cursor.ended_at ||
+                (
+                  first.ended_at == cursor.ended_at &&
+                  first.id < cursor.id.value()
+                ) else {
+                fail("History did not advance")
+              }
+            }
+            [..state.value.calls, ..page.items]
+          }
+        }
+        phase.val = Ready(
+          if page.next_cursor.is_empty() {
+            None
+          } else {
+            Some(@shared.parse_history_cursor(page.next_cursor))
+          },
+        )
         state.set({
           ..state.value,
-          calls: @shared.parse_conversations(text),
+          calls,
           loaded: true,
+          loading: false,
+          has_more: !page.next_cursor.is_empty(),
           error: "",
         })
       },
-      fn(message) { state.set({ ..state.value, error: message, }) },
+      fn(message) {
+        phase.val = Failed(request)
+        state.set({ ..state.value, loading: false, error: message, })
+      },
     )
   }
   {
     get_snapshot: fn() { state.value },
     subscribe: fn(listener) { state.subscribe(listener) },
-    start: fn() { life.start(refresh, false) },
+    start: fn() { life.start(fn() { load(First) }, false) },
     stop: fn() { life.stop() },
     set_tab: fn(tab) {
       if tab == "history" || tab == "friends" {
         state.set({ ..state.value, tab, })
       }
     },
+    load_more: fn() {
+      match phase.val {
+        Ready(Some(cursor)) => load(Older(cursor))
+        Idle | Loading | Ready(None) | Failed(_) => ()
+      }
+    },
+    retry: fn() { if phase.val is Failed(request) { load(request) } },
   }
 }
 

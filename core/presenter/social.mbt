@@ -136,7 +136,7 @@ pub fn create_social(
     )
   }
   let change = fn(id : Int, action : @friendship.Action) {
-    if !life.active || state.value.busy || id < 1 {
+    if !life.is_active() || state.value.busy || id < 1 {
       return
     }
     let path = action.path()
@@ -163,7 +163,7 @@ pub fn create_social(
     get_snapshot: fn() { state.value },
     subscribe: fn(listener) { state.subscribe(listener) },
     start: fn() {
-      if life.active {
+      if life.is_active() {
         return
       }
       life.start(
@@ -176,12 +176,14 @@ pub fn create_social(
         },
         false,
       )
-      life.unwatch = (ports.on_activity)(refresh)
+      life.watch(ports.on_activity, refresh)
     },
     stop: fn() { life.stop() },
     set_query: fn(query) { state.set({ ..state.value, query, }) },
     search: fn() {
-      if !life.active || state.value.busy || trim(state.value.query).is_empty() {
+      if !life.is_active() ||
+        state.value.busy ||
+        trim(state.value.query).is_empty() {
         return
       }
       life.cancel("candidates")

@@ -98,14 +98,20 @@ pub fn create_activity(
     read_error: "",
   })
   let life = scope(ports)
-  let socket : Ref[SocketPort] = Ref({ send: fn(_) { false }, close: noop, })
   let attempts = Ref(0)
-  let connection_generation = Ref(0)
   let receive = fn(inbox : @shared.InboxDto, offset : Double) {
     state.set({
       ..state.value,
       inbox,
-      items: inbox.items.map(notification_view),
+      items: inbox.items.map(fn(value) {
+        // checked_inbox validated the event and its required identifiers.
+        let notice = try! value.notice()
+        {
+          value,
+          description: notice.description(),
+          destination: notice.destination(),
+        }
+      }),
       error: "",
       revision: state.value.revision + 1,
       clockOffset: offset,
@@ -140,20 +146,24 @@ pub fn create_activity(
   }
   let focus = fn() { if (realtime.visible)() { refresh() } }
   fn connect() {
-    if !life.active {
-      return
+    guard life.begin("socket") is Some(connection) else { return }
+    let socket : Ref[SocketPort?] = Ref(None)
+    let opened = Ref(false)
+    let authorize = fn() {
+      if connection.is_open() && opened.val && socket.val is Some(socket) {
+        opened.val = false
+        let auth : Json = { "token": ("Bearer " + (ports.token)()).to_json() }
+        (socket.send)(auth.stringify()) |> ignore
+      }
     }
-    connection_generation.val += 1
-    let generation = connection_generation.val
-    (socket.val.close)()
-    socket.val = (realtime.socket)("/activity", fn(kind, text) {
-      if !life.active || generation != connection_generation.val {
+    let value = (realtime.socket)("/activity", fn(kind, text) {
+      if !connection.is_open() {
         return
       }
       match kind {
         "open" => {
-          let auth : Json = { "token": ("Bearer " + (ports.token)()).to_json() }
-          (socket.val.send)(auth.stringify()) |> ignore
+          opened.val = true
+          authorize()
         }
         "text" =>
           if text == "{\"type\":\"refresh\"}" {
@@ -162,24 +172,23 @@ pub fn create_activity(
             refresh()
           }
         "error" | "close" => {
-          connection_generation.val += 1
-          (socket.val.close)()
+          life.cancel("socket")
           state.set({ ..state.value, connected: false, })
-          let delay = [1000.0, 2000, 4000, 8000, 16000, 30000][if attempts.val <
-              5 {
-              attempts.val
-            } else {
-              5
-            }]
-          attempts.val += 1
+          let delay = [1000.0, 2000, 4000, 8000, 16000, 30000][attempts.val.min(
+              5,
+            )]
+          attempts.val = (attempts.val + 1).min(5)
           life.schedule("reconnect", delay, connect)
         }
         _ => ()
       }
     })
+    ignore(connection.own(value.close))
+    socket.val = Some(value)
+    authorize()
   }
   fn recover() {
-    if !life.active {
+    if !life.is_active() {
       return
     }
     life.schedule("recovery", 60000, fn() {
@@ -191,29 +200,25 @@ pub fn create_activity(
     get_snapshot: fn() { state.value },
     subscribe: fn(listener) { state.subscribe(listener) },
     start: fn() {
-      if life.active {
+      if life.is_active() {
         return
       }
-      life.active = true
+      life.activate()
       attempts.val = 0
       state.set({ ..state.value, busy: false, connected: false, })
       if (ports.token)().is_empty() {
         return
       }
-      life.unwatch = (realtime.on_focus)(focus)
+      life.watch(realtime.on_focus, focus)
       life.schedule("reconnect", 0, connect)
       refresh()
       recover()
     },
-    stop: fn() {
-      life.stop()
-      connection_generation.val += 1
-      (socket.val.close)()
-    },
+    stop: fn() { life.stop() },
     refresh,
     set_open: fn(open) { state.set({ ..state.value, open, }) },
     read: fn() {
-      if !life.active || state.value.busy {
+      if !life.is_active() || state.value.busy {
         return
       }
       guard state.value.inbox.items.get(0) is Some(item) else { return }

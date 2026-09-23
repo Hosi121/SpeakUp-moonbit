@@ -59,15 +59,10 @@ pub(all) struct VoiceController {
 }
 
 ///|
+#cfg(target="js")
 priv struct AudioInput {
   stream : StreamPort
   meter : MeterPort
-}
-
-///|
-fn AudioInput::close(self : AudioInput) -> Unit {
-  (self.stream.close)()
-  (self.meter.close)()
 }
 
 ///|

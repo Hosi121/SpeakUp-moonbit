@@ -163,7 +163,7 @@ async fn Voice::receive(self : Self, peer : PeerPort) -> Unit {
 fn Voice::signal(self : Self, signal : @shared.ServerSignal) -> Unit {
   let command = match signal {
     Conversation(call) => {
-      if call.model.id() != self.id {
+      if call.model.id().value() != self.id {
         self.fail("別の通話の状態を受信しました")
         return
       }
@@ -231,7 +231,7 @@ async fn Voice::connect(
   let call = @shared.parse_call(
     read_voice(ports, self.life, "/conversations/\{self.id}"),
   )
-  if call.model.id() != self.id {
+  if call.model.id().value() != self.id {
     raise @browser_async.PortError("別の通話の状態を受信しました")
   }
   (self.observer.conversation)(call)

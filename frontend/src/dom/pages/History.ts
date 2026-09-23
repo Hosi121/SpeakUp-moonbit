@@ -26,8 +26,10 @@ export function mount(
   const error = alert(),
     empty = el("p", "", "終了した会話はまだありません。");
   if (!tabs) empty.append(button("通話へ", () => go("/sessionlist", false)));
+  const more = button("さらに表示", controller.load_more),
+    retry = button("再試行", controller.retry);
   const items = el("div", "stack"),
-    history = el("div", "stack", error, empty, items),
+    history = el("div", "stack", error, retry, empty, items, more),
     friends = el("div");
   const rows = list<ConversationDto>(
     items,
@@ -82,6 +84,11 @@ export function mount(
     message(error, s.error);
     visible(empty, s.loaded && !s.calls.length);
     rows.update(s.calls);
+    visible(more, s.has_more && !s.error);
+    more.disabled = s.loading;
+    text(more, s.loading ? "読み込み中…" : "さらに表示");
+    visible(retry, !!s.error);
+    retry.disabled = s.loading;
     choice.update(s.tab);
     const show = tabs && s.tab === "friends";
     visible(history, !show);

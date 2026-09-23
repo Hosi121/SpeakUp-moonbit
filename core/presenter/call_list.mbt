@@ -71,7 +71,7 @@ pub fn create_calls(ports : AppPorts) -> CallsController {
             partner: call.partner(profile.id).username,
             can_join: clock.can_join,
             active: call.model.phase() is Active(_),
-            path: "/session?conversation=\{call.model.id()}",
+            path: "/session?conversation=\{call.model.id().value()}",
           }
         })
         me.val = profile
@@ -92,7 +92,7 @@ pub fn create_calls(ports : AppPorts) -> CallsController {
     get_snapshot: fn() { state.value },
     subscribe: fn(listener) { state.subscribe(listener) },
     start: fn() {
-      if !life.active {
+      if !life.is_active() {
         update({ ..state.value, busy: false, })
         life.start(refresh, true)
       }
@@ -101,7 +101,7 @@ pub fn create_calls(ports : AppPorts) -> CallsController {
     refresh,
     set_query: fn(query) { update({ ..state.value, query, }) },
     search: fn() {
-      if !life.active || !state.value.can_search {
+      if !life.is_active() || !state.value.can_search {
         return
       }
       update({ ..state.value, busy: true, error: "", })
@@ -124,7 +124,7 @@ pub fn create_calls(ports : AppPorts) -> CallsController {
       )
     },
     invite: fn(id) {
-      if !life.active || state.value.busy || id <= 0 || id == me.val.id {
+      if !life.is_active() || state.value.busy || id <= 0 || id == me.val.id {
         return
       }
       let key = match keys.get(id) {

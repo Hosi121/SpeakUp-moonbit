@@ -18,9 +18,8 @@ pub(all) struct MicrophoneController {
 ///|
 priv enum MicrophonePhase {
   Stopped
-  Acquiring
-  Capturing(StreamPort)
-  Sampling(AudioInput)
+  Acquiring(@lifetime.Lifetime)
+  Sampling(@lifetime.Lifetime, MeterPort)
   Checked
 }
 
@@ -35,35 +34,48 @@ pub fn create_microphone(
     ready: false,
     checked: false,
   })
-  let generation = Ref(0)
   let phase : Ref[MicrophonePhase] = Ref(Stopped)
-  let frame = Ref(noop)
-  let unwatch = Ref(noop)
+  let frame : Ref[@lifetime.Release?] = Ref(None)
   let stop = fn() {
     let previous = phase.val
     phase.val = if previous is Checked { Checked } else { Stopped }
-    generation.val += 1
-    (frame.val)()
-    frame.val = noop
-    (unwatch.val)()
-    unwatch.val = noop
     match previous {
-      Capturing(stream) => (stream.close)()
-      Sampling(audio) => audio.close()
-      Stopped | Acquiring | Checked => ()
+      Acquiring(life) | Sampling(life, _) => life.close()
+      Stopped | Checked => ()
+    }
+    frame.val = None
+  }
+  let failed = fn(life : @lifetime.Lifetime) {
+    if life.is_open() {
+      stop()
+      state.set({
+        ..state.value,
+        ready: false,
+        error: "マイクを利用できませんでした。ブラウザの設定を確認してください。",
+      })
     }
   }
   fn sample() {
-    (frame.val)()
-    frame.val = noop
-    guard phase.val is Sampling(audio) && (realtime.visible)() else { return }
-    let current = generation.val
-    state.set({
-      ..state.value,
-      levels: microphone_levels((audio.meter.sample)()),
-    })
-    if current == generation.val && phase.val is Sampling(_) {
-      frame.val = (media.frame)(sample)
+    if frame.val is Some(pending) {
+      frame.val = None
+      pending.close()
+    }
+    guard phase.val is Sampling(life, meter) && life.is_open() else { return }
+    try {
+      if !@browser_async.guard_sync(realtime.visible) {
+        return
+      }
+      let data = @browser_async.guard_sync(meter.sample)
+      if !life.is_open() {
+        return
+      }
+      state.set({ ..state.value, levels: microphone_levels(data), })
+      if life.is_open() {
+        let cancel = @browser_async.guard_sync(fn() { (media.frame)(sample) })
+        frame.val = Some(life.own(cancel))
+      }
+    } catch {
+      _ => failed(life)
     }
   }
   {
@@ -72,39 +84,51 @@ pub fn create_microphone(
     stop,
     start: fn() {
       guard phase.val is Stopped else { return }
-      phase.val = Acquiring
-      generation.val += 1
-      let current = generation.val
+      let life = @lifetime.Lifetime()
+      phase.val = Acquiring(life)
       state.set({ ..state.value, ready: false, error: "", })
-      unwatch.val = (realtime.on_focus)(sample)
-      (media.acquire)(
-        fn(stream) {
-          guard current == generation.val && phase.val is Acquiring else {
-            (stream.close)()
-            return
-          }
-          phase.val = Capturing(stream)
-          let audio : AudioInput = { stream, meter: (stream.meter)(2048), }
-          if current != generation.val {
-            audio.close()
-            return
-          }
-          phase.val = Sampling(audio)
-          state.set({ ..state.value, ready: true, })
-          sample()
-        },
-        fn(_) {
-          if current != generation.val {
-            return
-          }
-          stop()
-          state.set({
-            ..state.value,
-            ready: false,
-            error: "マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。",
-          })
-        },
-      )
+      if !life.is_open() {
+        return
+      }
+      try {
+        let unwatch = @browser_async.guard_sync(fn() {
+          (realtime.on_focus)(sample)
+        })
+        ignore(life.own(unwatch))
+        if !life.is_open() {
+          return
+        }
+        @browser_async.guard_sync(fn() {
+          (media.acquire)(
+            fn(stream) {
+              if !life.is_open() || !(phase.val is Acquiring(_)) {
+                (stream.close)()
+                return
+              }
+              ignore(life.own(stream.close))
+              try {
+                let meter = @browser_async.guard_sync(fn() {
+                  (stream.meter)(2048)
+                })
+                ignore(life.own(meter.close))
+                if !life.is_open() {
+                  return
+                }
+                phase.val = Sampling(life, meter)
+                state.set({ ..state.value, ready: true, })
+                if life.is_open() {
+                  sample()
+                }
+              } catch {
+                _ => failed(life)
+              }
+            },
+            fn(_) { failed(life) },
+          )
+        })
+      } catch {
+        _ => failed(life)
+      }
     },
     finish: fn() {
       if state.value.ready {

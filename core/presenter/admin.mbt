@@ -21,7 +21,10 @@ pub(all) struct AdminController {
   subscribe : (() -> Unit) -> () -> Unit
   start : () -> Unit
   stop : () -> Unit
-  set_field : (String, String) -> Unit
+  set_date_time : (String) -> Unit
+  set_theme : (String) -> Unit
+  set_query : (String) -> Unit
+  set_section : (String) -> Unit
   set_topic : (Int, String) -> Unit
   open : () -> Unit
   close : () -> Unit
@@ -70,19 +73,24 @@ pub fn create_admin(ports : AppPorts) -> AdminController {
       life.start(fn() { state.set({ ..state.value, busy: false, }) }, false)
     },
     stop: fn() { life.stop() },
-    set_field: fn(field, value) {
-      if state.value.busy {
-        return
+    set_date_time: fn(value) {
+      if !state.value.busy {
+        state.set({ ..state.value, dateTime: value, })
       }
-      match field {
-        "dateTime" => state.set({ ..state.value, dateTime: value, })
-        "theme" => state.set({ ..state.value, theme: value, })
-        "section" =>
-          if value == "events" || value == "users" {
-            state.set({ ..state.value, section: value, })
-          }
-        "query" => state.set({ ..state.value, query: value, })
-        _ => ()
+    },
+    set_theme: fn(value) {
+      if !state.value.busy {
+        state.set({ ..state.value, theme: value, })
+      }
+    },
+    set_query: fn(value) {
+      if !state.value.busy {
+        state.set({ ..state.value, query: value, })
+      }
+    },
+    set_section: fn(value) {
+      if !state.value.busy && (value == "events" || value == "users") {
+        state.set({ ..state.value, section: value, })
       }
     },
     set_topic: fn(index, value) {
@@ -100,7 +108,7 @@ pub fn create_admin(ports : AppPorts) -> AdminController {
     },
     close,
     create: fn() {
-      if !life.active || state.value.busy {
+      if !life.is_active() || state.value.busy {
         return
       }
       let date = (ports.iso)(state.value.dateTime)
@@ -132,7 +140,7 @@ pub fn create_admin(ports : AppPorts) -> AdminController {
       )
     },
     generate: fn() {
-      if !life.active || state.value.busy {
+      if !life.is_active() || state.value.busy {
         return
       }
       state.set({ ..state.value, busy: true, dialogError: "", })
@@ -152,7 +160,7 @@ pub fn create_admin(ports : AppPorts) -> AdminController {
       )
     },
     search: fn() {
-      if !life.active || state.value.busy {
+      if !life.is_active() || state.value.busy {
         return
       }
       state.set({ ..state.value, busy: true, error: "", })

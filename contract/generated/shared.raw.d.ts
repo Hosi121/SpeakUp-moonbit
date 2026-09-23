@@ -1,4 +1,5 @@
 import type * as json from "moonbitlang/core/json";
+import type * as identity from "hosi121/speakup/identity";
 import type * as conversation from "hosi121/speakup/conversation";
 
 export type Result<T, E> = { $tag: "Ok"; _0: T } | { $tag: "Err"; _0: E };
@@ -118,6 +119,10 @@ export function parse_client_signal(s: string): ClientSignal | undefined;
 export function parse_conversation(s: string): Result<ConversationDto, Error>;
 
 export function parse_conversations(s: string): Result<Array<ConversationDto>, Error>;
+
+export function parse_history_cursor(s: string): Result<HistoryCursor, Error>;
+
+export function parse_history_page(s: string): Result<HistoryPage, Error>;
 
 export function parse_reflection(s: string): Result<ReflectionDto, Error>;
 
@@ -314,6 +319,24 @@ export function FriendSummaryDto_to_json(self : FriendSummaryDto): Json;
 
 export function FriendSummaryDto_from_json(arg0: Json, arg1: json.JsonPath): Result<FriendSummaryDto, json.JsonDecodeError>;
 
+export interface HistoryCursor {
+  ended_at: number;
+  id: identity.ConversationId;
+}
+
+export function HistoryCursor_encode(self : HistoryCursor): string;
+
+export function HistoryCursor_HistoryCursor(n: number, arg1: identity.ConversationId): Result<HistoryCursor, Error>;
+
+export interface HistoryPage extends ToJson, json.FromJson {
+  items: Array<ConversationDto>;
+  next_cursor: string;
+}
+
+export function HistoryPage_to_json(self : HistoryPage): Json;
+
+export function HistoryPage_from_json(arg0: Json, arg1: json.JsonPath): Result<HistoryPage, json.JsonDecodeError>;
+
 export interface IceServerDto {
   urls: Array<string>;
   username: string;
@@ -363,6 +386,18 @@ export function MessageDto_to_json(self : MessageDto): Json;
 
 export function MessageDto_from_json(arg0: Json, arg1: json.JsonPath): Result<MessageDto, json.JsonDecodeError>;
 
+export type Notice = { $tag: "FriendRequested"; _0: identity.UserId } | { $tag: "FriendAccepted"; _0: identity.UserId } | { $tag: "CallInvitation"; _0: identity.ConversationId } | { $tag: "EventMatched"; _0: identity.ConversationId } | { $tag: "Message"; _0: identity.UserId; _1: identity.MessageId };
+
+export type Notice_FriendRequested = Extract<Notice, { $tag: "FriendRequested" }>;
+export type Notice_FriendAccepted = Extract<Notice, { $tag: "FriendAccepted" }>;
+export type Notice_CallInvitation = Extract<Notice, { $tag: "CallInvitation" }>;
+export type Notice_EventMatched = Extract<Notice, { $tag: "EventMatched" }>;
+export type Notice_Message = Extract<Notice, { $tag: "Message" }>;
+
+export function Notice_description(self : Notice): string;
+
+export function Notice_destination(self : Notice): string;
+
 export interface NotificationDto extends ToJson, json.FromJson {
   id: number;
   kind: string;
@@ -372,6 +407,8 @@ export interface NotificationDto extends ToJson, json.FromJson {
   read: boolean;
   created_at: string;
 }
+
+export function NotificationDto_notice(self : NotificationDto): Result<Notice, Error>;
 
 export function NotificationDto_to_json(self : NotificationDto): Json;
 

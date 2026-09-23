@@ -1,18 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "hosi121/speakup/api"
 
+import {
+  "hosi121/speakup/identity",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
 // Values
-pub fn configure_host(Host) -> Unit
-
-pub async fn execute(String, String, Int, String, String) -> ApiResponse
-
 pub fn expire(Int, (Int, String) -> Unit) -> Unit
 
-pub async fn expire_conversation(Int) -> ApiResponse
-
 pub fn handle(String, String, Int, String, String, (Int, String) -> Unit) -> Unit
-
-pub async fn overdue_conversations() -> Array[Int]
 
 pub fn poll_expired((Int, Array[Int]) -> Unit) -> Unit
 
@@ -20,21 +18,104 @@ pub fn set_notifier((Int) -> Unit) -> Unit
 
 // Errors
 pub(all) suberror HostError {
-  HostError(String)
-}
+  Credentials
+  NotConfigured
+  Conflict
+  Unavailable
+  InvalidData
+} derive(@debug.Debug)
+pub fn HostError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub struct Api {
+  // private fields
+}
+pub fn Api::Api(Host, notify? : (@identity.UserId) -> Unit) -> Self
+pub async fn Api::execute(Self, String, String, Int, String, String) -> ApiResponse
+pub async fn Api::expire_conversation(Self, @identity.ConversationId) -> ApiResponse
+pub async fn Api::overdue_conversations(Self) -> Array[@identity.ConversationId]
+
 pub(all) struct ApiResponse {
   status : Int
   body : String
 }
 
+pub(all) enum AuthAction {
+  SignIn
+  SignUp
+}
+
+pub(all) enum ChatKind {
+  Ask
+  Theme
+  Feedback
+}
+
+pub struct ChatReply {
+  content : String
+  // private fields
+}
+pub fn ChatReply::decode(Json) -> Self raise
+pub fn ChatReply::to_json(Self) -> Json
+pub impl ToJson for ChatReply
+
+pub(all) struct Credentials {
+  email : String
+  password : String
+}
+
+pub(all) struct Database {
+  run : async (Statement) -> DbResult
+  transaction : async (Array[Statement]) -> DbResult
+}
+
+pub(all) enum DbResult {
+  Rows(Array[DbRow])
+  Written(WriteResult)
+}
+
+pub struct DbRow {
+  // private fields
+}
+pub fn DbRow::DbRow(Map[String, SqlValue]) -> Self
+pub fn DbRow::to_json(Self) -> Json
+pub impl ToJson for DbRow
+
+pub(all) struct EventTimes {
+  start : String
+  end : String
+} derive(@json.FromJson)
+pub fn EventTimes::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+
 pub(all) struct Host {
-  invoke : async (Json) -> Json
+  database : Database
+  authenticate : async (AuthAction, Credentials) -> Unit
+  issue_token : async (@identity.UserId) -> String
+  chat : async (ChatKind, String) -> ChatReply
   now : () -> String
   now_millis : () -> Double
   public_url : (String) -> String
-  event_times : (String) -> String
+  event_times : (String) -> EventTimes?
+}
+
+pub(all) enum SqlValue {
+  Null
+  Text(String)
+  Number(Double)
+  Boolean(Bool)
+}
+pub fn SqlValue::to_json(Self) -> Json
+pub impl ToJson for SqlValue
+
+pub(all) struct Statement {
+  sql : String
+  params : Array[SqlValue]
+} derive(ToJson)
+pub fn Statement::to_json(Self) -> Json
+
+pub(all) struct WriteResult {
+  affected_rows : Double
+  insert_id : Double
 }
 
 // Type aliases

@@ -27,7 +27,7 @@ export function mount(host: HTMLElement, context: PageInput): () => void {
       { value: "events", label: "イベント管理" },
       { value: "users", label: "ユーザー情報" },
     ],
-    (v) => controller.set_field("section", v),
+    (v) => controller.set_section(v),
   );
   const success = status(""),
     error = alert(),
@@ -52,7 +52,7 @@ export function mount(host: HTMLElement, context: PageInput): () => void {
   events.append(eventHost, open, last);
   const query = input(
       "ユーザー名で検索",
-      (v) => controller.set_field("query", v),
+      (v) => controller.set_query(v),
       { required: true },
     ),
     search = submit("検索", ""),
@@ -100,12 +100,12 @@ export function mount(host: HTMLElement, context: PageInput): () => void {
   const modal = dialog("イベント作成", controller.close);
   view.scope.own(modal.dispose);
   const createForm = form(controller.create),
-    when = input("予定日時", (v) => controller.set_field("dateTime", v), {
+    when = input("予定日時", (v) => controller.set_date_time(v), {
       type: "datetime-local",
       step: "1",
       required: true,
     }),
-    theme = input("テーマ", (v) => controller.set_field("theme", v), {
+    theme = input("テーマ", (v) => controller.set_theme(v), {
       required: true,
     });
   const generate = button("AIによる生成", controller.generate),

@@ -22,6 +22,8 @@ test('new ingress decoders reject missing fields, fractional identifiers, out-of
     [parseSocial, { friends: [{ ...person, id: 1.5 }], incoming: [], outgoing: [] }],
     [parseInbox, { ...valid[1][1], now: now + 0.5 }],
     [parseInbox, { ...valid[1][1], items: [{ ...valid[1][1].items[0], kind: 'anything' }] }],
+    [parseInbox, { ...valid[1][1], items: [{ ...valid[1][1].items[0], message_id: 0 }] }],
+    [parseInbox, { ...valid[1][1], items: [{ ...valid[1][1].items[0], kind: 'call_invitation', conversation_id: 0 }] }],
     [parseThread, { ...valid[2][1], messages: [{ ...valid[2][1].messages[0], recipient_id: 2 }] }],
     [parseStats, { ...valid[3][1], minutes: -1 }],
     [parseEvents, [{ ...valid[4][1][0], participates_bit: 8 }]],

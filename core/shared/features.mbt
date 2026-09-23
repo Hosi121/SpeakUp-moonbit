@@ -191,11 +191,9 @@ pub fn checked_inbox(text : String) -> InboxDto raise {
       fail("Invalid notification")
     }
     validate_friend(actor)
-    guard [
-      "friend_request", "friend_accepted", "call_invitation", "message", "event_matched",
-    ].contains(kind) else {
-      fail("Invalid notification kind")
-    }
+    ignore(kind)
+    let notification : NotificationDto = @json.from_json(n)
+    notification.notice() |> ignore
   }
   @json.from_json(v)
 }
