@@ -4,6 +4,7 @@ import {
   "hosi121/speakup/bridge",
   "hosi121/speakup/matching",
   "hosi121/speakup/conversation",
+  "hosi121/speakup/friendship",
   "moonbitlang/core/json",
 }
 

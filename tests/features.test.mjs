@@ -11,7 +11,7 @@ import { nativeEnv, nativeExecutable } from '../scripts/native-env.mjs';
 const keys = generateKeyPairSync('rsa', { modulusLength: 2048, privateKeyEncoding: { type: 'pkcs8', format: 'pem' }, publicKeyEncoding: { type: 'spki', format: 'pem' } });
 const native = process.env.SERVER_RUNTIME === 'native';
 const base = 'http://127.0.0.1:18082';
-let db, child, logs = '', provider, users, providerRequests = [], gate;
+let db, child, logs = '', provider, providerRequests = [], gate;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function request(path, user, method = 'GET', payload) {
   const response = await fetch(base + path, { method, headers: { ...(user ? { Authorization: `Bearer ${user.token}` } : {}), 'Content-Type': 'application/json' }, body: payload === undefined ? undefined : JSON.stringify(payload) });
@@ -21,6 +21,14 @@ async function person(name, role = 'USER') {
   const [row] = await db.execute('INSERT INTO users(username,email,role) VALUES (?,?,?)', [name, `${randomUUID()}@example.test`, role]);
   const token = await new SignJWT({ user_id: String(row.insertId) }).setProtectedHeader({ alg: 'RS256' }).setIssuer('speakup').setAudience('speakup').setIssuedAt().setExpirationTime('1h').sign(await importPKCS8(keys.privateKey, 'RS256'));
   return { id: row.insertId, token };
+}
+async function participants() {
+  return [await person('Feature Alice', 'ADMIN'), await person('Feature Bob'), await person('Unrelated')];
+}
+async function friends(a, b) {
+  // This is a prerequisite of messaging, not a side effect of another test.
+  await db.execute("INSERT INTO friendships(low_user_id,high_user_id,requested_by,status) VALUES (?,?,?,'FRIEND')",
+    [Math.min(a.id, b.id), Math.max(a.id, b.id), a.id]);
 }
 async function eventually(work) {
   let last;
@@ -35,7 +43,6 @@ function activity(user) {
 }
 before(async () => {
   db = await mysql.createConnection(process.env.TEST_DATABASE_URL ?? 'mysql://speakup:speakup-local-only@127.0.0.1:3308/speakup_moonbit');
-  users = [await person('Feature Alice', 'ADMIN'), await person('Feature Bob'), await person('Unrelated')];
   provider = createServer(async (req, res) => {
     let text = ''; for await (const chunk of req) text += chunk;
     const input = JSON.parse(text); providerRequests.push(input);
@@ -58,12 +65,13 @@ after(async () => {
 
 test('notification items and unread count use one snapshot during concurrent inserts', async () => {
   const recipient = await person('Snapshot reader');
+  const actor = await person('Snapshot actor');
   const responses = [];
   await Promise.all([
     (async () => {
       for (let i = 0; i < 80; i++) {
         await db.execute('INSERT INTO notifications(user_id,actor_id,event_key,kind) VALUES (?,?,?,?)',
-          [recipient.id, users[0].id, randomUUID(), 'friend_request']);
+          [recipient.id, actor.id, randomUUID(), 'friend_request']);
       }
     })(),
     (async () => {
@@ -79,7 +87,7 @@ test('notification items and unread count use one snapshot during concurrent ins
 });
 
 test('friendship requires recipient consent, concurrent retries deduplicate, activity hints remain private', async () => {
-  const [a, b, c] = users;
+  const [a, b, c] = await participants();
   const sa = activity(a), sb = activity(b), sc = activity(c);
   try {
     await Promise.all([sa.ready(), sb.ready(), sc.ready()]);
@@ -109,7 +117,7 @@ test('friendship requires recipient consent, concurrent retries deduplicate, act
 });
 
 test('request cancellation and rejection allow explicit new consent without resurrecting acceptance', async () => {
-  const [a, , c] = users;
+  const a = await person('Requester'), c = await person('Recipient');
   assert.equal((await request(`/friends/${c.id}/request`, a, 'POST', {})).status, 200);
   assert.equal((await request(`/friends/${c.id}/cancel`, a, 'POST', {})).status, 200);
   assert.equal((await request(`/friends/${a.id}/accept`, c, 'POST', {})).status, 409);
@@ -119,8 +127,27 @@ test('request cancellation and rejection allow explicit new consent without resu
   const self = await request(`/friends/${a.id}/request`, a, 'POST', {}); assert.equal(self.status, 400);
 });
 
+test('competing friendship decisions commit one revision with only the winning notification', async () => {
+  for (const action of ['cancel', 'reject']) {
+    const a = await person('Requester'), b = await person('Recipient');
+    await db.execute("INSERT INTO friendships(low_user_id,high_user_id,requested_by,status) VALUES (?,?,?,'PENDING')", [a.id, b.id, a.id]);
+    const competing = action === 'cancel' ? [b.id, a] : [a.id, b];
+    const replies = await Promise.all([
+      request(`/friends/${a.id}/accept`, b, 'POST', {}),
+      request(`/friends/${competing[0]}/${action}`, competing[1], 'POST', {}),
+    ]);
+    assert.deepEqual(replies.map(r => r.status).sort(), [200, 409], JSON.stringify(replies));
+    const [[saved]] = await db.execute('SELECT status,requested_by,revision FROM friendships WHERE low_user_id=? AND high_user_id=?', [a.id, b.id]);
+    const accepted = replies[0].status === 200;
+    assert.deepEqual(saved, { status: accepted ? 'FRIEND' : 'DECLINED', requested_by: a.id, revision: 2 });
+    const [notices] = await db.execute('SELECT user_id,actor_id,kind,event_key FROM notifications WHERE user_id IN (?,?)', [a.id, b.id]);
+    assert.deepEqual(notices, accepted ? [{ user_id: a.id, actor_id: b.id, kind: 'friend_accepted', event_key: `friend:${a.id}:${b.id}:2` }] : []);
+  }
+});
+
 test('private messages persist, retry once, paginate by ID and mark only received messages read', async () => {
-  const [a, b, c] = users;
+  const [a, b, c] = await participants();
+  await friends(a, b);
   const key = randomUUID(), body = '<script>plain text</script> 日本語';
   const attempts = await Promise.all(Array.from({ length: 8 }, () => request(`/messages/${b.id}`, a, 'POST', { body, request_id: key })));
   assert.ok(attempts.every(r => r.status === 200), JSON.stringify(attempts));
@@ -152,7 +179,7 @@ async function completedCall(a, b) {
   return id;
 }
 test('stats derive only from completed calls and private saved reflections; surveys and advice are owner scoped', async () => {
-  const [a, b, c] = users;
+  const [a, b, c] = await participants();
   assert.equal((await request('/stats', a)).body.total_calls, 0);
   const id = await completedCall(a, b);
   const reflection = { satisfaction: 77, comment: 'my written reflection', learned_expressions: 'I enjoyed it.' };
@@ -188,7 +215,7 @@ test('stats derive only from completed calls and private saved reflections; surv
 });
 
 test('event roster respects participation bits, publishes private invitations and recovers expired calls without browsers', async () => {
-  const [a, b, c] = users;
+  const [a, b, c] = await participants();
   const event = await request('/events', a, 'POST', { event_start: '2026-10-01T12:00:00Z', theme: 'Feature event', topics: [] });
   assert.equal(event.status, 200); const id = event.body.id;
   for (const [user, bit] of [[a, 7], [b, 3], [c, 4]]) assert.equal((await request(`/events/${id}/register`, user, 'POST', { participates_bit: bit })).status, 200);

@@ -1,0 +1,59 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hosi121/speakup/friendship"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn decide(State, Action, Member) -> Decision raise Rejected
+
+// Errors
+pub(all) suberror Rejected {
+  NoPending
+  Conflict
+}
+
+// Types and methods
+pub(all) enum Action {
+  Request
+  Accept
+  Reject
+  Cancel
+}
+
+pub struct Decision {
+  next : State
+  notice : Notice?
+}
+
+pub(all) enum Member {
+  First
+  Second
+} derive(Eq, @debug.Debug)
+pub fn Member::equal(Self, Self) -> Bool
+pub fn Member::not_equal(Self, Self) -> Bool
+pub fn Member::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Notice {
+  Requested
+  Accepted
+} derive(Eq, @debug.Debug)
+pub fn Notice::equal(Self, Self) -> Bool
+pub fn Notice::not_equal(Self, Self) -> Bool
+pub fn Notice::to_repr(Self) -> @debug.Repr
+
+pub(all) enum State {
+  Absent
+  Pending(Member)
+  Accepted(Member)
+  Declined(Member)
+  Blocked
+} derive(Eq, @debug.Debug)
+pub fn State::equal(Self, Self) -> Bool
+pub fn State::not_equal(Self, Self) -> Bool
+pub fn State::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits
